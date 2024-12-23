@@ -4,34 +4,40 @@ from markupsafe import escape
 import json
 from scipy.spatial import distance
 from flask_cors import CORS
+from copy import copy
 
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
 
-EXACT_MATCH = """
-    select e.id, a.title, a.url
-    from embeddings e
-    join articles a
-        using(id)
-    where lower(a.title) like ?
-    order by a.title asc
-    limit ?
-"""
 
-def get_match(cur, q, limit):
-    cur.execute(EXACT_MATCH, ((q, limit)))
-    return [
-        {
-            'id': x[0],
-            'title': x[1],
-            'url': x[2]
-        }
-        for x in cur.fetchall()
-    ]
+
+
+def build_btree():
+    conn = sqlite3.Connection('data/data.db')
+    cur = conn.cursor()
+    cur.execute("select id, clean_title from articles")
+    articles = cur.fetchall()
+
+
+# MATCH = """
+#     select id, title, url
+#     from articles
+#     where clean_title like ?
+#     order by count desc
+#     limit ?
+# """
+
+# def get_match(cur, q, limit):
+#     cur.execute(MATCH, ((q, limit)))
+#     return [
+#         {
+#             'id': x[0],
+#             'title': x[1],
+#             'url': x[2]
+#         }
+#         for x in cur.fetchall()
+#     ]
 
 @app.route("/suggestion/<q>/limit/<limit>")
 def suggestion(q, limit):
@@ -39,24 +45,7 @@ def suggestion(q, limit):
 
     limit = int(escape(limit))
 
-    conn = sqlite3.Connection('data.db')
-    cur = conn.cursor()
-
     results = get_match(cur, q + '%', limit)
-    
-    if len(results) >= limit:
-        return results
-    
-    q = q + '%'
-    results.extend(get_match(cur, q, limit))
-    results = results[: limit]
-
-    if len(results) >= limit:
-        return results
-
-    q = '%' + q
-    results.extend(get_match(cur, q, limit))
-    results = results[: limit]
         
     return results
 
@@ -66,8 +55,7 @@ def guess(id):
 
     id = int(escape(id))
 
-    conn = sqlite3.Connection('data.db')
-    cur = conn.cursor()
+    for in_use
 
     QUERY = """
         select vector

@@ -1,30 +1,5 @@
 [package]
-name = "axum-sqlite-app"
-version = "0.1.0"
-edition = "2021"
+name = "spectrle"
 
 [dependencies]
-# Axum for routing and request handling
-axum = "0.6"
-tokio = { version = "1.0", features = ["full"] }
 
-# Rusqlite for SQLite database access
-rusqlite = { version = "0.29", features = ["bundled"] }
-
-# Serde for JSON serialization and deserialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-
-# Tower for middleware
-tower = "0.4"
-
-tower-http = { version = "0.4", features = ["cors"] }
-
-# Hyper for HTTP server (Axum depends on it)
-hyper = { version = "0.14", features = ["full"] }
-
-# Additional utilities for locking and thread safety
-tokio-util = "0.7"
-
-[features]
-default = []
