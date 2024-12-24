@@ -4,7 +4,45 @@ from markupsafe import escape
 import json
 from scipy.spatial import distance
 from flask_cors import CORS
-from copy import copy
+from copy import deepcopy
+
+random = [
+(1164, 'artificial intelligence'),
+(84493, 'savannah, georgia'),
+(990329, 'gamespot'),
+(57447, 'charlotte, north carolina'),
+(60192, 'bruce springsteen'),
+(17416221, 'south africa'),
+(534366, 'barack obama'),
+(5119376, 'john f. kennedy'),
+(18973446, 'geometry'),
+(173070, 'the wall street journal'),
+(5551, 'costa rica'),
+(167409, 'alternative rock'),
+(3524766, 'youtube'),
+(23245410, 'academy award for best actor'),
+(808, 'alfred hitchcock'),
+(701, 'angola'),
+(319442, 'san francisco chronicle'),
+(5334607, 'africa'),
+(3352, 'blues'),
+(585629, 'kyiv'),
+(52911, 'town'),
+(26230922, 'nobel peace prize'),
+(689, 'asia'),
+(19468510, 'united states house of representatives'),
+(12153654, 'elizabeth ii'),
+(4699587, 'fish'),
+(863, 'american civil war'),
+(2569378, 'hurricane katrina'),
+(23534170, 'fantasy'),
+(3969, 'buckingham palace'),
+(5884, 'charles dickens'),
+(19334491, 'vishnu'),
+(42010, 'queen (band)'),
+(54422, 'chinese civil war'),
+(1998, 'austin, texas')
+]
 
 app = Flask(__name__)
 CORS(app)
@@ -13,11 +51,11 @@ CORS(app)
 conn = sqlite3.Connection('stable/data/data.db')
 cur = conn.cursor()
 
-cur.execute("select id, clean_title, count from articles order by count desc")
+cur.execute("select id, clean_title, count from articles")
 articles = cur.fetchall()
-articles = list(sorted(
-    articles, key=lambda x: x[1]
-))
+articles = sorted(articles, key=lambda x: x[1])
+
+conn.close()
 
 
 def bin_prefix_search(array, prefix, limit):
@@ -50,33 +88,15 @@ def bin_prefix_search(array, prefix, limit):
     while right + 1 <= len(array) and prefix == array[right][1][: size]:
         right += 1
 
-    return list(
-        sorted(
-            array[left : right],
-            key=lambda x: x[2],
-            reverse=True
-        )[: limit]
-    )
+    array_slice = array[left : right]  # Shallow copy
+    for i in range(len(array_slice)):
+        if array_slice[i][1] == prefix:
+            copy = list(deepcopy(array_slice[i]))
+            copy[2] = 100000  # Higher than any count.
+            array_slice[i] = tuple(copy)  # Avoids mutating original list.
+    array_slice = sorted(array_slice, key=lambda x: x[2], reverse=True)[: limit]
 
-
-# MATCH = """
-#     select id, title, url
-#     from articles
-#     where clean_title like ?
-#     order by count desc
-#     limit ?
-# """
-
-# def get_match(cur, q, limit):
-#     cur.execute(MATCH, ((q, limit)))
-#     return [
-#         {
-#             'id': x[0],
-#             'title': x[1],
-#             'url': x[2]
-#         }
-#         for x in cur.fetchall()
-#     ]
+    return array_slice
 
 @app.route("/suggestion/<q>/limit/<limit>")
 def suggestion(q, limit):
@@ -84,21 +104,35 @@ def suggestion(q, limit):
 
     limit = int(escape(limit))
 
-    return bin_prefix_search(articles, q, limit)
+    result = bin_prefix_search(articles, q, limit)
+    if result:
+        return result
+    return []
         
-# @app.route("/guess/<id>")
-# def guess(id):
-#     DAILY_WORD = 336
+@app.route("/guess/<id>")
+def guess(id):
+    conn = sqlite3.Connection('stable/data/data.db')
+    cur = conn.cursor()
 
-#     id = int(escape(id))
+    i = 230842300708270289 % random.__len__()
+    DAILY_WORD = random[i][0]
 
-#     QUERY = """
-#         select vector
-#         from embeddings
-#         where id in (?, ?)
-#     """
+    id = int(escape(id))
 
-#     cur.execute(QUERY, (DAILY_WORD, id))
-#     a, b = cur.fetchall()
+    QUERY = """
+        select vector
+        from embeddings
+        where id in (?, ?)
+    """
 
-#     return str(distance.cosine(json.loads(a[0]), json.loads(b[0])))
+    if id == DAILY_WORD:
+        return "0"
+
+    try:
+        cur.execute(QUERY, (DAILY_WORD, id))
+        a, b = cur.fetchall()
+        return str(distance.cosine(json.loads(a[0]), json.loads(b[0])))
+    except Exception as e:
+        return str(e)
+    finally:
+        conn.close()
