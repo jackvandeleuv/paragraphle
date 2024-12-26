@@ -1,39 +1,37 @@
-function wrapResult(text) {
-    return `<div id="result">${text}</div>`
+function updateContainer(items, container) {
+    const updatedItems = items.join('\n');
+    container.innerHTML = updatedItems;
 }
 
-function updateResults(results, element) {
-    const array = [];
-    for (const r of results) {
-        array.push(wrapResult(r));
-    }
-    const updatedResults = array.join('\n');
-    element.innerHTML = updatedResults;
-}
-
-async function getSuggestions(input) {
+async function getSuggestion(input) {
     if (input === '') {
         return
     }
+
     const url = `http://127.0.0.1:5000/suggestion/${input}/limit/5`;
     const result = await fetch(url);
     const text = await result.json();
-    const strings = text.map((x) => x[1]);
-    const resultsDiv = document.getElementById('resultContainer');
-    if (strings.length > 0) {
-        updateResults(strings, resultsDiv);
+
+    const items = text.map((x) =>
+        `<li>${x[1]}></li>`
+    );
+
+    const suggestionContainer = document.getElementById('suggestionContainer');
+
+    if (items.length > 0) {
+        updateContainer(items, suggestionContainer);
         topSuggestion = [text[0][0], text[0][1]];
     } else {
-        updateResults([''], resultsDiv)
+        updateContainer([''], suggestionContainer)
     }
 }
 
-async function guess(guessId, guessString) {
+async function postGuess(guessId, guessString) {
     if (guessId === '') {
         return
     }
     const guessDiv = document.getElementById('guessContainer');
-    const url = `http://127.0.0.1:5000/guess/${guessId}`;
+    const url = `http://127.0.0.1:5000/guess_id/${guessId}`;
     const result = await fetch(url);
     const score = await result.text();
     console.log(`score: ${score}`)
@@ -41,42 +39,41 @@ async function guess(guessId, guessString) {
     guesses.push([guessString, scoreFloat]);
     guesses.sort((a, b) => a[1] - b[1]);
     if (guesses.length > 15) {
-        guesses = guesses.slice(end=15);
+        guesses = guesses.slice(0, 15);
     }
     const formatted = guesses.map((row) => `<div>${row[0]}: ${row[1]}</div>`);
-    updateResults(formatted, guessDiv);
+    updateContainer(formatted, guessDiv);
 }
 
 let topSuggestion = [-1, ''];
 
-const guesses = [];
+let guesses = [];
 
 const main = document.getElementById("main");
 
 const formHTML = `
-    <form id="form">
+    <form id="form" autocomplete="off">
         <input id="form-input" name="form-input" type="text">
     </form>
 `;
 main.insertAdjacentHTML("afterend", formHTML);
 
-const resultContainer = `<div id="resultContainer"></div><br>`;
-main.insertAdjacentHTML("afterend", resultContainer);
+const suggestionContainer = `<ol id="suggestionContainer" class="suggestionContainer></ol>`;
+main.insertAdjacentHTML("afterend", suggestionContainer);
 
-const guessContainer = `<div id="guessContainer"></div><br>`;
+const guessContainer = `<div id="guessContainer" class="guessContainer"></div><br>`;
 main.insertAdjacentHTML("afterend", guessContainer);
 
 const form = document.getElementById("form");
 form.addEventListener("input", async (event) => {
     event.preventDefault();
     const input = event.target.value;
-    await getSuggestions(input);
+    await getSuggestion(input);
 })
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    // const input = document.getElementById('form-input').value
     console.log(`submitting topSuggestion: ${topSuggestion}`);
-    await guess(topSuggestion[0], topSuggestion[1]);
-    document.getElementById('form-input').value = '';
+    await postGuess(topSuggestion[0], topSuggestion[1]);
+    document.getElementById('form').value = '';
 })

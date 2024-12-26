@@ -5,6 +5,9 @@ import json
 from scipy.spatial import distance
 from flask_cors import CORS
 from copy import deepcopy
+import numpy as np
+from numpy.linalg import norm
+from numpy import dot
 
 random = [
 (1164, 'artificial intelligence'),
@@ -57,7 +60,6 @@ articles = sorted(articles, key=lambda x: x[1])
 
 conn.close()
 
-
 def bin_prefix_search(array, prefix, limit):
     left = 0
     right = len(array)
@@ -109,15 +111,23 @@ def suggestion(q, limit):
         return result
     return []
         
-@app.route("/guess/<id>")
-def guess(id):
+@app.route("/guess_string/<string>")
+def guess_string(string):
+    return ''
+
+@app.route("/guess_id/<id>")
+def guess_id(id):
     conn = sqlite3.Connection('stable/data/data.db')
     cur = conn.cursor()
 
-    i = 230842300708270289 % random.__len__()
+    i = 2304232127028 % random.__len__()
     DAILY_WORD = random[i][0]
+    # print(random[i])
 
     id = int(escape(id))
+
+    if id == DAILY_WORD:
+        return "0"
 
     QUERY = """
         select vector
@@ -125,13 +135,16 @@ def guess(id):
         where id in (?, ?)
     """
 
-    if id == DAILY_WORD:
-        return "0"
-
     try:
         cur.execute(QUERY, (DAILY_WORD, id))
         a, b = cur.fetchall()
-        return str(distance.cosine(json.loads(a[0]), json.loads(b[0])))
+
+        a = np.frombuffer(a[0])
+        b = np.frombuffer(b[0])
+
+        return str(
+           1 - (a.dot(b) / (norm(a) * norm(b)))
+        )
     except Exception as e:
         return str(e)
     finally:

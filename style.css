@@ -1,0 +1,8 @@
+.suggestionCard:hover {
+    background-color: bisque;
+}
+
+.suggestionContainer {
+    display: flex;
+    flex-direction: column;
+}
