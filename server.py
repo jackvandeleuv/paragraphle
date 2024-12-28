@@ -120,9 +120,10 @@ def guess_id(id):
     conn = sqlite3.Connection('stable/data/data.db')
     cur = conn.cursor()
 
-    i = 2304232127028 % random.__len__()
-    DAILY_WORD = random[i][0]
+    # i = 2304232127028 % random.__len__()
+    # DAILY_WORD = random[i][0]
     # print(random[i])
+    DAILY_WORD = 4637590
 
     id = int(escape(id))
 

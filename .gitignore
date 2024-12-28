@@ -6,3 +6,4 @@ transformed
 jeo/master_season1-35.tsv
 jeo/JEOPARDY_CSV.csv
 stable/data/embeddings.jsonl
+/stable/data

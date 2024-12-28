@@ -4,10 +4,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Wikipediale</title>
+    <title>Thingle</title>
 </head>
 <body>
-    <div id="main"></div>
+    <header>
+        <p>Thingle</p>
+    </header>
+
+    <div class="panelWrapper">
+
+        <div class="leftPanel">
+            <canvas id="canvas"></canvas>
+            <div id="formWrapper" class="formWrapper">
+                <div id="suggestionContainer" class="suggestionContainer">
+                    <div class="suggestionCard"></div>
+                    <div class="suggestionCard"></div>
+                    <div class="suggestionCard"></div>
+                    <div class="suggestionCard"></div>
+                    <div class="suggestionCard"></div>
+                </div>
+                <form id="form" autocomplete="off">
+                    <input id="form-input" name="form-input" type="text">
+                </form>
+            </div>
+        </div>
+
+        <div class="rightPanel">
+            <div id="guessWrapper" class="guessWrapper">
+                <p>Top</p>
+                <div id="guessContainerTop" class="guessContainer">
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                </div>
+                <p>Recent</p>
+                <div id="guessContainerRecent" class="guessContainer">
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                    <div class="guessCard">
+                        <div class="cluster">5</div>
+                        <div class="name">United States</div>
+                        <div class="score">.94</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>Footer</p>
+    </footer>
+
     <script src="script.js"></script>
 </body>
 </html>

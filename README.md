@@ -1,4 +1,4 @@
-# Steps to run
+# Old steps to run
 - links.go
 - filter.ipynb
 - post-filter-scrape.ipynb
@@ -9,6 +9,6 @@
 # New steps
 - links.go
 - parse_articles.ipynb
-- filter.ipynb
+- clean.ipynb
 - embed.ipynb
 - insert.ipynb

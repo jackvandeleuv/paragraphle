@@ -1,8 +1,94 @@
-.suggestionCard:hover {
-    background-color: bisque;
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
 }
+
+header {
+    border: 1px solid black;
+}
+
+footer {
+    border: 1px solid black;
+}
+
+.panelWrapper {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    min-height: 0; 
+}
+
+.rightPanel {
+    border: 1px solid black;
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+}
+
+.leftPanel {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border: 1px solid black;
+}
+
+/* canvas {
+    background-color: palegoldenrod;
+    flex: 1 1 auto;
+    min-height: 0;
+} */
+
+#canvas {
+    width: 200px;      
+    height: 200px;    
+    background-color: palegoldenrod;
+  }
 
 .suggestionContainer {
     display: flex;
     flex-direction: column;
+    border: 1px solid black;
+}
+
+.guessContainer {
+    border: 1px solid black;
+}
+
+.formWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.guessWrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.suggestionCard {
+    min-height: 15px;
+    min-width: 200px;
+    border: 1px solid red;
+}
+
+.guessCard {
+    min-height: 15px;
+    min-width: 200px;
+    border: 1px solid red;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.cluster {
+    border: 1px solid blue;
+    border-radius: 20px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 5px;
+    padding-right: 5px;
+
 }
