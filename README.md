@@ -11,4 +11,5 @@
 - parse_articles.ipynb
 - clean.ipynb
 - embed.ipynb
+- cluster.ipynb
 - insert.ipynb

@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 import sqlite3
 from markupsafe import escape
 import json
@@ -47,18 +47,29 @@ random = [
 (1998, 'austin, texas')
 ]
 
-app = Flask(__name__)
-CORS(app)
+def get_articles():
+    conn = sqlite3.Connection('stable/data/data.db')
+    cur = conn.cursor()
+    cur.execute("select id, clean_title, count from articles")
+    articles = cur.fetchall()
+    articles = sorted(articles, key=lambda x: x[1])
+    conn.close()
+    return articles
 
+def get_daily_word_vector(id):
+    conn = sqlite3.Connection('stable/data/data.db')
+    cur = conn.cursor()
+    cur.execute("""
+        select vector
+        from embeddings
+        where id == ?
+    """, (id,))
+    vector = np.frombuffer(cur.fetchone()[0])
+    conn.close()
+    return vector
 
-conn = sqlite3.Connection('stable/data/data.db')
-cur = conn.cursor()
-
-cur.execute("select id, clean_title, count from articles")
-articles = cur.fetchall()
-articles = sorted(articles, key=lambda x: x[1])
-
-conn.close()
+def get_clusters():
+    return np.load('stable/data/clusters.npy')
 
 def bin_prefix_search(array, prefix, limit):
     left = 0
@@ -100,6 +111,18 @@ def bin_prefix_search(array, prefix, limit):
 
     return array_slice
 
+app = Flask(__name__)
+CORS(app)
+
+# Global variables.
+articles = get_articles()
+clusters = get_clusters()
+DAILY_WORD = 4637590
+daily_vec = get_daily_word_vector(DAILY_WORD)
+# i = 2304232127028 % random.__len__()
+# DAILY_WORD = random[i][0]
+# print(random[i])
+
 @app.route("/suggestion/<q>/limit/<limit>")
 def suggestion(q, limit):
     q = escape(q).lower()
@@ -110,43 +133,43 @@ def suggestion(q, limit):
     if result:
         return result
     return []
-        
-@app.route("/guess_string/<string>")
-def guess_string(string):
-    return ''
 
 @app.route("/guess_id/<id>")
 def guess_id(id):
     conn = sqlite3.Connection('stable/data/data.db')
     cur = conn.cursor()
 
-    # i = 2304232127028 % random.__len__()
-    # DAILY_WORD = random[i][0]
-    # print(random[i])
-    DAILY_WORD = 4637590
-
     id = int(escape(id))
 
-    if id == DAILY_WORD:
-        return "0"
-
-    QUERY = """
-        select vector
-        from embeddings
-        where id in (?, ?)
-    """
+    QUERY = "select vector from embeddings where id == ?"
 
     try:
-        cur.execute(QUERY, (DAILY_WORD, id))
-        a, b = cur.fetchall()
+        cur.execute(QUERY, (id,))
+        guess = np.frombuffer(cur.fetchone()[0])
 
-        a = np.frombuffer(a[0])
-        b = np.frombuffer(b[0])
+        distances = []
+        for center in clusters:
+            distances.append(norm(guess - center))
 
-        return str(
-           1 - (a.dot(b) / (norm(a) * norm(b)))
-        )
+        cluster = np.argmin(distances) + 1
+
+        if id == DAILY_WORD:
+            return jsonify({
+                'distance': 0.0,
+                'cluster': float(cluster)
+            })
+        
+        print(type(guess), type(daily_vec))
+
+        score = 1 - (dot(guess, daily_vec) / (norm(guess) * norm(daily_vec)))
+
+        return jsonify({
+            'cluster': float(cluster),
+            'score': float(score)
+        })
+
     except Exception as e:
+        print(e)
         return str(e)
     finally:
         conn.close()

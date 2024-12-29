@@ -30,13 +30,16 @@ async function postGuess(guessId, guessString) {
     if (guessId === '') {
         return
     }
-    const guessDiv = document.getElementById('guessContainer');
+    const guessDiv = document.getElementById('guessContainerTop');
     const url = `http://127.0.0.1:5000/guess_id/${guessId}`;
     const result = await fetch(url);
-    const score = await result.text();
-    console.log(`score: ${score}`)
-    const scoreFloat = Number.parseFloat(score);
-    guesses.push([guessString, scoreFloat]);
+    console.log(result);
+    const dict = await result.json();
+
+    const scoreFloat = Number.parseFloat(dict.score);
+    const clusterFloat = Number.parseFloat(dict.cluster);
+
+    guesses.push([guessString, scoreFloat, clusterFloat]);
     guesses.sort((a, b) => a[1] - b[1]);
     if (guesses.length > 15) {
         guesses = guesses.slice(0, 15);
@@ -65,24 +68,14 @@ form.addEventListener("submit", async (event) => {
     document.getElementById('form-input').value = '';
 })
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-
-const dpr = window.devicePixelRatio || 1;
-
-// Set the canvas width/height *in pixels* to account for the dpr
-// We still want it to *appear* as 200x200 in CSS
-canvas.width = 200 * dpr;
-canvas.height = 200 * dpr;
-
-// Scale the context to match
-ctx.scale(dpr, dpr);
-
-// Now, drawing a circle of radius 5 at (100, 100)
-ctx.beginPath();
-ctx.arc(100, 100, 5, 0, 2 * Math.PI);
-ctx.fillStyle = "red";
-ctx.fill();
-
-console.log(ctx);
+// const canvas = document.getElementById("canvas");
+// const ctx = canvas.getContext("2d");
+// const dpr = window.devicePixelRatio || 1;
+// canvas.width = 200 * dpr;
+// canvas.height = 200 * dpr;
+// ctx.scale(dpr, dpr);
+// ctx.beginPath();
+// ctx.arc(100, 100, 5, 0, 2 * Math.PI);
+// ctx.fillStyle = "red";
+// ctx.fill();
+// console.log(ctx);
