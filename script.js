@@ -26,26 +26,42 @@ async function getSuggestion(input) {
     }
 }
 
+function formatGuesses(guesses) {
+    return guesses.map((row) => `
+        <div class="guessCard">
+            <div class="cluster">${row[2]}</div>
+            <div class="name">${row[0]}</div>
+            <div class="score">${row[1]}</div>
+
+        </div>
+    `)
+}
+
 async function postGuess(guessId, guessString) {
     if (guessId === '') {
         return
     }
-    const guessDiv = document.getElementById('guessContainerTop');
+    const topContainer = document.getElementById('guessContainerTop');
+    const recentContainer = document.getElementById('guessContainerRecent');
+
     const url = `http://127.0.0.1:5000/guess_id/${guessId}`;
     const result = await fetch(url);
-    console.log(result);
     const dict = await result.json();
 
-    const scoreFloat = Number.parseFloat(dict.score);
-    const clusterFloat = Number.parseFloat(dict.cluster);
+    const scoreFloat = Number.parseFloat(dict.score).toFixed(2);
+    const clusterFloat = Number.parseInt(dict.cluster);
 
     guesses.push([guessString, scoreFloat, clusterFloat]);
-    guesses.sort((a, b) => a[1] - b[1]);
-    if (guesses.length > 15) {
-        guesses = guesses.slice(0, 15);
-    }
-    const formatted = guesses.map((row) => `<div class="guessCard">${row[0]}: ${row[1]}</div>`);
-    updateContainer(formatted, guessDiv);
+
+    const topGuesses = [...guesses];
+    topGuesses.sort((a, b) => a[1] - b[1]);
+
+    const formattedTop = formatGuesses(topGuesses);
+    const formattedRecent = formatGuesses(guesses);
+
+    updateContainer(formattedTop, topContainer);
+    updateContainer(formattedRecent, recentContainer);
+
 }
 
 let topSuggestion = [-1, ''];
