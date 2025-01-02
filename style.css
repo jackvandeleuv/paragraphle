@@ -55,6 +55,8 @@ footer {
 
 .guessContainer {
     border: 1px solid black;
+    max-height: 100px;
+    overflow-y: scroll;
 }
 
 .formWrapper {
@@ -90,5 +92,4 @@ footer {
     padding-bottom: 1px;
     padding-left: 5px;
     padding-right: 5px;
-
 }

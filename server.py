@@ -1,13 +1,13 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import sqlite3
 from markupsafe import escape
-import json
-from scipy.spatial import distance
 from flask_cors import CORS
 from copy import deepcopy
 import numpy as np
 from numpy.linalg import norm
 from numpy import dot
+import threading
+import time
 
 random = [
 (1164, 'artificial intelligence'),
@@ -50,7 +50,7 @@ random = [
 def get_articles():
     conn = sqlite3.Connection('stable/data/data.db')
     cur = conn.cursor()
-    cur.execute("select id, clean_title, count from articles")
+    cur.execute("select id, clean_title, count, title from articles")
     articles = cur.fetchall()
     articles = sorted(articles, key=lambda x: x[1])
     conn.close()
@@ -130,6 +130,63 @@ def suggestion(q, limit):
         return result
     return []
 
+def log_guess(guess_id, timestamp, ip):
+    conn = sqlite3.Connection('stable/data/data.db')
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            insert into guesses (
+                guess_id, timestamp, ip
+            ) values (?, ?, ?)
+        """, (guess_id, timestamp, ip)
+        )
+        conn.commit()
+    except Exception as e:
+        print(e)
+
+    conn.close()
+
+@app.route("/ping/<width>/<height>/<innerWidth>/<innerHeight>/<pixelRatio>")
+def ping(width, height, innerWidth, innerHeight, pixelRatio):
+    user = request.headers.get('User-Agent', '')
+    referer = request.headers.get('Referer', '')
+    ip = request.remote_addr
+    timestamp = time.time()
+
+    conn = sqlite3.Connection('stable/data/data.db')
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            insert into ping (
+                user_agent,
+                referer,
+                ip,
+                timestamp,
+                width,
+                height,
+                inner_width,
+                inner_height,
+                pixelRatio
+            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            user, 
+            referer, 
+            ip, 
+            timestamp, 
+            width, 
+            height, 
+            innerWidth, 
+            innerHeight, 
+            pixelRatio
+        ))
+        conn.commit()
+    except Exception as e:
+        print(e)
+
+    conn.close()
+
+    return jsonify([])
+
 @app.route("/guess_id/<id>")
 def guess_id(id):
     try:
@@ -162,11 +219,15 @@ def guess_id(id):
                 'cluster': float(cluster)
             })
         
-        score = 1 - (dot(guess, daily_vec) / (norm(guess) * norm(daily_vec)))
+        distance = 1 - (dot(guess, daily_vec) / (norm(guess) * norm(daily_vec)))
+
+        ip = request.remote_addr
+        timestamp = time.time()
+        threading.Thread(target=log_guess, args=(id, timestamp, ip)).start()
 
         return jsonify({
             'cluster': float(cluster),
-            'score': float(score)
+            'distance': float(distance)
         })
 
     except Exception as e:
