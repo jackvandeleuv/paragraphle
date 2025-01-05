@@ -27,9 +27,13 @@ async function getSuggestion(input) {
 }
 
 function formatGuesses(guesses) {
+    // formatted = [];
+    // for (const guess of guesses) {
+
+    // }
     return guesses.map((row) => `
         <div class="guessCard">
-            <div class="cluster">${row[2]}</div>
+            <div class="cluster" style="background-color: ${angleToColor(clusterToAngle(row[2]))};">${row[2]}</div>
             <div class="name">${row[0]}</div>
             <div class="distance">${row[1]}</div>
         </div>
@@ -90,13 +94,19 @@ function renderCanvas(guesses) {
         }
         seen.add(guess[2]);
         points.push(guess);
-        console.log(seen);
     }
 
+    // Reset canvas
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawDot(300 / 2, 400 / 2);
+
+    drawConicGradient();
+
+    // Center dot
+    drawDot(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, "white");
+
+    // Other points
     for (let x of points) {
         renderGuess(
             x[0], 
@@ -109,21 +119,43 @@ function renderCanvas(guesses) {
 function writeLabel(label, x, y) {
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    ctx.fillText(label, x - 10, y - 5);
+    ctx.fillStyle = "black";
+    ctx.font = `500 ${LABEL_SIZE}px Georgia`;
+    ctx.textAlign = "center";
+    ctx.fillText(label, x, y - 7);
+}
+
+function angleToColor(angle) {
+    const normalizedTheta = (angle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+
+    const hue = (normalizedTheta / (2 * Math.PI)) * 360;
+
+    const saturation = 100; 
+    const lightness = 60; 
+    const hslColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+
+    return hslColor;
+}
+
+function clusterToAngle(cluster) {
+    const N_CLUSTERS = 300;
+    const scaleBy = 2 * Math.PI / N_CLUSTERS;
+    return cluster * scaleBy;
 }
 
 function renderGuess(title, cluster, distance) {
-    const xOffset = 300 / 2;
-    const yOffset = 400 / 2;
+    const xOffset = CANVAS_WIDTH / 2;
+    const yOffset = CANVAS_HEIGHT / 2;
     const scaledDistance = Math.pow(distance + 1, 7);
 
-    const angle = cluster % (2 * Math.PI);
+    const angle = clusterToAngle(cluster);
+
     const x = (scaledDistance * Math.cos(angle)) + xOffset;
     const y = (scaledDistance * Math.sin(angle)) + yOffset;
 
-    console.log(x, y)
+    const color = angleToColor(angle);
 
-    drawDot(x, y);
+    drawDot(x, y, color);
     writeLabel(title, x, y);
 }
 
@@ -137,7 +169,6 @@ function add_form_listeners() {
     
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        console.log(`submitting topSuggestion: ${topSuggestion}`);
         await postGuess(topSuggestion[0], topSuggestion[1]);
         document.getElementById('form-input').value = '';
     })
@@ -152,20 +183,56 @@ function scaleCanvas(x, y) {
     ctx.scale(dpr, dpr);
 }
 
-function drawDot(x, y) {
+function drawDot(x, y, color) {
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
+
+    // Outline
     ctx.beginPath();
-    ctx.arc(x, y, 2, 0, 2 * Math.PI);
+    ctx.arc(x, y, DOT_RADIUS * 1.05, 0, 2 * Math.PI);
     ctx.fillStyle = "black";
+    ctx.fill();
+
+    // Inner color
+    ctx.beginPath();
+    ctx.arc(x, y, DOT_RADIUS, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
     ctx.fill();
 }
 
+function drawConicGradient() {
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const gradient = ctx.createConicGradient(
+        0, 
+        CANVAS_WIDTH / 2, 
+        CANVAS_HEIGHT / 2
+    );
+  
+    for (let hue = 0; hue < 360; hue++) {
+        const t = hue / 360; 
+        const color = `hsl(${hue}, 100%, 50%)`;
+        gradient.addColorStop(t, color);
+      }
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+}
+
 // Initialize.
-fetch(`http://127.0.0.1:5000/ping/${window.screen.width}/${window.screen.height}/${window.innerWidth}/${window.innerHeight}/${window.devicePixelRatio}`);
-add_form_listeners();
+const CANVAS_WIDTH = 250;
+const CANVAS_HEIGHT = 250;
+const LABEL_SIZE = 6;
+const DOT_RADIUS = 2;
+
 let topSuggestion = [-1, ''];
 let guesses = [];
 
-scaleCanvas(300, 400);
-drawDot(300 / 2, 400 / 2);
+fetch(`http://127.0.0.1:5000/ping/${window.screen.width}/${window.screen.height}/${window.innerWidth}/${window.innerHeight}/${window.devicePixelRatio}`);
+
+add_form_listeners();
+
+drawConicGradient();
+drawDot(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 'white');
+scaleCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);

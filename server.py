@@ -108,6 +108,37 @@ def bin_prefix_search(array, prefix, limit):
 
     return array_slice
 
+def get_cluster_examples():
+    conn = sqlite3.Connection('stable/data/data.db')
+    cur = conn.cursor()
+    cur.execute("""
+        select cluster, title, count
+        from (
+            select 
+                title,
+                cluster,
+                count, 
+                row_number() over (
+                    partition by cluster
+                    order by count desc
+                ) as rank
+            from articles
+        ) sub
+        where rank <= 5
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    top = {}
+    for cluster, title, count in rows:
+        row = {'title': title, 'score': count}
+        if cluster in top:
+            top[cluster].append(row)
+        else:
+            top[cluster] = [row]
+    return top
+
+
 app = Flask(__name__)
 CORS(app)
 
@@ -115,9 +146,8 @@ CORS(app)
 articles = get_articles()
 DAILY_WORD = 4637590
 daily_vec = get_daily_word_vector(DAILY_WORD)
-# i = 2304232127028 % random.__len__()
-# DAILY_WORD = random[i][0]
-# print(random[i])
+cluster_examples = get_cluster_examples()
+
 
 @app.route("/suggestion/<q>/limit/<limit>")
 def suggestion(q, limit):
@@ -186,6 +216,13 @@ def ping(width, height, innerWidth, innerHeight, pixelRatio):
     conn.close()
 
     return jsonify([])
+
+@app.route("/cluster_example/<cluster_id>")
+def cluster_example(cluster_id):
+    cluster_id = int(escape(cluster_id))
+    return jsonify(
+        cluster_examples[cluster_id]
+    )
 
 @app.route("/guess_id/<id>")
 def guess_id(id):
