@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 import sqlite3
 from markupsafe import escape
 from flask_cors import CORS
@@ -157,8 +157,8 @@ def suggestion(q, limit):
 
     result = bin_prefix_search(articles, q, limit)
     if result:
-        return result
-    return []
+        return jsonify(result), 200
+    return "No matching article.", 404
 
 def log_guess(guess_id, timestamp, ip):
     conn = sqlite3.Connection('stable/data/data.db')

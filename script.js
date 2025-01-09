@@ -4,33 +4,39 @@ function updateContainer(items, container) {
 }
 
 async function getSuggestion(input) {
+    topSuggestion = [-1, ''];
+
     if (input === '') {
         return
     }
 
+    const suggestionContainer = document.getElementById('suggestionContainer');
+
     const url = `http://127.0.0.1:5000/suggestion/${input}/limit/5`;
-    const result = await fetch(url);
+    const result = await fetch(url)
+    
+    if (!result.ok) {
+        updateContainer([], suggestionContainer);
+        return
+    }
+
     const text = await result.json();
+
+    const emptyCard = `<div class="suggestionCard"></div>`;
 
     const items = text.map((x) =>
         `<div class="suggestionCard">${x[3]}</div>`
     );
 
-    const suggestionContainer = document.getElementById('suggestionContainer');
-
-    if (items.length > 0) {
-        updateContainer(items, suggestionContainer);
-        topSuggestion = [text[0][0], text[0][3]];
-    } else {
-        updateContainer([''], suggestionContainer)
+    while (items.length < 5) {
+        items.push(emptyCard)
     }
+
+    updateContainer(items, suggestionContainer);
+    topSuggestion = [text[0][0], text[0][3]];
 }
 
 function formatGuesses(guesses) {
-    // formatted = [];
-    // for (const guess of guesses) {
-
-    // }
     return guesses.map((row) => `
         <div class="guessCard">
             <div class="cluster" style="background-color: ${angleToColor(clusterToAngle(row[2]))};">${row[2]}</div>
@@ -41,7 +47,7 @@ function formatGuesses(guesses) {
 }
 
 async function postGuess(guessId, guessString) {
-    if (guessId === '') {
+    if (guessId === -1) {
         return
     }
     const topContainer = document.getElementById('guessContainerTop');
@@ -49,6 +55,11 @@ async function postGuess(guessId, guessString) {
 
     const url = `http://127.0.0.1:5000/guess_id/${guessId}`;
     const result = await fetch(url);
+
+    if (!result.ok) {
+        return
+    }
+
     const dict = await result.json();
 
     const distanceFloat = Number.parseFloat(dict.distance)
@@ -99,12 +110,12 @@ function renderCanvas(guesses) {
     // Reset canvas
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
     drawConicGradient();
 
     // Center dot
-    drawDot(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, "white");
+    drawDot("white", canvas.offsetWidth / 2, canvas.offsetHeight / 2);
 
     // Other points
     for (let x of points) {
@@ -117,6 +128,7 @@ function renderCanvas(guesses) {
 }
 
 function writeLabel(label, x, y) {
+    const LABEL_SIZE = 6;
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "black";
@@ -144,8 +156,10 @@ function clusterToAngle(cluster) {
 }
 
 function renderGuess(title, cluster, distance) {
-    const xOffset = CANVAS_WIDTH / 2;
-    const yOffset = CANVAS_HEIGHT / 2;
+    const canvas = document.getElementById("canvas");
+
+    const xOffset = canvas.offsetWidth / 2;
+    const yOffset = canvas.offsetHeight / 2;
     const scaledDistance = Math.pow(distance + 1, 7);
 
     const angle = clusterToAngle(cluster);
@@ -155,7 +169,7 @@ function renderGuess(title, cluster, distance) {
 
     const color = angleToColor(angle);
 
-    drawDot(x, y, color);
+    drawDot(color, x, y);
     writeLabel(title, x, y);
 }
 
@@ -174,18 +188,25 @@ function add_form_listeners() {
     })
 }
 
-function scaleCanvas(x, y) {
+function scaleCanvas() {
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = x * dpr;
-    canvas.height = y * dpr;
+    const width = canvas.offsetWidth;
+    const height = canvas.offsetHeight;
+    canvas.setAttribute("width", width * dpr);
+    canvas.setAttribute("height", height * dpr);
     ctx.scale(dpr, dpr);
 }
 
-function drawDot(x, y, color) {
+function drawDot(color, x=null, y=null) {
+    const DOT_RADIUS = 2;
+
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
+
+    x = x || canvas.offsetWidth;
+    y = y || canvas.offsetHeight;
 
     // Outline
     ctx.beginPath();
@@ -206,33 +227,28 @@ function drawConicGradient() {
 
     const gradient = ctx.createConicGradient(
         0, 
-        CANVAS_WIDTH / 2, 
-        CANVAS_HEIGHT / 2
+        canvas.offsetWidth / 2, 
+        canvas.offsetHeight / 2
     );
   
     for (let hue = 0; hue < 360; hue++) {
         const t = hue / 360; 
         const color = `hsl(${hue}, 100%, 50%)`;
         gradient.addColorStop(t, color);
-      }
+    }
     
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 }
 
 // Initialize.
-const CANVAS_WIDTH = 250;
-const CANVAS_HEIGHT = 250;
-const LABEL_SIZE = 6;
-const DOT_RADIUS = 2;
-
 let topSuggestion = [-1, ''];
 let guesses = [];
 
-fetch(`http://127.0.0.1:5000/ping/${window.screen.width}/${window.screen.height}/${window.innerWidth}/${window.innerHeight}/${window.devicePixelRatio}`);
-
-add_form_listeners();
-
-drawConicGradient();
-drawDot(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 'white');
-scaleCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+document.addEventListener("DOMContentLoaded", () => {
+    fetch(`http://127.0.0.1:5000/ping/${window.screen.width}/${window.screen.height}/${window.innerWidth}/${window.innerHeight}/${window.devicePixelRatio}`);
+    add_form_listeners();
+    drawConicGradient();
+    drawDot('white');
+    scaleCanvas();
+});

@@ -1,9 +1,10 @@
 html, body {
-    height: 100%;
+    /* height: 100%; */
     margin: 0;
     display: flex;
     flex-direction: column;
     font-family: Georgia, 'Times New Roman', Times, serif;
+    background-color: #EFEFEF;
 }
 
 header {
@@ -39,10 +40,10 @@ footer {
 }
 
 #canvas {
-    width: 250;      
-    height: 250;    
+    width: 100%;
+    height: 100%;
     border-radius: 3px;
-  }
+}
 
 .suggestionContainer {
     display: flex;
@@ -89,4 +90,13 @@ footer {
     padding-bottom: 3px;
     padding-left: 8px;
     padding-right: 8px;
+}
+
+.cluster-popup {
+    visibility: hidden;
+    background-color: red;
+}
+
+.cluster-popup:hover {
+    visibility: visible;
 }
