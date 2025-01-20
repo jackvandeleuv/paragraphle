@@ -1,48 +1,65 @@
 html, body {
-    /* height: 100%; */
+    height: 100%;
     margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
     font-family: Georgia, 'Times New Roman', Times, serif;
-    background-color: #EFEFEF;
+    /* background-color: #EFEFEF; */
+    background-color: transparent;
 }
 
 header {
-    border: 1px solid black;
+    /* border: 1px solid black; */
     font-size: x-large;
+    color: rgb(220, 219, 219);
     padding-left: 10px;
 }
 
 footer {
-    border: 1px solid black;
+    /* border: 1px solid black; */
 }
 
 .panelWrapper {
-    flex: 1 1 auto;
     display: flex;
     flex-direction: row;
-    min-height: 0; 
+    background-color: transparent;
+    flex-grow: 1;
 }
 
 .rightPanel {
-    border: 1px solid black;
+    /* border: 1px solid black; */
     display: flex;
     flex-direction: column;
     justify-content: end;
+    background-color: transparent;
+    margin-right: 5px;
 }
 
 .leftPanel {
-    flex: 1 1 auto;
+    height: auto;
     display: flex;
     flex-direction: column;
-    min-height: 0;
-    border: 1px solid black;
+    /* border: 1px solid black; */
+    background-color: transparent;
+    flex-grow: 1;
+    justify-content: end;
 }
 
 #canvas {
-    width: 100%;
-    height: 100%;
-    border-radius: 3px;
+    position: fixed;  
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+}
+
+.formWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
 }
 
 .suggestionContainer {
@@ -53,12 +70,6 @@ footer {
 .guessContainer {
     max-height: 100px;
     overflow-y: scroll;
-}
-
-.formWrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
 }
 
 .guessWrapper {
@@ -76,11 +87,52 @@ footer {
 .guessCard {
     min-height: 15px;
     min-width: 200px;
-    border: 1px solid black;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    border-radius: 3px;
+    border-radius: 4px;
+    gap: 5px;
+    border: 1px solid black;
+}
+
+.dist1 {
+    background: rgb(255, 100, 100, .7);
+}
+
+.dist2 {
+    background: rgb(255, 110, 100, .7);
+}
+
+.dist3 {
+    background: rgb(255, 120, 100, .7);
+}
+
+.dist4 {
+    background: rgb(255, 130, 100);
+}
+
+.dist5 {
+    background: rgb(255, 140, 100);
+}
+
+.dist6 {
+    background: rgb(255, 150, 100);
+}
+
+.dist7 {
+    background: rgb(255, 160, 100);
+}
+
+.dist8 {
+    background: rgb(255, 170, 100);
+}
+
+.dist9 {
+    background: rgb(255, 180, 100);
+}
+
+.dist10 {
+    background: rgb(255, 190, 100);
 }
 
 .cluster {
@@ -90,6 +142,7 @@ footer {
     padding-bottom: 3px;
     padding-left: 8px;
     padding-right: 8px;
+    border: 1px solid black
 }
 
 .cluster-popup {
@@ -99,4 +152,8 @@ footer {
 
 .cluster-popup:hover {
     visibility: visible;
+}
+
+.thumbnail {
+    width: 30px;
 }

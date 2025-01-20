@@ -241,19 +241,20 @@ def guess_id(id):
         guess = cur.fetchone()[0]
 
         cur.execute("""
-            select cluster
+            select cluster, title
             from articles 
             where id == ?
         """, (id,))
 
-        cluster = cur.fetchone()[0]
+        cluster, title = cur.fetchone()
 
         guess = np.frombuffer(guess)
 
         if id == DAILY_WORD:
             return jsonify({
                 'distance': 0.0,
-                'cluster': float(cluster)
+                'cluster': float(cluster),
+                'title': title
             })
         
         distance = 1 - (dot(guess, daily_vec) / (norm(guess) * norm(daily_vec)))
@@ -264,7 +265,8 @@ def guess_id(id):
 
         return jsonify({
             'cluster': float(cluster),
-            'distance': float(distance)
+            'distance': float(distance),
+            'title': title
         })
 
     except Exception as e:
