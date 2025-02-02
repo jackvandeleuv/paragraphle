@@ -1,10 +1,11 @@
 function updateContainer(items, container) {
-    const updatedItems = items.join('\n');
+    const html = items.map((item) => item.getHTML());
+    const updatedItems = html.join('\n');
     container.innerHTML = updatedItems;
 }
 
 async function getSuggestion(input) {
-    topSuggestion = [-1, ''];
+    topSuggestion = new Suggestion();
 
     if (input === '') {
         return
@@ -12,7 +13,7 @@ async function getSuggestion(input) {
 
     const suggestionContainer = document.getElementById('suggestionContainer');
 
-    const url = `http://127.0.0.1:5000/suggestion/${input}/limit/5`;
+    const url = `http://127.0.0.1:5000/suggestion/${input}/limit/10`;
     const result = await fetch(url)
     
     if (!result.ok) {
@@ -22,18 +23,16 @@ async function getSuggestion(input) {
 
     const text = await result.json();
 
-    const emptyCard = `<div class="suggestionCard"></div>`;
-
-    const items = text.map((x) =>
-        `<div class="suggestionCard">${x[3]}</div>`
+    const suggestion = text.map((x) =>
+        new Suggestion(x[0], x[3])
     );
 
-    while (items.length < 5) {
-        items.push(emptyCard)
+    while (suggestion.length < 5) {
+        suggestion.push(new Suggestion())
     }
 
-    updateContainer(items, suggestionContainer);
-    topSuggestion = [text[0][0], text[0][3]];
+    updateContainer(suggestion, suggestionContainer);
+    topSuggestion = new Suggestion(text[0][0], text[0][3]);
 }
 
 function scoreBucket(score) {
@@ -44,14 +43,25 @@ function scoreBucket(score) {
     if (bucket < .65) {
         bucket = .65;
     }
-    // 0.0 ... .30
 
-    console.log('one: ' + (bucket - .65))
-    console.log('two: ' + ((bucket - .65) / 3))
-    console.log('three: ' + Math.round(((bucket - .65) / 3)))
     bucket = Math.round(((bucket - .65) / 3)) + 1;
-    console.log('four: ' + bucket);
+
     return `dist${bucket}`;
+}
+
+class Suggestion {
+    constructor (id = -1, text = '') {
+        this.id = id;
+        this.text = text;
+    }
+
+    getHTML() {
+        return `
+            <div class="suggestionCard">
+                ${this.text}
+            </div>
+        `
+    }
 }
 
 class Guess {
@@ -60,7 +70,7 @@ class Guess {
         distance,
         cluster,
         title,
-        imageUrl = '',
+        imageUrl,
         html = '',
         bucket = -1,
         color = ''
@@ -75,37 +85,7 @@ class Guess {
         this.color = color;
     }
 
-    async __getImageUrl() {
-        const query = `https://en.wikipedia.org/w/api.php?action=query&titles=${this.title}&prop=pageimages&format=json&origin=*`;
-        const request = await fetch(query);
-    
-        if (!request.ok) {
-            console.error(`Could not fetch image for: ${this.title}`)
-            console.log(request)
-            return
-        }
-    
-        const data = await request.json();
-    
-        if (!data.ok) {
-            console.error(`Could not fetch image for: ${this.title}`)
-            return
-        }
-    
-        const pages = data.query.pages;
-        const page = Object.values(pages)[0]; 
-    
-        const image = page.pageimage;
-        const cleanTitle = title.replaceAll(' ', '_');
-    
-        this.imageUrl = `https://en.wikipedia.org/wiki/${cleanTitle}#/media/File:${image}`;
-    }
-
-    async __format() {
-        if (this.imageUrl === '') {
-            await this.__getImageUrl();
-        }
-
+    __format() {
         if (this.bucket === -1) {
             this.bucket = scoreBucket(this.distance);
         }
@@ -115,12 +95,12 @@ class Guess {
         }
     }
 
-    async makeHtml() {
+    async makeHTML() {
         if (this.html !== '') {
             return
         }
 
-        await this.__format();
+        this.__format();
 
         this.html = `
             <div class="guessCard ${this.bucket}">
@@ -130,6 +110,10 @@ class Guess {
                 <div class="distance">${this.distance}</div>
             </div>
         `;
+    }
+
+    getHTML() {
+        return this.html;
     }
 
     copy() {
@@ -163,9 +147,12 @@ async function postGuess(guessId, guessString) {
     const distanceString = distanceFloat.toFixed(2);
     const clusterInt = Number.parseInt(dict.cluster);
     const title = dict.title;
+    const imageUrl = dict.image_url || '';
 
-    const guess = new Guess(guessString, distanceString, clusterInt, title);
-    await guess.makeHtml();
+    console.log('URL:' + imageUrl)
+
+    const guess = new Guess(guessString, distanceString, clusterInt, title, imageUrl);
+    await guess.makeHTML();
     guesses.push(guess);
 
     renderCanvas();
@@ -196,14 +183,14 @@ function renderCanvas() {
     closest.sort((a, b) => a.distance - b.distance);
     const seen = new Set();
     points = [];
-    for (let guess of closest) {
+    for (const guess of closest) {
         if (seen.has(guess.cluster)) {
             const noTitle = guess.copy();
             noTitle.text = '';
             points.push(noTitle);
             continue
         }
-        seen.add(guess[2]);
+        seen.add(guess.cluster);
         points.push(guess);
     }
 
@@ -218,11 +205,11 @@ function renderCanvas() {
     drawDot("white", canvas.offsetWidth / 2, canvas.offsetHeight / 2);
 
     // Other points
-    for (let x of points) {
+    for (const point of points) {
         renderGuess(
-            x[0], 
-            x[2], 
-            Number.parseFloat(x[1])
+            point.title, 
+            point.cluster, 
+            Number.parseFloat(point.distance)
         )
     }
 }
@@ -285,12 +272,12 @@ function add_form_listeners() {
     
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (topSuggestion[0] === -1) {
+        if (topSuggestion.id === -1) {
             return
         }
-        await postGuess(topSuggestion[0], topSuggestion[1]);
+        await postGuess(topSuggestion.id, topSuggestion.text);
         document.getElementById('form-input').value = '';
-        topSuggestion = [-1, ''];
+        topSuggestion = new Suggestion();
     })
 }
 
@@ -337,7 +324,7 @@ function drawConicGradient() {
 }
 
 // Initialize.
-let topSuggestion = [-1, ''];
+let topSuggestion = new Suggestion();
 const guesses = [];
 // const imageUrlCache = new Map();
 

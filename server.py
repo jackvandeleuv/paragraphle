@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request
 import sqlite3
 from markupsafe import escape
 from flask_cors import CORS
@@ -8,44 +8,6 @@ from numpy.linalg import norm
 from numpy import dot
 import threading
 import time
-
-random = [
-(1164, 'artificial intelligence'),
-(84493, 'savannah, georgia'),
-(990329, 'gamespot'),
-(57447, 'charlotte, north carolina'),
-(60192, 'bruce springsteen'),
-(17416221, 'south africa'),
-(534366, 'barack obama'),
-(5119376, 'john f. kennedy'),
-(18973446, 'geometry'),
-(173070, 'the wall street journal'),
-(5551, 'costa rica'),
-(167409, 'alternative rock'),
-(3524766, 'youtube'),
-(23245410, 'academy award for best actor'),
-(808, 'alfred hitchcock'),
-(701, 'angola'),
-(319442, 'san francisco chronicle'),
-(5334607, 'africa'),
-(3352, 'blues'),
-(585629, 'kyiv'),
-(52911, 'town'),
-(26230922, 'nobel peace prize'),
-(689, 'asia'),
-(19468510, 'united states house of representatives'),
-(12153654, 'elizabeth ii'),
-(4699587, 'fish'),
-(863, 'american civil war'),
-(2569378, 'hurricane katrina'),
-(23534170, 'fantasy'),
-(3969, 'buckingham palace'),
-(5884, 'charles dickens'),
-(19334491, 'vishnu'),
-(42010, 'queen (band)'),
-(54422, 'chinese civil war'),
-(1998, 'austin, texas')
-]
 
 def get_articles():
     conn = sqlite3.Connection('stable/data/data.db')
@@ -144,7 +106,7 @@ CORS(app)
 
 # Global variables.
 articles = get_articles()
-DAILY_WORD = 4637590
+DAILY_WORD = 23749
 daily_vec = get_daily_word_vector(DAILY_WORD)
 cluster_examples = get_cluster_examples()
 
@@ -153,7 +115,11 @@ cluster_examples = get_cluster_examples()
 def suggestion(q, limit):
     q = escape(q).lower()
 
-    limit = int(escape(limit))
+    try:
+        limit = int(escape(limit))
+    except ValueError as e:
+        print(e)
+        return "Invalid ID.", 404
 
     result = bin_prefix_search(articles, q, limit)
     if result:
@@ -239,6 +205,7 @@ def guess_id(id):
         """, (id,))
 
         guess = cur.fetchone()[0]
+        guess = np.frombuffer(guess)
 
         cur.execute("""
             select cluster, title
@@ -248,13 +215,24 @@ def guess_id(id):
 
         cluster, title = cur.fetchone()
 
-        guess = np.frombuffer(guess)
+        cur.execute("""
+            select url
+            from images 
+            where articles_id == ?
+        """, (id,))
+
+        row = cur.fetchone()
+        if row is None:
+            image_url = ''
+        else:
+            image_url = row[0]
 
         if id == DAILY_WORD:
             return jsonify({
                 'distance': 0.0,
                 'cluster': float(cluster),
-                'title': title
+                'title': title,
+                'image_url': image_url
             })
         
         distance = 1 - (dot(guess, daily_vec) / (norm(guess) * norm(daily_vec)))
@@ -266,7 +244,8 @@ def guess_id(id):
         return jsonify({
             'cluster': float(cluster),
             'distance': float(distance),
-            'title': title
+            'title': title,
+            'image_url': image_url
         })
 
     except Exception as e:
