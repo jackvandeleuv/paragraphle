@@ -8,7 +8,8 @@
 
 # New steps
 - links.go
-- parse_articles.ipynb
+- selected.ipynb
+- parse_articles.go
 - clean.ipynb
 - embed.ipynb
 - cluster.ipynb

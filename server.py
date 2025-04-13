@@ -70,35 +70,35 @@ def bin_prefix_search(array, prefix, limit):
 
     return array_slice
 
-def get_cluster_examples():
-    conn = sqlite3.Connection('stable/data/data.db')
-    cur = conn.cursor()
-    cur.execute("""
-        select cluster, title, count
-        from (
-            select 
-                title,
-                cluster,
-                count, 
-                row_number() over (
-                    partition by cluster
-                    order by count desc
-                ) as rank
-            from articles
-        ) sub
-        where rank <= 5
-    """)
-    rows = cur.fetchall()
-    conn.close()
+# def get_cluster_examples():
+#     conn = sqlite3.Connection('stable/data/data.db')
+#     cur = conn.cursor()
+#     cur.execute("""
+#         select cluster, title, count
+#         from (
+#             select 
+#                 title,
+#                 cluster,
+#                 count, 
+#                 row_number() over (
+#                     partition by cluster
+#                     order by count desc
+#                 ) as rank
+#             from articles
+#         ) sub
+#         where rank <= 5
+#     """)
+#     rows = cur.fetchall()
+#     conn.close()
 
-    top = {}
-    for cluster, title, count in rows:
-        row = {'title': title, 'score': count}
-        if cluster in top:
-            top[cluster].append(row)
-        else:
-            top[cluster] = [row]
-    return top
+#     top = {}
+#     for cluster, title, count in rows:
+#         row = {'title': title, 'score': count}
+#         if cluster in top:
+#             top[cluster].append(row)
+#         else:
+#             top[cluster] = [row]
+#     return top
 
 
 app = Flask(__name__)

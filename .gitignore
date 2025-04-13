@@ -8,3 +8,10 @@ jeo/JEOPARDY_CSV.csv
 stable/data/embeddings.jsonl
 /stable/data
 guess.json
+preprocessing/data
+preprocessing/.scala-build
+preprocessing/.bsp
+.scala-build
+.metals
+preprocessing/wiki
+.bsp
