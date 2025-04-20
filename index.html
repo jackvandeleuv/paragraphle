@@ -4,94 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Knowledgele</title>
+    <title>Embedle</title>
 </head>
 <body>
     <header>
-        <p>Knowledgele</p>
+        <h1>Embedle</h1>
+        <!-- <p>April 13, 2025</p> -->
     </header>
 
-    <div class="panelWrapper">
-        <canvas id="canvas"></canvas>
-
-        <div class="leftPanel">
-            <div id="formWrapper" class="formWrapper">
-                <div id="suggestionContainer" class="suggestionContainer">
-                    <div class="suggestionCard"></div>
-                    <div class="suggestionCard"></div>
-                    <div class="suggestionCard"></div>
-                    <div class="suggestionCard"></div>
-                    <div class="suggestionCard"></div>
-                </div>
-                <form id="form" autocomplete="off">
-                    <input id="form-input" name="form-input" type="text">
-                </form>
+    <div class="mainPanel">
+        <div id="guessFeatureArticle" class="guessFeatureArticle">
+            <div id="guessFeatureArticleTitle" class="guessFeatureArticleTitle">
             </div>
+            <div id="guessFeatureBoxContainer" class="guessFeatureBoxContainer"></div>
         </div>
 
-        <div class="rightPanel">
-            <div id="guessWrapper" class="guessWrapper">
-                <p>Best</p>
-                <div id="guessContainerTop" class="guessContainer">
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                </div>
-                <p>Recent</p>
-                <div id="guessContainerRecent" class="guessContainer">
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                    <div class="guessCard">
-                        <div class="cluster"></div>
-                        <div class="name"></div>
-                        <div class="distance"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
+        <div id="topGuesses" class="topGuesses">
+            <div class="topGuessesArticleHeader">
+                <button class="chunksButton">
+                    <h3>Chunks</h3>
+                </button>
+                <button class="keywordsButton">
+                    <h3>Keywords</h3>
+                </button>
+            </div>
+            
+            <div id="topGuessesContainer" class="topGuessesContainer"></div>
+        </div>
     </div>
 
+    <div class="inputBox">
+        <div id="topSuggestionBox" class="topSuggestionBox">
+            <div id="topSuggestionCard" class="topSuggestionCard"></div>
+        </div>
+        <div class="suggestionWrapper">
+            <div id="suggestionContainer" class="suggestionContainer">
+                <div class="suggestionCard"></div>
+                <div class="suggestionCard"></div>
+                <div class="suggestionCard"></div>
+                <div class="suggestionCard"></div>
+                <div class="suggestionCard"></div>
+            </div>
+            <div class="formContainer">
+                <div></div>
+                <form class="form" id="form" autocomplete="off">
+                    <input id="form-input" class="form-input" name="form-input" type="text" autofocus>
+                </form>
+                <div></div>
+            </div>
+        </div>
+    </div>
+       
     <footer>
         <p></p>
     </footer>

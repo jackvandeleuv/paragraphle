@@ -1,269 +1,145 @@
-function updateContainer(items, container) {
-    const html = items.map((item) => item.getHTML());
-    const updatedItems = html.join('\n');
-    container.innerHTML = updatedItems;
-}
-
-async function getSuggestion(input) {
-    topSuggestion = new Suggestion();
-
-    if (input === '') {
-        return
-    }
-
-    const suggestionContainer = document.getElementById('suggestionContainer');
-
-    const url = `http://127.0.0.1:5000/suggestion/${input}/limit/10`;
-    const result = await fetch(url)
-    
-    if (!result.ok) {
-        updateContainer([], suggestionContainer);
-        return
-    }
-
-    const text = await result.json();
-
-    const suggestion = text.map((x) =>
-        new Suggestion(x[0], x[3])
-    );
-
-    while (suggestion.length < 5) {
-        suggestion.push(new Suggestion())
-    }
-
-    updateContainer(suggestion, suggestionContainer);
-    topSuggestion = new Suggestion(text[0][0], text[0][3]);
-}
-
-function scoreBucket(score) {
-    let bucket = score;
-    if (bucket > .95) {
-        bucket = .95
-    }
-    if (bucket < .65) {
-        bucket = .65;
-    }
-
-    bucket = Math.round(((bucket - .65) / 3)) + 1;
-
-    return `dist${bucket}`;
-}
-
 class Suggestion {
-    constructor (id = -1, text = '') {
-        this.id = id;
+    constructor (article_id = -1, text = '') {
+        this.article_id = article_id;
         this.text = text;
     }
 
     getHTML() {
+        return `<div class="suggestionCard">${this.text.toUpperCase()}</div>`
+    }
+}
+
+class TopSuggestion {
+    constructor (article_id = -1, text = '') {
+        this.article_id = article_id;
+        this.text = text;
+    }
+
+    getHTML() {
+        return `<div id="topSuggestionCard" class="topSuggestionCard">${this.text.toUpperCase()}</div>`
+    }
+}
+
+
+class TopGuessesBox {
+    constructor (
+        chunk = "", 
+        distance = -1, 
+        article_id = -1,
+        title = "",
+        chunk_id = -1
+    ) {
+        this.chunk = chunk;
+        this.distance = Math.round(distance * 100) / 100;
+        this.article_id = article_id;
+        this.title = title;
+        this.chunk_id = chunk_id;
+    }
+
+    getHTML() { 
+        const color = calculateDistanceColor(this.distance);
         return `
-            <div class="suggestionCard">
-                ${this.text}
+            <div title="${this.title.toUpperCase()}" class="topGuessesBox">
+                <div class="topGuessesTitle">
+                    <h4 style="background-color: ${color}; opacity">
+                        Distance: ${this.distance}
+                    </h4>
+                </div>
+                <p>${this.chunk}</p>
             </div>
         `
     }
 }
 
-class Guess {
-    constructor(
-        text,
-        distance,
-        cluster,
-        title,
-        imageUrl,
-        html = '',
-        bucket = -1,
-        color = ''
+class GuessFeatureBox {
+    constructor (
+        chunk = "", 
+        distance = -1, 
+        article_id = -1, 
+        rank = -1,
+        chunk_id = -1
     ) {
-        this.text = text;
-        this.distance = distance;
-        this.cluster = cluster;
-        this.title = title;
-        this.imageUrl = imageUrl;
-        this.html = html;
-        this.bucket = bucket;
-        this.color = color;
-    }
-
-    __format() {
-        if (this.bucket === -1) {
-            this.bucket = scoreBucket(this.distance);
-        }
-
-        if (this.color === '') {
-            this.color = angleToColor(clusterToAngle(this.cluster));
-        }
-    }
-
-    async makeHTML() {
-        if (this.html !== '') {
-            return
-        }
-
-        this.__format();
-
-        this.html = `
-            <div class="guessCard ${this.bucket}">
-                <img class="thumbnail" src="${this.imageUrl}"></img>
-                <div class="cluster" style="background-color: ${this.color};">${this.cluster}</div>
-                <div class="name">${this.text}</div>
-                <div class="distance">${this.distance}</div>
-            </div>
-        `;
+        this.chunk = chunk;
+        this.distance = Math.round(distance * 100) / 100;
+        this.article_id = article_id;
+        this.rank = rank;
+        this.chunk_id = chunk_id;
     }
 
     getHTML() {
-        return this.html;
+        const color = calculateDistanceColor(this.distance);
+        return `
+            <div class="guessFeatureBox">
+                <div class="guessFeatureTitle">
+                    <h3>(${this.rank})</h3>
+                    <div class="distanceBox" style="background-color: ${color};">
+                        <h3>Distance ${this.distance}</h3>
+                    </div>
+                </div>
+                <p>${this.chunk}</p>
+            </div>
+        `
     }
-
-    copy() {
-        return new Guess(
-            this.text,
-            this.distance,
-            this.cluster,
-            this.title,
-            this.imageUrl,
-            this.html,
-            this.bucket,
-            this.color
-        )
-    } 
 }
 
-async function postGuess(guessId, guessString) {
-    const topContainer = document.getElementById('guessContainerTop');
-    const recentContainer = document.getElementById('guessContainerRecent');
+function calculateDistanceColor(distance) {
+    if (distance > .7) {
+        return "var(--cold)"
+    } else if (distance > .5) {
+        return "var(--warm)"
+    } else if (distance > .3) {
+        return "var(--hot)"
+    } else {
+        return "var(--blazing)"
+    }
+}
 
-    const url = `http://127.0.0.1:5000/guess_id/${guessId}`;
+function updateContainer(items, container) {
+    container.innerHTML = items
+        .map((item) => item.getHTML())
+        .join('\n');
+    add_enter_listener();
+}
+
+async function getSuggestion(input) {
+    if (input === '') return;
+
+    const suggestionsContainer = document.getElementById('suggestionContainer');
+    const topSuggestionBox = document.getElementById('topSuggestionBox');
+
+    const url = `http://127.0.0.1:5000/suggestion/${input}/limit/5`;
     const result = await fetch(url);
     
     if (!result.ok) {
+        updateContainer(
+            [
+                new Suggestion(), 
+                new Suggestion(), 
+                new Suggestion(), 
+                new Suggestion(), 
+                new Suggestion()
+            ], 
+            suggestionsContainer
+        );
         return
     }
 
-    const dict = await result.json();
+    const text = await result.json();
 
-    const distanceFloat = Number.parseFloat(dict.distance)
-    const distanceString = distanceFloat.toFixed(2);
-    const clusterInt = Number.parseInt(dict.cluster);
-    const title = dict.title;
-    const imageUrl = dict.image_url || '';
+    const suggestions = text.map((x) => new Suggestion(x[0], x[1]));
 
-    console.log('URL:' + imageUrl)
-
-    const guess = new Guess(guessString, distanceString, clusterInt, title, imageUrl);
-    await guess.makeHTML();
-    guesses.push(guess);
-
-    renderCanvas();
-
-    const uniqueTop = [];
-    const seen = new Set();
-    for (const guess of guesses) {
-        if (seen.has(guess.text)) {
-            continue
-        }
-        seen.add(guess.text);
-        uniqueTop.push(guess.copy());
+    while (suggestions.length < 5) {
+        suggestions.push(new Suggestion())
     }
 
-    uniqueTop.sort((a, b) => a.distance - b.distance);
-
-    const recentGuesses = [...guesses];
-    recentGuesses.reverse();
-
-    updateContainer(uniqueTop, topContainer);
-    updateContainer(recentGuesses, recentContainer);
-}
-
-function renderCanvas() {
-    scaleCanvas();
-
-    const closest = [...guesses];
-    closest.sort((a, b) => a.distance - b.distance);
-    const seen = new Set();
-    points = [];
-    for (const guess of closest) {
-        if (seen.has(guess.cluster)) {
-            const noTitle = guess.copy();
-            noTitle.text = '';
-            points.push(noTitle);
-            continue
-        }
-        seen.add(guess.cluster);
-        points.push(guess);
-    }
-
-    // Reset canvas
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-
-    drawConicGradient();
-
-    // Center dot
-    drawDot("white", canvas.offsetWidth / 2, canvas.offsetHeight / 2);
-
-    // Other points
-    for (const point of points) {
-        renderGuess(
-            point.title, 
-            point.cluster, 
-            Number.parseFloat(point.distance)
-        )
-    }
-}
-
-function writeLabel(label, x, y) {
-    const LABEL_SIZE = 12;
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "black";
-    ctx.font = `500 ${LABEL_SIZE}px Georgia`;
-    ctx.textAlign = "center";
-    ctx.fillText(label, x, y - 7);
-}
-
-function angleToColor(angle) {
-    const normalizedTheta = (angle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-
-    const hue = (normalizedTheta / (2 * Math.PI)) * 360;
-
-    const saturation = 100; 
-    const lightness = 60; 
-    const hslColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-
-    return hslColor;
-}
-
-function clusterToAngle(cluster) {
-    const N_CLUSTERS = 300;
-    const scaleBy = 2 * Math.PI / N_CLUSTERS;
-    return cluster * scaleBy;
-}
-
-function renderGuess(title, cluster, distance) {
-    const canvas = document.getElementById("canvas");
-
-    const canvasScale = canvas.offsetWidth / 300;
-
-    const xOffset = canvas.offsetWidth / 2;
-    const yOffset = canvas.offsetHeight / 2;
-    const scaledDistance = Math.pow(distance + 1, 7) * canvasScale;
-
-    const angle = clusterToAngle(cluster);
-
-    const x = (scaledDistance * Math.cos(angle)) + xOffset;
-    const y = (scaledDistance * Math.sin(angle)) + yOffset;
-
-    const color = angleToColor(angle);
-
-    drawDot(color, x, y);
-    writeLabel(title, x, y);
+    updateContainer(suggestions, suggestionsContainer);
+    topSuggestion = new TopSuggestion(text[0][0], text[0][1]);
+    updateContainer([topSuggestion], topSuggestionBox);
 }
 
 function add_form_listeners() {
     const form = document.getElementById("form");
+
     form.addEventListener("input", async (event) => {
         event.preventDefault();
         const input = event.target.value;
@@ -272,80 +148,75 @@ function add_form_listeners() {
     
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (topSuggestion.id === -1) {
-            return
-        }
-        await postGuess(topSuggestion.id, topSuggestion.text);
-        document.getElementById('form-input').value = '';
-        topSuggestion = new Suggestion();
+        if (topSuggestion.article_id === -1) return;
+
+        const formInput = document.getElementById("form-input");
+        formInput.disabled = true;
+        formInput.value = '';
+
+        await guess_article(topSuggestion.article_id, topSuggestion.text);
+        topSuggestion = new TopSuggestion();
+
+        formInput.disabled = false;
+        formInput.focus();
     })
 }
 
-function drawDot(color, x=null, y=null) {
-    const DOT_RADIUS = 3;
+function add_enter_listener() {
+    const form = document.getElementById('form-input');
+    const topSuggestionCard = document.getElementById('topSuggestionCard');
 
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+    form.addEventListener('keydown', function(event) {
+        if (event.key !== 'Enter') return;
+        topSuggestionCard.style.backgroundColor = 'var(--dark-mid)';
+        topSuggestionCard.style.color = 'var(--light-full)';
 
-    x = x || canvas.offsetWidth;
-    y = y || canvas.offsetHeight;
+    });
 
-    // Outline
-    ctx.beginPath();
-    ctx.arc(x, y, DOT_RADIUS * 1.05, 0, 2 * Math.PI);
-    ctx.fillStyle = "black";
-    ctx.fill();
-
-    // Inner color
-    ctx.beginPath();
-    ctx.arc(x, y, DOT_RADIUS, 0, 2 * Math.PI);
-    ctx.fillStyle = color;
-    ctx.fill();
+    form.addEventListener('keyup', function(event) {
+        if (event.key !== 'Enter') return;
+        topSuggestionCard.style.backgroundColor = 'var(--light-mid)';
+        topSuggestionCard.style.color = 'var(--dark-full)';
+    });
 }
 
-function drawConicGradient() {
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+async function guess_article(article_id, title) {
+    const url = `http://127.0.0.1:5000/guess_article/${article_id}`;
+    const guessFeatureBoxContainer = document.getElementById('guessFeatureBoxContainer');
+    const topGuessesContainer = document.getElementById('topGuessesContainer');
+    const topFeatureArticleTitle = document.getElementById('guessFeatureArticleTitle');
 
-    const gradient = ctx.createConicGradient(
-        0, 
-        canvas.offsetWidth / 2, 
-        canvas.offsetHeight / 2
-    );
-  
-    for (let hue = 0; hue < 360; hue++) {
-        const t = hue / 360; 
-        const color = `hsl(${hue}, 100%, 50%)`;
-        gradient.addColorStop(t, color);
-    }
+    guessFeatureBoxContainer.innerHTML = "<progress></progress";
+    topFeatureArticleTitle.innerHTML = `<h2>${title.toUpperCase()}</h2>`
+
+    const chunks = await fetch(url).then(async (response) => await response.json());
     
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+    const guessFeatureBoxes = chunks.map(
+        (chunk, i) => new GuessFeatureBox(chunk[1], chunk[2], article_id, i + 1, chunk[0])
+    )
+    updateContainer(guessFeatureBoxes, guessFeatureBoxContainer);
+
+    const topGuessesBox = chunks.map(
+        (chunk) => new TopGuessesBox(chunk[1], chunk[2], article_id, title, chunk[0])
+    )
+
+    // Dedup top guesses.
+    for (const box of topGuessesBox) {
+        if (topGuessesIds.has(box.chunk_id)) continue;
+        topGuessesIds.add(box.chunk_id);
+        topGuesses.push(box);
+    }
+
+    topGuesses.sort((a, b) => a.distance - b.distance);
+    updateContainer(topGuesses, topGuessesContainer);
+
+    const topSuggestionCard = document.getElementById('topSuggestionCard');
+    topSuggestionCard.style.backgroundColor = 'var(--light-mid)';
+    topSuggestionCard.style.color = 'var(--dark-full)';
 }
 
-// Initialize.
-let topSuggestion = new Suggestion();
-const guesses = [];
-// const imageUrlCache = new Map();
-
-document.addEventListener("DOMContentLoaded", () => {
-    fetch(`http://127.0.0.1:5000/ping/${window.screen.width}/${window.screen.height}/${window.innerWidth}/${window.innerHeight}/${window.devicePixelRatio}`);
-    add_form_listeners();
-    drawConicGradient();
-    drawDot('white');
-});
-
-function scaleCanvas() {
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    const width = canvas.offsetWidth;
-    const height = canvas.offsetHeight;
-    canvas.setAttribute("width", width * dpr);
-    canvas.setAttribute("height", height * dpr);
-    ctx.scale(dpr, dpr);
-}
-
-window.addEventListener('resize', renderCanvas);
-
-renderCanvas();
+const topGuesses = [];
+const topGuessesIds = new Set();
+let topSuggestion = new TopSuggestion();
+add_enter_listener();
+add_form_listeners();

@@ -1,159 +1,214 @@
+:root {
+    --accent: rgb(179, 167, 254);
+    --light-full: rgb(243, 234, 234);
+    --dark-full: rgb(18, 18, 18);
+    --light-mid: rgb(228, 228, 222);
+    --dark-mid: rgb(90, 89, 78);
+    --cold: rgb(238, 238, 147, .6);
+    --warm: rgb(213, 96, 98, .6); 
+    --hot: rgb(243, 119, 72, .6);
+    --blazing: rgb(243, 119, 72, .9);
+  }
+
 html, body {
-    height: 100%;
+    font-family: 'Times New Roman', Times, serif;
+    background-color: var(--light-full);
     margin: 0;
     padding: 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    font-family: Georgia, 'Times New Roman', Times, serif;
-    /* background-color: #EFEFEF; */
-    background-color: transparent;
 }
 
 header {
-    /* border: 1px solid black; */
-    font-size: x-large;
-    color: rgb(220, 219, 219);
-    padding-left: 10px;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: left;
+    align-items: end;
+    margin-bottom: 5px;
+    padding: 10px;
 }
 
 footer {
-    /* border: 1px solid black; */
+    min-height: 30px;
 }
 
-.panelWrapper {
-    display: flex;
-    flex-direction: row;
-    background-color: transparent;
-    flex-grow: 1;
+p {
+    font-size: medium;
+    margin: 0px;
 }
 
-.rightPanel {
-    /* border: 1px solid black; */
-    display: flex;
-    flex-direction: column;
-    justify-content: end;
-    background-color: transparent;
-    margin-right: 5px;
+h1 {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    margin: 0px;
 }
 
-.leftPanel {
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    /* border: 1px solid black; */
-    background-color: transparent;
-    flex-grow: 1;
-    justify-content: end;
+h2 {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    margin: 0px;
+
 }
 
-#canvas {
-    position: fixed;  
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;
+h3 {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    margin: 0px;
 }
 
-.formWrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+h4 {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    margin: 0px;
+}
+
+h5 {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    margin: 0px;
+}
+
+.mainPanel {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
     gap: 5px;
+    overflow: auto;
+    flex: 1;
 }
 
-.suggestionContainer {
+/* GUESS FEATURE BOX */
+
+.guessFeatureArticle {
     display: flex;
     flex-direction: column;
+    overflow: scroll;
+    border: 1px solid var(--dark-mid);
+    border-radius: 5px;
+    padding: 7px;
+    gap: 3px;
 }
 
-.guessContainer {
-    max-height: 100px;
-    overflow-y: scroll;
-}
-
-.guessWrapper {
+.guessFeatureBoxContainer {
     display: flex;
     flex-direction: column;
+    gap: 3px;
 }
 
-.suggestionCard {
-    min-height: 15px;
-    min-width: 200px;
-    border: 1px solid black;
-    border-radius: 3px;
+.guessFeatureBox {
+    color: rgb(18, 18, 18);
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid var(--dark-mid);
+    background-color: var(--light-mid);
 }
 
-.guessCard {
-    min-height: 15px;
-    min-width: 200px;
+.guessFeatureTitle {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.guessFeatureArticleTitle {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: 5px;
+}
+
+.guessFeatureArticleTitle:hover {
+    text-decoration: underline;
+}
+
+.distanceBox {
+    padding: 2px;
+    border-radius: 1px;
+    border: 1px solid var(--bright)
+}
+
+/* TOP GUESSES */
+
+.topGuesses {
+    display: flex;
+    flex-direction: column;
+    overflow: scroll;
+    border: 1px solid var(--dark-mid);
+    border-radius: 5px;
+    padding: 7px;
+    gap: 4px;
+}
+
+.topGuessesBox {
+    color: var(--dark-full);
+    border-radius: 10px;
+    padding: 10px;
+    background-color: var(--light-mid);
+    border: 1px solid var(--dark-full)
+}
+
+.topGuessesContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.topGuessesArticleHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 4px;
+}
+
+/* INPUT FORM */
+
+.inputBox {
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
     gap: 5px;
-    border: 1px solid black;
+    padding: 10px;
 }
 
-.dist1 {
-    background: rgb(255, 100, 100, .7);
+.suggestionContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    gap: 5px;
 }
 
-.dist2 {
-    background: rgb(255, 110, 100, .7);
+.suggestionWrapper {
+    align-items: stretch;
 }
 
-.dist3 {
-    background: rgb(255, 120, 100, .7);
+.suggestionCard {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    border: 1px solid var(--dark-mid);
+    border-radius: 3px;
+    text-align: center;
+    background-color: var(--light-mid);
+    padding: 5px;
 }
 
-.dist4 {
-    background: rgb(255, 130, 100);
+.topSuggestionCard {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    text-align: center;
+    font-size: 25px;
+    border: 1px solid var(--dark-mid);
+    border-radius: 3px;
+    background-color: var(--light-mid);
+    padding: 5px;
 }
 
-.dist5 {
-    background: rgb(255, 140, 100);
+.formContainer {
+    /* display: grid; */
+    /* grid-template-columns: 1fr 2fr 1fr; */
+    margin-top: 5px;
 }
 
-.dist6 {
-    background: rgb(255, 150, 100);
-}
-
-.dist7 {
-    background: rgb(255, 160, 100);
-}
-
-.dist8 {
-    background: rgb(255, 170, 100);
-}
-
-.dist9 {
-    background: rgb(255, 180, 100);
-}
-
-.dist10 {
-    background: rgb(255, 190, 100);
-}
-
-.cluster {
-    border-radius: 20px;
-    margin: 2px;
-    padding-top: 3px;
-    padding-bottom: 3px;
-    padding-left: 8px;
-    padding-right: 8px;
-    border: 1px solid black
-}
-
-.cluster-popup {
-    visibility: hidden;
-    background-color: red;
-}
-
-.cluster-popup:hover {
-    visibility: visible;
-}
-
-.thumbnail {
-    width: 30px;
+.form-input {
+    width: 100%;
+    height: 30px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: large;
+    outline: none;
+    box-shadow: var(--dark-full);
+    border-radius: 3px;
+    border: 2px solid var(--dark-full);
+    background-color: var(--light-full);
 }

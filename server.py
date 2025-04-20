@@ -8,27 +8,53 @@ from numpy.linalg import norm
 from numpy import dot
 import threading
 import time
+from dotenv import load_dotenv
+from openai import OpenAI
+import os 
+
+load_dotenv()
+
+client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+DB_PATH = 'preprocessing/data/data.db'
 
 def get_articles():
-    conn = sqlite3.Connection('stable/data/data.db')
+    conn = sqlite3.Connection(DB_PATH)
     cur = conn.cursor()
-    cur.execute("select id, clean_title, count, title from articles")
+    cur.execute("""
+        select 
+            article_id, clean_title, count, title 
+        from articles""")
     articles = cur.fetchall()
     articles = sorted(articles, key=lambda x: x[1])
     conn.close()
     return articles
 
-def get_daily_word_vector(id):
-    conn = sqlite3.Connection('stable/data/data.db')
+def get_daily_word_vector(article_id):
+    conn = sqlite3.Connection(DB_PATH)
     cur = conn.cursor()
     cur.execute("""
         select vector
         from embeddings
-        where id == ?
-    """, (id,))
-    vector = np.frombuffer(cur.fetchone()[0])
+        where article_id == ?
+    """, (article_id,))
+    vector = np.array([np.frombuffer(row[0]) for row in cur.fetchall()]).mean(axis=0)
     conn.close()
     return vector
+
+def get_daily_word_vector_live(article_id: int):
+    conn = sqlite3.Connection(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("""
+        select chunk
+        from chunks
+        where article_id == ?
+    """, (article_id,))
+    chunks = [x[0] for x in cur.fetchall()]
+    result = client.embeddings.create(
+        input=chunks,
+        model="text-embedding-3-small"
+    )
+    return np.array([np.array(x.embedding) for x in result.data]).mean(axis=0)
 
 def bin_prefix_search(array, prefix, limit):
     left = 0
@@ -70,46 +96,15 @@ def bin_prefix_search(array, prefix, limit):
 
     return array_slice
 
-# def get_cluster_examples():
-#     conn = sqlite3.Connection('stable/data/data.db')
-#     cur = conn.cursor()
-#     cur.execute("""
-#         select cluster, title, count
-#         from (
-#             select 
-#                 title,
-#                 cluster,
-#                 count, 
-#                 row_number() over (
-#                     partition by cluster
-#                     order by count desc
-#                 ) as rank
-#             from articles
-#         ) sub
-#         where rank <= 5
-#     """)
-#     rows = cur.fetchall()
-#     conn.close()
-
-#     top = {}
-#     for cluster, title, count in rows:
-#         row = {'title': title, 'score': count}
-#         if cluster in top:
-#             top[cluster].append(row)
-#         else:
-#             top[cluster] = [row]
-#     return top
-
-
 app = Flask(__name__)
 CORS(app)
 
 # Global variables.
 articles = get_articles()
-DAILY_WORD = 23749
-daily_vec = get_daily_word_vector(DAILY_WORD)
-cluster_examples = get_cluster_examples()
-
+DAILY_WORD = 19017269
+# daily_vec = get_daily_word_vector(DAILY_WORD)
+daily_vec = get_daily_word_vector_live(DAILY_WORD)
+CHUNKS_TO_RETURN = 2
 
 @app.route("/suggestion/<q>/limit/<limit>")
 def suggestion(q, limit):
@@ -122,132 +117,131 @@ def suggestion(q, limit):
         return "Invalid ID.", 404
 
     result = bin_prefix_search(articles, q, limit)
+
     if result:
         return jsonify(result), 200
     return "No matching article.", 404
 
-def log_guess(guess_id, timestamp, ip):
-    conn = sqlite3.Connection('stable/data/data.db')
-    cur = conn.cursor()
+# def log_guess(guess_id, timestamp, ip):
+#     conn = sqlite3.Connection('stable/data/data.db')
+#     cur = conn.cursor()
+#     try:
+#         cur.execute("""
+#             insert into guesses (
+#                 guess_id, timestamp, ip
+#             ) values (?, ?, ?)
+#         """, (guess_id, timestamp, ip)
+#         )
+#         conn.commit()
+#     except Exception as e:
+#         print(e)
+
+#     conn.close()
+
+# @app.route("/ping/<width>/<height>/<innerWidth>/<innerHeight>/<pixelRatio>")
+# def ping(width, height, innerWidth, innerHeight, pixelRatio):
+#     user = request.headers.get('User-Agent', '')
+#     referer = request.headers.get('Referer', '')
+#     ip = request.remote_addr
+#     timestamp = time.time()
+
+#     conn = sqlite3.Connection('stable/data/data.db')
+#     cur = conn.cursor()
+#     try:
+#         cur.execute("""
+#             insert into ping (
+#                 user_agent,
+#                 referer,
+#                 ip,
+#                 timestamp,
+#                 width,
+#                 height,
+#                 inner_width,
+#                 inner_height,
+#                 pixelRatio
+#             ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+#         """, (
+#             user, 
+#             referer, 
+#             ip, 
+#             timestamp, 
+#             width, 
+#             height, 
+#             innerWidth, 
+#             innerHeight, 
+#             pixelRatio
+#         ))
+#         conn.commit()
+#     except Exception as e:
+#         print(e)
+
+#     conn.close()
+
+#     return jsonify([])
+    
+
+@app.route("/guess_article/<article_id>")
+def guess_article(article_id):
     try:
-        cur.execute("""
-            insert into guesses (
-                guess_id, timestamp, ip
-            ) values (?, ?, ?)
-        """, (guess_id, timestamp, ip)
-        )
-        conn.commit()
-    except Exception as e:
-        print(e)
-
-    conn.close()
-
-@app.route("/ping/<width>/<height>/<innerWidth>/<innerHeight>/<pixelRatio>")
-def ping(width, height, innerWidth, innerHeight, pixelRatio):
-    user = request.headers.get('User-Agent', '')
-    referer = request.headers.get('Referer', '')
-    ip = request.remote_addr
-    timestamp = time.time()
-
-    conn = sqlite3.Connection('stable/data/data.db')
-    cur = conn.cursor()
-    try:
-        cur.execute("""
-            insert into ping (
-                user_agent,
-                referer,
-                ip,
-                timestamp,
-                width,
-                height,
-                inner_width,
-                inner_height,
-                pixelRatio
-            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            user, 
-            referer, 
-            ip, 
-            timestamp, 
-            width, 
-            height, 
-            innerWidth, 
-            innerHeight, 
-            pixelRatio
-        ))
-        conn.commit()
-    except Exception as e:
-        print(e)
-
-    conn.close()
-
-    return jsonify([])
-
-@app.route("/cluster_example/<cluster_id>")
-def cluster_example(cluster_id):
-    cluster_id = int(escape(cluster_id))
-    return jsonify(
-        cluster_examples[cluster_id]
-    )
-
-@app.route("/guess_id/<id>")
-def guess_id(id):
-    try:
-        conn = sqlite3.Connection('stable/data/data.db')
+        conn = sqlite3.Connection('preprocessing/data/data.db')
         cur = conn.cursor()
 
-        id = int(escape(id))
-
-        cur.execute("""
-            select vector
-            from embeddings 
-            where id == ?
-        """, (id,))
-
-        guess = cur.fetchone()[0]
-        guess = np.frombuffer(guess)
-
-        cur.execute("""
-            select cluster, title
-            from articles 
-            where id == ?
-        """, (id,))
-
-        cluster, title = cur.fetchone()
-
-        cur.execute("""
-            select url
-            from images 
-            where articles_id == ?
-        """, (id,))
-
-        row = cur.fetchone()
-        if row is None:
-            image_url = ''
-        else:
-            image_url = row[0]
-
-        if id == DAILY_WORD:
-            return jsonify({
-                'distance': 0.0,
-                'cluster': float(cluster),
-                'title': title,
-                'image_url': image_url
-            })
+        article_id = int(escape(article_id))
         
-        distance = 1 - (dot(guess, daily_vec) / (norm(guess) * norm(daily_vec)))
+        if article_id == DAILY_WORD:
+            print('YOU WON!')
+            return jsonify([(-1, 'YOU WON!', 0)])
 
-        ip = request.remote_addr
-        timestamp = time.time()
-        threading.Thread(target=log_guess, args=(id, timestamp, ip)).start()
+        # cur.execute("""
+        #     select e.vector, e.chunk_id, c.chunk
+        #     from (
+        #         select vector, chunk_id 
+        #         from embeddings
+        #         where article_id == ?
+        #     ) as e
+        #     join (
+        #         select chunk_id, chunk
+        #         from chunks
+        #         where article_id == ?
+        #     ) as c
+        #         using (chunk_id)
+        # """, (article_id, article_id))
 
-        return jsonify({
-            'cluster': float(cluster),
-            'distance': float(distance),
-            'title': title,
-            'image_url': image_url
-        })
+        cur.execute("""
+            select chunk_id, chunk
+            from chunks
+            where article_id == ?
+        """, (article_id,))
+        guess = cur.fetchall()
+        result = client.embeddings.create(
+            input=[x[1] for x in guess],
+            model="text-embedding-3-small"
+        )
 
+        guess_matrix = np.array([np.array(x.embedding) for x in result.data])
+
+        print('number of chunks:', guess_matrix.shape[0])
+
+        # Vectorized cosine distance.
+        # Faster than iteratively calling distance.cosine().
+        numerator = guess_matrix @ daily_vec
+        denominator_rhs = np.sqrt(np.sum(daily_vec ** 2)) 
+        denominator_lhs = np.sqrt(np.sum(guess_matrix ** 2, axis=1))
+        denominator = denominator_lhs * denominator_rhs
+        distances = 1 - (numerator / denominator)
+
+        indices = np.argsort(distances)
+
+        return [
+            (guess[i][0], guess[i][1], distances[i]) 
+            for i in indices
+        ][: CHUNKS_TO_RETURN]
+
+        # return [
+        #     (guess[i][1], guess[i][2], distances[i]) 
+        #     for i in indices
+        # ][: CHUNKS_TO_RETURN]
+        
     except Exception as e:
         print(e)
         return str(e)
