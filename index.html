@@ -9,8 +9,18 @@
 <body>
     <header>
         <h1>Embedle</h1>
-        <!-- <p>April 13, 2025</p> -->
+        <!-- <p>May 17, 2025</p> -->
     </header>
+
+    <div class="scoreBox">
+        <h4 id="scoreMessage">Miles away...</h4>
+        <progress 
+            max="1" 
+            value="0" 
+            class="scoreBar"
+            id="scoreBar"
+        ></progress>
+    </div>
 
     <div class="mainPanel">
         <div id="guessFeatureArticle" class="guessFeatureArticle">
@@ -21,8 +31,9 @@
 
 
         <div id="topGuesses" class="topGuesses">
+            <h3>Guesses</h3>
             <div class="topGuessesArticleHeader">
-                <button class="chunksButton">
+                <button class="chunksButton suggestionHighlighted">
                     <h3>Chunks</h3>
                 </button>
                 <button class="keywordsButton">
