@@ -143,8 +143,15 @@ h5 {
 }
 
 .guessImage {
+    max-height: 200px;
+    height: 200px;
+}
+
+.guessImageLoaded {
     border: 1px solid var(--dark-full);
     border-radius: 5px;
+    /* object-fit: cover; */
+    /* width: 100%; */
 }
 
 .distanceBox {

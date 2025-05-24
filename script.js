@@ -1,60 +1,24 @@
 class Suggestion {
-    constructor (article_id = -1, text = '') {
-        const cleanText = text.toUpperCase();
+    constructor (
+        article_id = -1, clean_title = '', count = -1, 
+        title = '', url = '', id = -1, suggestionType = 'suggestionCard'
+    ) {
+        const cleanText = clean_title.toUpperCase();
         this.article_id = article_id;
         this.text = cleanText;
         this.clippedText = clipText(cleanText);
-        this.elem = this.makeElem();
+        this.elem = this.makeElem(id, suggestionType);
+        this.url = url;
+        this.id = id;
+        this.title = title;
         addSuggestionListener(this.elem);
     }
 
-    makeElem() {
+    makeElem(id, suggestionType) {
         const topSuggestionCard = document.createElement('button');
-        topSuggestionCard.classList.add('suggestionCard');
+        topSuggestionCard.id = id;
+        topSuggestionCard.classList.add(suggestionType);
         topSuggestionCard.classList.add('noSelect')
-        topSuggestionCard.title = this.text;
-        topSuggestionCard.innerText = this.clippedText;
-        topSuggestionCard.id = `suggestion-${this.article_id}`;
-        return topSuggestionCard;
-    }
-}
-
-class TopSuggestion {
-    constructor (article_id = -1, text = '') {
-        const cleanText = text.toUpperCase();
-        this.article_id = article_id;
-        this.text = cleanText;
-        this.clippedText = clipText(cleanText);
-        this.elem = this.makeElem();
-        addSuggestionListener(this.elem);
-        this.addTopSuggestionListener();
-    }
-
-    addTopSuggestionListener() {
-        const form = document.getElementById('form-input');
-
-        form.addEventListener('keydown', function(event) {
-            // const topSuggestionCard = document.getElementById('topSuggestionCard');
-            if (event.key !== 'Enter') return;
-            // topSuggestionCard.style.backgroundColor = 'var(--dark-mid)';
-            // topSuggestionCard.style.color = 'var(--light-full)';
-
-        });
-
-        form.addEventListener('keyup', function(event) {
-            // const topSuggestionCard = document.getElementById('topSuggestionCard');
-            if (event.key !== 'Enter') return;
-            // topSuggestionCard.style.backgroundColor = 'var(--light-mid)';
-            // topSuggestionCard.style.color = 'var(--dark-full)';
-        });
-    }
-
-    makeElem() {
-        const topSuggestionCard = document.createElement('button');
-        topSuggestionCard.classList.add('topSuggestionCard');
-        topSuggestionCard.classList.add('noSelect')
-        topSuggestionCard.id = `suggestion-${this.article_id}`;
-        topSuggestionCard.title = this.text;
         topSuggestionCard.innerText = this.clippedText;
         return topSuggestionCard;
     }
@@ -66,8 +30,12 @@ function addSuggestionListener(element) {
 
         event.target.classList.add('suggestionHighlighted');
 
-        const article_id = event.target.id.split('-')[1];
-        await guessArticle(article_id, event.target.title);
+        if (event.target.classList.contains('topSuggestionCard')) {
+            await guessArticle(topSuggestion.article_id, topSuggestion.title, topSuggestion.url);
+        } else {
+            const suggestion = suggestions[event.target.id];
+            await guessArticle(suggestion.article_id, suggestion.title, suggestion.url);
+        }
         event.target.classList.remove('suggestionHighlighted');
     })
 }
@@ -85,10 +53,10 @@ class TopGuessesBox {
         this.article_id = article_id;
         this.title = title;
         this.chunk_id = chunk_id;
-        this.elem = this.getElem();
+        this.elem = this.makeElem();
     }
 
-    getElem() { 
+    makeElem() { 
         const color = calculateDistanceColor(this.distance);
         const topGuessesBox = document.createElement('div');
         topGuessesBox.classList.add('topGuessesBox');
@@ -176,14 +144,16 @@ function updateContainer(items, container) {
     }
 }
 
-async function getSuggestion(input) {
+async function getSuggestion(input, limit=6) {
     if (input === '') return;
 
     const suggestionsContainer = document.getElementById('suggestionContainer');
     const topSuggestionBox = document.getElementById('topSuggestionBox');
 
-    const url = `http://127.0.0.1:5000/suggestion/${input}/limit/5`;
+    const url = `http://127.0.0.1:5000/suggestion/${input}/limit/${limit}`;
     const result = await fetch(url);
+
+    console.log(result.length)
     
     if (!result.ok) {
         updateContainer(
@@ -201,15 +171,26 @@ async function getSuggestion(input) {
 
     const text = await result.json();
 
-    const suggestions = text.map((x) => new Suggestion(x[0], x[1]));
 
-    while (suggestions.length < 5) {
-        suggestions.push(new Suggestion())
+    if (text.length > 0) {
+        topSuggestion = new Suggestion(...text.pop(), ...[-1, 'topSuggestionCard']);
+        console.log(topSuggestion)
+        updateContainer([topSuggestion], topSuggestionBox);
+    }
+
+    let idx = 0;
+    suggestions = [];
+    for (const item of text) {
+        suggestions.push(new Suggestion(...item, ...[idx++, 'suggestionCard']))
+    }
+
+    while (suggestions.length < limit - 1) {
+        const blankSuggestion = new Suggestion();
+        blankSuggestion.id = idx++;
+        suggestions.push(blankSuggestion);
     }
 
     updateContainer(suggestions, suggestionsContainer);
-    topSuggestion = new TopSuggestion(text[0][0], text[0][1]);
-    updateContainer([topSuggestion], topSuggestionBox);
 }
 
 function add_form_listeners() {
@@ -230,8 +211,9 @@ function add_form_listeners() {
         formInput.disabled = true;
         formInput.value = '';
 
-        await guessArticle(topSuggestion.article_id, topSuggestion.text);
-        topSuggestion = new TopSuggestion();
+        await guessArticle(topSuggestion.article_id, topSuggestion.text, topSuggestion.url);
+        topSuggestion = new Suggestion();
+        topSuggestion.suggestionType = 'topSuggestionCard';
 
         formInput.disabled = false;
         formInput.focus();
@@ -269,11 +251,12 @@ function urlToName(title) {
 async function getWikiImage(url) {
     const name = urlToName(url);
     const imageURL = `https://en.wikipedia.org/api/rest_v1/page/summary/${name}`;
-    console.log(imageURL)
-    const res = await fetch(imageURL, {headers:{'Accept': 'application/json'}});
-    if (!res.ok) return 'https://upload.wikimedia.org/wikipedia/commons/7/78/Claude_Monet_-_The_Magpie_-_Google_Art_Project.jpg';
+    const res = await fetch(imageURL, {headers: {'Accept': 'application/json'}});
+    if (!res.ok) return defaultImage;
     const data = await res.json();
-    return data.originalimage?.source || data.thumbnail?.source || null;
+    console.log(data)
+    return data.thumbnail?.source || defaultImage;
+    // return data.originalimage?.source || data.thumbnail?.source || null;
 }
 
 function updateScoreBar() {
@@ -286,8 +269,7 @@ function updateScoreBar() {
     scoreBar.value = Math.max(2 - bestScore, 1) - 1;
 }
 
-async function guessArticle(article_id, title, limit=3) {
-    console.log(article_id)
+async function guessArticle(article_id, title, imageUrl, limit=3) {
     guessingArticle = true;
 
     const url = `http://127.0.0.1:5000/guess_article/${article_id}/limit/${limit}`;
@@ -298,15 +280,19 @@ async function guessArticle(article_id, title, limit=3) {
     guessFeatureBoxContainer.innerHTML = "<progress></progress";
     topFeatureArticleTitle.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 10px;">
-            <img id="guessImage" class="guessImage" style="height: 200px;" src=""></img>
-            <h2>${title.toUpperCase()}</h2>
+            <img id="guessImage" class="guessImage" src=""></img>
+            <h2>${title}</h2>
         </div>
     `;
 
-    const chunks = await fetch(url).then(async (response) => await response.json());
-
     const guessImage = document.getElementById('guessImage');
-    guessImage.src = await getWikiImage(chunks[0][3]);
+    const imagePromise = getWikiImage(imageUrl);
+
+    const chunks = await fetch(url).then(async (response) => await response.json());
+    console.log('got chunks!')
+    guessImage.src = await imagePromise;
+    console.log('got image!')
+    guessImage.classList.add('guessImageLoaded');
 
     const cleanChunks = chunks.map((chunk) => chunk[1].toLowerCase().trim());
     for (const chunk of cleanChunks) {
@@ -345,7 +331,7 @@ async function guessArticle(article_id, title, limit=3) {
     topSuggestionCard.backgroundColor = 'var(--light-mid)';
     topSuggestionCard.color = 'var(--dark-full)';
 
-    console.log(`top tokens: ${await getTopTokens()}`);
+    // console.log(`top tokens: ${await getTopTokens()}`);
 
     guessingArticle = false;
 }
@@ -353,11 +339,16 @@ async function guessArticle(article_id, title, limit=3) {
 // Globals.
 const topGuesses = [];
 const topGuessesIds = new Set();
-let topSuggestion = new TopSuggestion();
 
-add_form_listeners();
+const defaultImage = 'https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/263px-Wikipedia-logo-v2.svg.png';
+
+let topSuggestion = new Suggestion();
+let suggestions = [];
+
+add_form_listeners(); 
 
 const targetTokens = getTargetTokens();  // Normalized.
+
 const guessTokens = new Map();
 let totalGuessTokens = 0;
 

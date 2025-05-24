@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import os 
 from collections import Counter
+from typing import List
 
 load_dotenv()
 
@@ -71,15 +72,28 @@ DB_PATH = 'preprocessing/data/data.db'
 
 #     return jsonify([])
 
-def get_articles():
+class Article:
+    def __init__(self, article_id, clean_title, count, title, url):
+        self.clean_title = clean_title
+        self.count = count
+        self.data = (article_id, clean_title, count, title, url)
+    
+    def unpack(self) -> str:
+        return (self.article_id, self.clean_title, self.count, self.title, self.url)
+    
+    def deep_copy(self):
+        return Article(*deepcopy(self.data))
+
+def get_articles() -> List[Article]:
     conn = sqlite3.Connection(DB_PATH)
     cur = conn.cursor()
     cur.execute("""
         select 
-            article_id, clean_title, count, title 
-        from articles""")
-    articles = cur.fetchall()
-    articles = sorted(articles, key=lambda x: x[1])
+            article_id, clean_title, count, title, url
+        from articles
+    """)
+    articles = [Article(*row) for row in cur.fetchall()]
+    articles = sorted(articles, key=lambda x: x.clean_title)
     conn.close()
     return articles
 
@@ -109,7 +123,7 @@ def get_daily_word_tokens(article_id: int):
     chunks = ' '.join([x[0] for x in cur.fetchall()]).split()
     chunks = [chunk.lower().strip() for chunk in chunks]
     chunks = [(key, val) for key, val in Counter(chunks).items()]
-    chunks = list(sorted(chunks, key=lambda x: x[-1], reverse=True))[: 1000]
+    chunks = list(sorted(chunks, key=lambda x: x[-1], reverse=True))
     return chunks
 
 def bin_prefix_search(array, prefix, limit):
@@ -120,10 +134,10 @@ def bin_prefix_search(array, prefix, limit):
 
     found = False
     while left < right:
-        if prefix == array[mid][1][: size]:
+        if prefix == array[mid].clean_title[: size]:
             found = True
             break
-        elif prefix < array[mid][1][: size]:
+        elif prefix < array[mid].clean_title[: size]:
             right = mid
             mid = ((right - left) // 2) + left
         else:
@@ -134,21 +148,20 @@ def bin_prefix_search(array, prefix, limit):
         return None
             
     left = mid
-    while 0 < left - 1 and prefix == array[left - 1][1][: size]:
+    while 0 < left - 1 and prefix == array[left - 1].clean_title[: size]:
         left -= 1
         
     # Don't add one to comparisons with right if using slices because it is exclusive
     right = mid
-    while right + 1 <= len(array) and prefix == array[right][1][: size]:
+    while right + 1 <= len(array) and prefix == array[right].clean_title[: size]:
         right += 1
 
     array_slice = array[left : right]  # Shallow copy
     for i in range(len(array_slice)):
-        if array_slice[i][1] == prefix:
-            copy = list(deepcopy(array_slice[i]))
-            copy[2] = 100000  # Higher than any count.
-            array_slice[i] = tuple(copy)  # Avoids mutating original list.
-    array_slice = sorted(array_slice, key=lambda x: x[2], reverse=True)[: limit]
+        if array_slice[i].clean_title == prefix:
+            copy_article = array_slice[i].deep_copy()
+            copy_article.count = 100000  # Higher than any count.
+    array_slice = sorted(array_slice, key=lambda x: x.count, reverse=True)[: limit]
 
     return array_slice
 
@@ -178,7 +191,7 @@ def suggestion(q, limit):
     result = bin_prefix_search(articles, q, limit)
 
     if result:
-        return jsonify(result), 200
+        return jsonify([row.data for row in result]), 200
     return "No matching article.", 404
     
 @app.route("/guess_article/<article_id>/limit/<limit>")
