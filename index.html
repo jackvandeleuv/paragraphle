@@ -4,22 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Embedle</title>
+    <title>WikiGuess</title>
 </head>
 <body>
     <header>
-        <h1>Embedle</h1>
+        <h1>WikiGuess</h1>
         <!-- <p>May 17, 2025</p> -->
     </header>
 
-    <div class="scoreBox">
-        <h4 id="scoreMessage">Miles away...</h4>
-        <progress 
-            max="1" 
-            value="0" 
-            class="scoreBar"
-            id="scoreBar"
-        ></progress>
+    <div class="subHeader">
+        <div class="scoreBox">
+            <h4 id="scoreMessage">Miles away...</h4>
+            <progress 
+                max="1" 
+                value="0" 
+                class="scoreBar"
+                id="scoreBar"
+            ></progress>
+        </div>
+
+        <div class="guessCountBox">
+            <h4>Guesses:</h4>
+            <h4 id="guessCountMessage">0</h4>
+        </div>
     </div>
 
     <div class="mainPanel">
@@ -29,9 +36,8 @@
             <div id="guessFeatureBoxContainer" class="guessFeatureBoxContainer"></div>
         </div>
 
-
         <div id="topGuesses" class="topGuesses">
-            <h3>Guesses</h3>
+            <h3>Past Guesses</h3>
             <div class="topGuessesArticleHeader">
                 <button class="chunksButton suggestionHighlighted">
                     <h3>Chunks</h3>

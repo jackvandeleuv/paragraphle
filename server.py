@@ -7,13 +7,46 @@ import numpy as np
 from dotenv import load_dotenv
 from openai import OpenAI
 import os 
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import List
 
 load_dotenv()
 
 client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 DB_PATH = 'preprocessing/data/data.db'
+
+STOP_WORDS = set([
+    'a',
+    'and',
+    'of',
+    'in',
+    'is',
+    'as',
+    'was',
+    'or',
+    'by',
+    'for',
+    'that',
+    'from',
+    'be',
+    'which',
+    'use', 
+    'they',
+    'known',
+    'may', 
+    'other',
+    'has', 
+    'into', 
+    'the',
+    'with',
+    'an',
+    'to',
+    'its',
+    'he',
+    'his',
+    'at',
+    '–'
+])
 
 # def log_guess(guess_id, timestamp, ip):
 #     conn = sqlite3.Connection('stable/data/data.db')
@@ -112,7 +145,7 @@ def get_daily_word_vector_live(article_id: int):
     )
     return np.array([np.array(x.embedding) for x in result.data]).mean(axis=0)
 
-def get_daily_word_tokens(article_id: int):
+def get_daily_word_stats(article_id: int):
     conn = sqlite3.Connection(DB_PATH)
     cur = conn.cursor()
     cur.execute("""
@@ -120,11 +153,30 @@ def get_daily_word_tokens(article_id: int):
         from chunks
         where article_id == ?
     """, (article_id,))
-    chunks = ' '.join([x[0] for x in cur.fetchall()]).split()
-    chunks = [chunk.lower().strip() for chunk in chunks]
-    chunks = [(key, val) for key, val in Counter(chunks).items()]
-    chunks = list(sorted(chunks, key=lambda x: x[-1], reverse=True))
-    return chunks
+    chunks = [x[0].lower().strip() for x in cur.fetchall()]
+    n_chunks = len(chunks)
+
+    tokens = ' '.join(chunks).split()
+    tokens = [token.lower().strip() for token in tokens]
+    n_tokens = len(tokens)
+
+    token_counts = {token: val for token, val in Counter(tokens).items() if token not in STOP_WORDS}
+
+    chunks_with_token = defaultdict(int)
+    for chunk in chunks:
+        seen = set()
+        for token in chunk.split():
+            if token in seen:
+                continue
+            chunks_with_token[token] += 1
+            seen.add(token)
+
+    return {
+        'n_chunks': n_chunks,
+        'n_tokens': n_tokens,
+        'chunks_with_token': chunks_with_token,
+        'token_counts': token_counts
+    }
 
 def bin_prefix_search(array, prefix, limit):
     left = 0
@@ -171,12 +223,12 @@ CORS(app)
 
 # Global variables.
 articles = get_articles()
-DAILY_WORD = 20353360
+DAILY_WORD = 180546
 daily_vec = get_daily_word_vector_live(DAILY_WORD)
 
-@app.route("/keywords")
-def keywords():
-    return get_daily_word_tokens(DAILY_WORD), 200
+@app.route("/target_stats")
+def target_stats():
+    return jsonify(get_daily_word_stats(DAILY_WORD)), 200
 
 @app.route("/suggestion/<q>/limit/<limit>")
 def suggestion(q, limit):
@@ -222,26 +274,31 @@ def guess_article(article_id, limit):
         """, (article_id, article_id))
         guess = cur.fetchall()
 
-        result = client.embeddings.create(
-            input=[x[1] for x in guess],
-            model="text-embedding-3-small"
-        )
+        # result = client.embeddings.create(
+        #     input=[x[1] for x in guess],
+        #     model="text-embedding-3-small"
+        # )
 
-        guess_matrix = np.array([np.array(x.embedding) for x in result.data])
+        # guess_matrix = np.array([np.array(x.embedding) for x in result.data])
 
-        # Vectorized cosine distance.
-        # Faster than iteratively calling distance.cosine().
-        numerator = guess_matrix @ daily_vec
-        denominator_rhs = np.sqrt(np.sum(daily_vec ** 2)) 
-        denominator_lhs = np.sqrt(np.sum(guess_matrix ** 2, axis=1))
-        denominator = denominator_lhs * denominator_rhs
-        distances = 1 - (numerator / denominator)
+        # # Vectorized cosine distance.
+        # # Faster than iteratively calling distance.cosine().
+        # numerator = guess_matrix @ daily_vec
+        # denominator_rhs = np.sqrt(np.sum(daily_vec ** 2)) 
+        # denominator_lhs = np.sqrt(np.sum(guess_matrix ** 2, axis=1))
+        # denominator = denominator_lhs * denominator_rhs
+        # distances = 1 - (numerator / denominator)
 
-        indices = np.argsort(distances)
+        # indices = np.argsort(distances)
+
+        # return [
+        #     (guess[i][0], guess[i][1], distances[i], guess[i][2]) 
+        #     for i in indices
+        # ][: limit]
 
         return [
-            (guess[i][0], guess[i][1], distances[i], guess[i][2]) 
-            for i in indices
+            (guess[i][0], guess[i][1], 0.99, guess[i][2]) 
+            for i in range(len(guess))
         ][: limit]
         
     except Exception as e:

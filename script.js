@@ -7,25 +7,23 @@ class Suggestion {
         this.article_id = article_id;
         this.text = cleanText;
         this.clippedText = clipText(cleanText);
-        this.elem = this.makeElem(id, suggestionType);
         this.url = url;
         this.id = id;
         this.title = title;
-        addSuggestionListener(this.elem);
+        this.suggestionType = suggestionType;
     }
 
-    makeElem(id, suggestionType) {
+    makeElem() {
         const topSuggestionCard = document.createElement('button');
-        topSuggestionCard.id = id;
-        topSuggestionCard.classList.add(suggestionType);
+        topSuggestionCard.id = this.id;
+        topSuggestionCard.classList.add(this.suggestionType);
         topSuggestionCard.classList.add('noSelect')
         topSuggestionCard.innerText = this.clippedText;
+        topSuggestionCard.addEventListener('click', this.suggestionListener);
         return topSuggestionCard;
     }
-}
 
-function addSuggestionListener(element) {
-    element.addEventListener('click', async function(event) {
+    async suggestionListener(event) {
         if (guessingArticle) return;
 
         event.target.classList.add('suggestionHighlighted');
@@ -37,7 +35,7 @@ function addSuggestionListener(element) {
             await guessArticle(suggestion.article_id, suggestion.title, suggestion.url);
         }
         event.target.classList.remove('suggestionHighlighted');
-    })
+    }
 }
 
 class TopGuessesBox {
@@ -46,34 +44,69 @@ class TopGuessesBox {
         distance = -1, 
         article_id = -1,
         title = "",
-        chunk_id = -1
+        chunk_id = -1,
+        idx = -1
     ) {
         this.chunk = chunk;
         this.distance = Math.round(distance * 100) / 100;
         this.article_id = article_id;
         this.title = title;
         this.chunk_id = chunk_id;
-        this.elem = this.makeElem();
+        this.isOpen = false;
+        this.idx = idx;
+    }
+
+    getFullDisplayChunk(chunk) {
+        return chunk.slice(0, 50) + '... <span>More</span>';
+    }
+
+    // getDisplayButton() {
+    //     const button = document.createElement('span');
+    //     button.id = this.idx;
+    //     button.innerText = this.isOpen ? 'Less' : 'More';
+    //     button.addEventListener('click', (e) => {
+    //         topGuessesRef[e.target.id].isOpen = !topGuessesRef[e.target.id].isOpen
+    //         const topGuessesContainer = document.getElementById('topGuessesContainer');
+    //         updateContainer(topGuessesSorted, topGuessesContainer);
+    //     })
+    //     return button;
+    // }
+
+    getDisplayChunk() {
+        const chunkText = document.createElement('p');
+        chunkText.innerText = this.isOpen ? this.chunk : this.chunk.slice(0, 100) + '...';
+        return chunkText;
     }
 
     makeElem() { 
         const color = calculateDistanceColor(this.distance);
         const topGuessesBox = document.createElement('div');
         topGuessesBox.classList.add('topGuessesBox');
-        topGuessesBox.title = this.title.toUpperCase();
+        topGuessesBox.style.backgroundColor = color;
 
         const innerHTML = `
-            <div class="topGuessesTitle" style="background-color: ${color};">
-                <h4>
-                    ${this.title}
-                </h4>
-                <h4>
-                    Distance: ${this.distance}
-                </h4>
-            </div>
+                <div class="topGuessesBoxHeader">
+                    <h5>
+                        ${this.title}
+                    </h5>
+                    <p>
+                        ${this.distance}
+                    </p>
+                </div>
         `;
 
         topGuessesBox.innerHTML = innerHTML;
+
+        topGuessesBox.appendChild(this.getDisplayChunk());
+
+        topGuessesBox.id = this.idx;
+        topGuessesBox.addEventListener('click', (e) => {
+            console.log(e.currentTarget)
+            topGuessesRef[e.currentTarget.id].isOpen = !topGuessesRef[e.currentTarget.id].isOpen
+            const topGuessesContainer = document.getElementById('topGuessesContainer');
+            updateContainer(topGuessesSorted, topGuessesContainer);
+        })
+
         return topGuessesBox;
     }
 }
@@ -91,7 +124,6 @@ class GuessFeatureBox {
         this.article_id = article_id;
         this.rank = rank;
         this.chunk_id = chunk_id;
-        this.elem = this.makeElem();
     }
 
     makeElem() {
@@ -99,6 +131,7 @@ class GuessFeatureBox {
 
         const guessFeatureBox = document.createElement('div');
         guessFeatureBox.classList.add('guessFeatureBox');
+
 
         const innerHTML = `
             <div class="guessFeatureTitle">
@@ -137,10 +170,23 @@ function calculateDistanceColor(distance) {
     }
 }
 
+function calculateDistanceLabel(distance) {
+    if (distance > .7) {
+        return "Ice cold..."
+    } else if (distance > .5) {
+        return "Getting somewhere..."
+    } else if (distance > .3) {
+        return "Wait! Unless..."
+    } else {
+        return "You're in the danger zone!"
+    }
+}
+
+
 function updateContainer(items, container) {
     container.innerHTML = '';
     for (const item of items) {
-        container.appendChild(item.elem)
+        container.appendChild(item.makeElem())
     }
 }
 
@@ -152,8 +198,6 @@ async function getSuggestion(input, limit=6) {
 
     const url = `http://127.0.0.1:5000/suggestion/${input}/limit/${limit}`;
     const result = await fetch(url);
-
-    console.log(result.length)
     
     if (!result.ok) {
         updateContainer(
@@ -174,7 +218,6 @@ async function getSuggestion(input, limit=6) {
 
     if (text.length > 0) {
         topSuggestion = new Suggestion(...text.pop(), ...[-1, 'topSuggestionCard']);
-        console.log(topSuggestion)
         updateContainer([topSuggestion], topSuggestionBox);
     }
 
@@ -220,42 +263,23 @@ function add_form_listeners() {
     })
 }
 
-async function getTargetTokens() {
-    const response = await fetch('http://127.0.0.1:5000/keywords');
-    const tokens = new Map(Object.entries(await response.json()));
-    const total = tokens.values().reduce((a, b) => a + b);
-    const normalizedTokens = new Map();
-    for (const token of tokens.keys()) {
-        const rawCount = tokens.get(token);
-        normalizedTokens.set(token, rawCount / total);
-    }
-    return tokens;
-}
-
-async function getTopTokens() {
-    await targetTokens;
-    const topTokens = new Map();
-    for (const token of guessTokens.keys()) {
-        if (!targetTokens.get(token)) continue;
-        const guessCount = guessTokens.get(token) / totalGuessTokens;
-        const targetCount = targetTokens.get(token);
-        topTokens.set(token, guessCount * targetCount);
-    }
-}
-
 function urlToName(title) {
     const titleSplit = title.split('/wiki/');
     return titleSplit[titleSplit.length - 1];
 }
 
 async function getWikiImage(url) {
-    const name = urlToName(url);
-    const imageURL = `https://en.wikipedia.org/api/rest_v1/page/summary/${name}`;
-    const res = await fetch(imageURL, {headers: {'Accept': 'application/json'}});
-    if (!res.ok) return defaultImage;
-    const data = await res.json();
-    console.log(data)
-    return data.thumbnail?.source || defaultImage;
+    try {
+        const name = urlToName(url);
+        const imageURL = `https://en.wikipedia.org/api/rest_v1/page/summary/${name}`;
+        const res = await fetch(imageURL, {headers: {'Accept': 'application/json'}});
+        if (!res.ok) return defaultImage;
+        const data = await res.json();
+        return data.thumbnail?.source || defaultImage;
+    } catch (error) {
+        console.error(error);
+        return defaultImage;
+    }
     // return data.originalimage?.source || data.thumbnail?.source || null;
 }
 
@@ -267,9 +291,103 @@ function updateScoreBar() {
     */
     const scoreBar = document.getElementById('scoreBar');
     scoreBar.value = Math.max(2 - bestScore, 1) - 1;
+    scoreBar.style.accentColor = calculateDistanceColor(bestScore);
+ 
+    const scoreMessage = document.getElementById('scoreMessage');
+    scoreMessage.innerText = calculateDistanceLabel(bestScore);
 }
 
-async function guessArticle(article_id, title, imageUrl, limit=3) {
+async function getTargetStats() {
+    const response = await fetch('http://127.0.0.1:5000/target_stats');
+    const responseJSON = await response.json();
+
+    responseJSON.token_counts = new Map(Object.entries(responseJSON.token_counts));
+    responseJSON.chunks_with_token = new Map(Object.entries(responseJSON.chunks_with_token));
+
+    return responseJSON
+}
+
+async function getTokenScores() {
+    /* 
+        Combine the raw counts from the target and each guess into a score-per-token.
+    */
+    const targetStats = await targetStatsPromise;
+
+    const scores = [];
+
+    for (const token of targetStats.token_counts.keys()) {
+        if (!guessStats.token_counts.has(token)) continue;
+
+        // console.log(`
+        //     --${token}--
+
+        //     target tokens: ${targetStats.n_tokens},
+        //     guess tokens: ${guessStats.n_tokens},
+
+        //     target chunks: ${targetStats.n_chunks},
+        //     guess chunks: ${guessStats.n_chunks},
+
+        //     target chunks with token: ${targetStats.chunks_with_token.get(token)},
+        //     guess chunks with token: ${guessStats.chunks_with_token.get(token)}
+        // `)
+
+        // const termFrequency = (
+        //     (targetStats.token_counts.get(token) + guessStats.token_counts.get(token)) / 
+        //     (targetStats.n_tokens + guessStats.n_tokens)
+        // );
+
+        const termFrequency = (
+            guessStats.token_counts.get(token) / guessStats.n_tokens
+        );
+
+        const inverseDocumentFrequency = Math.log(
+            (targetStats.n_chunks + guessStats.n_chunks) /
+            (1 + targetStats.chunks_with_token.get(token) + guessStats.chunks_with_token.get(token))
+        );
+        scores.push(
+            {
+                'token': token,
+                'score': termFrequency * inverseDocumentFrequency,
+                'termFrequency': termFrequency,
+                'IDF': inverseDocumentFrequency
+            }
+        );
+    }
+
+    return scores
+}
+
+function updateBOWStats(chunkText) {
+    //     'n_chunks': 0,
+    //     'n_tokens': 0,
+    //     'chunks_with_token': new Map(),  // (token, chunks_with_token)
+    //     'token_counts': new Map()  // (token, token_counts)
+
+    const chunk = chunkText.toLowerCase().trim();
+    const tokens = chunk.split(' ');
+
+    guessStats.n_chunks = guessStats.n_chunks + 1;
+    guessStats.n_tokens = guessStats.n_tokens + tokens.length;
+
+    const seenToken = new Set();
+    for (const token of tokens) {
+        if (guessStats.token_counts.has(token)) {
+            guessStats.token_counts.set(token, guessStats.token_counts.get(token) + 1)
+        } else {
+            guessStats.token_counts.set(token, 1)
+        }
+        
+        if (seenToken.has(token)) continue;
+        if (guessStats.chunks_with_token.has(token)) {
+            guessStats.chunks_with_token.set(token, guessStats.chunks_with_token.get(token) + 1)
+        } else {
+            guessStats.chunks_with_token.set(token, 1)
+        }
+        seenToken.add(token);
+    }
+}
+
+async function guessArticle(article_id, title, articleURL, limit=5) {
     guessingArticle = true;
 
     const url = `http://127.0.0.1:5000/guess_article/${article_id}/limit/${limit}`;
@@ -286,59 +404,64 @@ async function guessArticle(article_id, title, imageUrl, limit=3) {
     `;
 
     const guessImage = document.getElementById('guessImage');
-    const imagePromise = getWikiImage(imageUrl);
+    const imagePromise = getWikiImage(articleURL);
 
     const chunks = await fetch(url).then(async (response) => await response.json());
-    console.log('got chunks!')
-    guessImage.src = await imagePromise;
-    console.log('got image!')
-    guessImage.classList.add('guessImageLoaded');
 
-    const cleanChunks = chunks.map((chunk) => chunk[1].toLowerCase().trim());
-    for (const chunk of cleanChunks) {
-        if (!guessTokens.has(chunk)) continue;
-        const count = guessTokens.get(chunk);
-        guessTokens.set(chunk, count + 1);
-        totalGuessTokens += 1;
-    }
+    guessImage.src = await imagePromise;
+    guessImage.classList.add('guessImageLoaded');  
     
     const guessFeatureBoxes = chunks.map(
         (chunk, i) => new GuessFeatureBox(chunk[1], chunk[2], article_id, i + 1, chunk[0])
-    )
+    );
     updateContainer(guessFeatureBoxes, guessFeatureBoxContainer);
 
-    const topGuessesBox = chunks.map(
-        (chunk) => new TopGuessesBox(chunk[1], chunk[2], article_id, title, chunk[0])
-    )
+    for (const chunk of chunks) {
+        const chunk_id = chunk[0];
+        if (topGuessesChunkIds.has(chunk_id)) continue;
 
-    // Dedup top guesses.
-    for (const box of topGuessesBox) {
-        if (topGuessesIds.has(box.chunk_id)) continue;
-        topGuessesIds.add(box.chunk_id);
-        topGuesses.push(box);
+        updateBOWStats(chunk[1]);
+
+        const nextRefId = topGuessesRef.length || 0;
+        console.log(nextRefId)
+        const box = new TopGuessesBox(chunk[1], chunk[2], article_id, title, chunk_id, nextRefId);
+
+        topGuessesChunkIds.add(box.chunk_id);
+        topGuessesSorted.push(box);
+        topGuessesRef.push(box);
     }
 
-    topGuesses.sort((a, b) => a.distance - b.distance);
+    topGuessesSorted.sort((a, b) => a.distance - b.distance);
 
-    if (topGuesses) {
-        bestScore = Math.min(topGuesses[0].distance, bestScore);
+    if (topGuessesSorted) {
+        bestScore = Math.min(topGuessesSorted[0].distance, bestScore);
         updateScoreBar();
     }
 
-    updateContainer(topGuesses, topGuessesContainer);
+    updateContainer(topGuessesSorted, topGuessesContainer);
 
     const topSuggestionCard = document.getElementsByClassName('topSuggestionCard');
     topSuggestionCard.backgroundColor = 'var(--light-mid)';
     topSuggestionCard.color = 'var(--dark-full)';
 
-    // console.log(`top tokens: ${await getTopTokens()}`);
+    const tokenScoreMap = await getTokenScores();
+    const sortedTokenScores = tokenScoreMap.sort((a, b) => b.score - a.score);
+    console.log('\ntop tokens:');
+    for (const row of sortedTokenScores.slice(0, 10)) {
+        console.log(`${row.token}: ${row.score}`)
+    }
+
+    guessCount += 1;
+    const counter = document.getElementById('guessCountMessage');
+    counter.innerText = guessCount;
 
     guessingArticle = false;
 }
 
 // Globals.
-const topGuesses = [];
-const topGuessesIds = new Set();
+const topGuessesSorted = [];
+const topGuessesRef = [];
+const topGuessesChunkIds = new Set();
 
 const defaultImage = 'https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/263px-Wikipedia-logo-v2.svg.png';
 
@@ -347,11 +470,19 @@ let suggestions = [];
 
 add_form_listeners(); 
 
-const targetTokens = getTargetTokens();  // Normalized.
-
-const guessTokens = new Map();
-let totalGuessTokens = 0;
+//  Bag of words stats. Shared between target article and guess articles.
+const guessStats = {
+    'n_chunks': 0,
+    'n_tokens': 0,
+    'chunks_with_token': new Map(),  // (token, chunks_with_token)
+    'token_counts': new Map()  // (token, token_counts)
+}
+const targetStatsPromise = getTargetStats();  // Initial stats for the target article.
 
 let bestScore = 2;  // Range from 2 to 0.
 
 let guessingArticle = false;
+
+let guessCount = 0;
+
+let pastGuessesChunks = true;  // Chunks or Keywords.

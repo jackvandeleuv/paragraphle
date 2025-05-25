@@ -89,6 +89,16 @@ h5 {
     -ms-user-select: none;
 }
 
+/* SUB HEADER */
+
+.subHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
 .scoreBox {
     display: flex;
     flex-direction: row;
@@ -96,6 +106,12 @@ h5 {
     justify-content: center;
     gap: 10px;
     padding: 5px;
+}
+
+.guessCountBox {
+    display: flex;
+    flex-direction: row;
+    gap: 3px;
 }
 
 /* GUESS FEATURE BOX */
@@ -166,7 +182,7 @@ h5 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100%;
+    /* width: 100%; */
     overflow-y: scroll;
     border: 1px solid var(--dark-mid);
     border-radius: 5px;
@@ -175,12 +191,34 @@ h5 {
 }
 
 .topGuessesBox {
-    color: var(--dark-full);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    /* color: var(--dark-full); */
     border-radius: 10px;
     padding: 10px;
     background-color: var(--light-mid);
     border: 1px solid var(--dark-full);
-    width: 100%;
+    /* width: 100%; */
+    user-select: none;
+}
+
+.topGuessesBox:hover {
+    opacity: 75%;
+}
+
+.topGuessesBoxHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.topGuessesBoxButton {
+    background-color: rgb(0, 0, 0, 0);
+    border: 1px solid black;
+    border-radius: 3px;
+    padding-right: 6px;
+    padding-left: 6px;
 }
 
 .topGuessesContainer {
@@ -237,8 +275,9 @@ h5 {
 }
 
 .suggestionCard:hover {
-    background-color: var(--dark-mid);
-    color: var(--light-mid)
+    /* background-color: var(--dark-mid);
+    color: var(--light-mid); */
+    opacity: 75%;
 }
 
 .topSuggestionCard {
@@ -254,8 +293,9 @@ h5 {
 }
 
 .topSuggestionCard:hover {
-    background-color: var(--dark-mid);
-    color: var(--light-mid)
+    /* background-color: var(--dark-mid);
+    color: var(--light-mid); */
+    opacity: 75%;
 }
 
 .suggestionHighlighted {
