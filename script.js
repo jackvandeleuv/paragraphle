@@ -6,11 +6,21 @@ class Suggestion {
         const cleanText = clean_title.toUpperCase();
         this.article_id = article_id;
         this.text = cleanText;
-        this.clippedText = clipText(cleanText);
+        this.clippedText = this.clipText(cleanText);
         this.url = url;
         this.id = id;
         this.title = title;
         this.suggestionType = suggestionType;
+    }
+
+    clipText(text) {
+        if (text === '') return '';
+        const MAX_LEN = 30;
+        const diff = text.length - MAX_LEN;
+        if (diff > 0) {
+            return text.slice(0, MAX_LEN) + '...';
+        }
+        return text;
     }
 
     makeElem() {
@@ -25,6 +35,7 @@ class Suggestion {
 
     async suggestionListener(event) {
         if (guessingArticle) return;
+        if (this.id === -1) return;
 
         event.target.classList.add('boxHighlighted');
 
@@ -76,7 +87,7 @@ class TopGuessesBox {
         this.article_id = article_id;
         this.title = title;
         this.chunk_id = chunk_id;
-        this.isOpen = false;
+        this.isOpen = defaultBoxIsOpen;
         this.idx = idx;
     }
 
@@ -113,7 +124,6 @@ class TopGuessesBox {
 
         topGuessesBox.id = this.idx;
         topGuessesBox.addEventListener('click', (e) => {
-            console.log(e.currentTarget)
             topGuessesRef[e.currentTarget.id].isOpen = !topGuessesRef[e.currentTarget.id].isOpen
             updateContainer(topGuessesSorted, 'topGuessesContainer');
         })
@@ -170,17 +180,7 @@ class GuessFeatureBox {
     }
 }
 
-function clipText(text) {
-    const MAX_LEN = 30;
-    const diff = text.length - MAX_LEN;
-    if (diff > 0) {
-        return text.slice(0, MAX_LEN) + '...';
-    }
-    return text;
-}
-
 function calculateDistanceBackgroundColor(distance) {
-    console.log(`color: ${distance}`)
     if (distance > .65) {
         return "var(--one)"
     } else if (distance > .50) {
@@ -189,6 +189,8 @@ function calculateDistanceBackgroundColor(distance) {
         return "var(--three)"
     } else if (distance > .20) {
         return "var(--four)"
+    } else if (distance === 0) {
+        return "var(--accent)"
     } else {
         return "var(--five)"
     }
@@ -198,13 +200,15 @@ function calculateDistanceLabel(distance) {
     if (distance > .65) {
         return "Brr... you are DISTANT"
     } else if (distance > .50) {
-        return "You are still approximately very far away"
+        return "You're still approximately very far away"
     } else if (distance > .35) {
-        return "Ok yeah wait you're onto something..."
+        return "Oh wait you're onto something..."
     } else if (distance > .20) {
         return "You are GETTING THERE"
+    } else if (distance == 0) {
+        return "You GOT IT"
     } else {
-        return "Ow oh shit ow that's hot as fuck ow"
+        return "Ow shit ow that's hot as fuck ow"
     }
 }
 
@@ -231,7 +235,7 @@ async function getSuggestion(input, limit=6) {
                 new Suggestion(), 
                 new Suggestion()
             ], 
-            'suggestionsContainer'
+            'suggestionContainer'
         );
         return
     }
@@ -245,8 +249,8 @@ async function getSuggestion(input, limit=6) {
 
     let idx = 0;
     suggestions = [];
-    for (const item of text) {
-        suggestions.push(new Suggestion(...item, ...[idx++, 'suggestionCard']))
+    while (text.length > 0) {
+        suggestions.push(new Suggestion(...text.pop(), ...[idx++, 'suggestionCard']))
     }
 
     while (suggestions.length < limit - 1) {
@@ -274,6 +278,20 @@ function addSidepanelButtonListeners() {
         e.currentTarget.classList.add('boxHighlighted');
         document.getElementById('chunksButton').classList.remove('boxHighlighted');
         document.getElementById('topGuessesArticleTitle').innerText = "Top Keywords";
+        updateTopGuessesContainer();
+    }));
+
+    expandButton = document.getElementById('expandButton');
+    expandButton.addEventListener('click', (_) => {
+        for (const box of topGuessesSorted) box.isOpen = true;
+        defaultBoxIsOpen = true;
+        updateTopGuessesContainer();
+    });
+
+    collapseButton = document.getElementById('collapseButton');
+    collapseButton.addEventListener('click', ((_) => {
+        for (const box of topGuessesSorted) box.isOpen = false;
+        defaultBoxIsOpen = false;
         updateTopGuessesContainer();
     }));
 }
@@ -325,17 +343,11 @@ async function getWikiImage(url) {
 }
 
 function updateScoreBar() {
-    /**
-    *   bestScore is 2 (furthest) to 0 (closest).
-    *   2 - bestScore inverts the range.
-    *   Then we clip the score to go from 1 to 2.
-    */
     const scoreBar = document.getElementById('scoreBar');
-    scoreBar.value = Math.max(2 - bestScore, 1) - 1;
+    scoreBar.value = Math.max(1 - (1.3 * bestScore), 0);
     scoreBar.style.accentColor = calculateDistanceBackgroundColor(bestScore);
  
     const scoreMessage = document.getElementById('scoreMessage');
-    console.log(`${calculateDistanceLabel(bestScore)} ${bestScore}`)
     scoreMessage.innerText = calculateDistanceLabel(bestScore);
 }
 
@@ -452,13 +464,21 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
 
     const url = `http://127.0.0.1:5000/guess_article/${article_id}/limit/${limit}`;
 
-    const chunksPromise = fetch(url).then(async (response) => await response.json());
+    const chunksPromise = fetch(url);
 
     updateContainer(makeSkeletonGuessFeatureBoxes(), 'guessFeatureBoxContainer');
+    document.getElementById("form").input = '';
 
     loadGuessHeader(articleURL, title);
 
-    const chunks = await chunksPromise;
+    const chunksResponse = await chunksPromise;
+    if (!chunksResponse.ok) {
+        updateContainer([], 'guessFeatureBoxContainer');
+        guessingArticle = false;
+        return;
+    }
+    const chunks = await chunksResponse.json();
+
     const guessFeatureBoxes = chunks.map(
         (chunk, i) => new GuessFeatureBox(chunk[1], chunk[2], article_id, i + 1, chunk[0])
     );
@@ -505,9 +525,6 @@ const defaultImage = 'https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikip
 let topSuggestion = new Suggestion();
 let suggestions = [];
 
-addFormListeners(); 
-addSidepanelButtonListeners();
-
 //  Bag of words stats. Shared between target article and guess articles.
 const guessStats = {
     'n_chunks': 0,
@@ -524,3 +541,8 @@ let guessingArticle = false;
 let guessCount = 0;
 
 let pastGuessesChunkMode = true;  // Chunks or Keywords.
+
+let defaultBoxIsOpen = false;
+
+addFormListeners(); 
+addSidepanelButtonListeners();

@@ -56,12 +56,25 @@ STOP_WORDS = set([
     'both',
     'she',
     'her',
-    'there'
+    'there',
+    'were',
+    'during',
+    'used',
+    'have',
+    'also',
+    'these',
+    'after',
+    'who',
+    'but',
+    'new',
+    'their',
+    'such',
+    'not'
 ])
 
 class Article:
     def __init__(self, article_id, clean_title, count, title, url):
-        self.clean_title = clean_title
+        self.clean_title = escape(clean_title)  # Equivalent to: escape(title.lower().strip())
         self.count = count
         self.data = (article_id, clean_title, count, title, url)
     
@@ -112,7 +125,6 @@ def get_daily_word_stats(article_id: int):
 
     tokens = ' '.join(chunks).split()
     tokens = [token.lower().strip() for token in tokens]
-    # tokens = [re.sub(r'[^A-Za-z0-9]+', '', token) for token in tokens]
     n_tokens = len(tokens)
 
     token_counts = {token: val for token, val in Counter(tokens).items() if token not in STOP_WORDS}
@@ -168,17 +180,47 @@ def bin_prefix_search(array, prefix, limit):
         if array_slice[i].clean_title == prefix:
             copy_article = array_slice[i].deep_copy()
             copy_article.count = 100000  # Higher than any count.
-    array_slice = sorted(array_slice, key=lambda x: x.count, reverse=True)[: limit]
+    array_slice = sorted(array_slice, key=lambda x: x.count)[-limit :] 
 
     return array_slice
 
+def cache_embedding(conn, model, article_id, result_data, guess):
+    cursor = conn.cursor()
+    rows = []
+    for i in range(len(result_data)):
+        rows.append((
+            np.array(result_data[i].embedding).tobytes(), 
+            article_id, 
+            guess[i][0], 
+            model
+        ))
+
+    cursor.executemany("""
+        insert into embeddings (vector, article_id, chunk_id, model) values (?, ?, ?, ?)
+    """, (rows))
+    
+    conn.commit()
+
+def get_cached_embedding(conn, article_id):
+    cursor = conn.cursor()
+    cursor.execute("""
+        select vector 
+        from embeddings 
+        where article_id == ? 
+        order by chunk_id desc
+    """, (article_id,))
+    rows = cursor.fetchall()
+    if not rows:
+        return None
+    return np.array([np.frombuffer(row[0]) for row in rows])
 
 app = Flask(__name__)
 CORS(app)
 
 # Global variables.
+EMBEDDING_MODEL = "text-embedding-3-small"
+DAILY_WORD = 14666430
 articles = get_articles()
-DAILY_WORD = 165584
 daily_vec = get_daily_word_vector_live(DAILY_WORD)
 
 @app.route("/target_stats")
@@ -208,6 +250,9 @@ def guess_article(article_id, limit):
         cur = conn.cursor()
 
         article_id = int(escape(article_id))
+        if article_id == -1:
+            return 'Invalid article ID.', 404
+        
         limit = int(escape(limit))
 
         if article_id == DAILY_WORD:
@@ -225,16 +270,16 @@ def guess_article(article_id, limit):
                 from articles
                 where article_id == ?    
             ) as a
-            on c.article_id == a.article_id
+                on c.article_id == a.article_id
+            order by chunk_id desc
         """, (article_id, article_id))
         guess = cur.fetchall()
 
-        result = client.embeddings.create(
-            input=[x[1] for x in guess],
-            model="text-embedding-3-small"
-        )
-
-        guess_matrix = np.array([np.array(x.embedding) for x in result.data])
+        guess_matrix = get_cached_embedding(conn, article_id)
+        if guess_matrix is None:
+            result = client.embeddings.create(input=[x[1] for x in guess], model=EMBEDDING_MODEL)
+            cache_embedding(conn, EMBEDDING_MODEL, article_id, result.data, guess)
+            guess_matrix = np.array([np.array(x.embedding) for x in result.data])
 
         # Vectorized cosine distance.
         # Faster than iteratively calling distance.cosine().
@@ -258,6 +303,6 @@ def guess_article(article_id, limit):
         
     except Exception as e:
         print(e)
-        return str(e)
+        return 'Internal server error.', 500
     finally:
         conn.close()
