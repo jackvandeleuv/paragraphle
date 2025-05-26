@@ -295,11 +295,6 @@ def guess_article(article_id, limit):
             (guess[i][0], guess[i][1], distances[i], guess[i][2]) 
             for i in indices
         ][: limit]
-
-        return [
-            (guess[i][0], guess[i][1], 0.99, guess[i][2]) 
-            for i in range(len(guess))
-        ][: limit]
         
     except Exception as e:
         print(e)

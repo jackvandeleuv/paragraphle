@@ -1,12 +1,12 @@
 .env
 data.db
-source
-transformed
 /archive
 jeo/master_season1-35.tsv
 jeo/JEOPARDY_CSV.csv
 stable/data/embeddings.jsonl
 /stable/data
+/transformed/data
+/source/data
 guess.json
 preprocessing/data
 preprocessing/.scala-build
