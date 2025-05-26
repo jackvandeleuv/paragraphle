@@ -14,7 +14,7 @@ import re
 load_dotenv()
 
 client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
-DB_PATH = 'preprocessing/data/data.db'
+DB_PATH = 'data.db'
 
 STOP_WORDS = set([
     'a',
@@ -246,7 +246,7 @@ def suggestion(q, limit):
 @app.route("/guess_article/<article_id>/limit/<limit>")
 def guess_article(article_id, limit):
     try:
-        conn = sqlite3.Connection('preprocessing/data/data.db')
+        conn = sqlite3.Connection(DB_PATH)
         cur = conn.cursor()
 
         article_id = int(escape(article_id))
