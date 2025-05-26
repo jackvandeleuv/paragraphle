@@ -26,7 +26,7 @@ class Suggestion {
     async suggestionListener(event) {
         if (guessingArticle) return;
 
-        event.target.classList.add('suggestionHighlighted');
+        event.target.classList.add('boxHighlighted');
 
         if (event.target.classList.contains('topSuggestionCard')) {
             await guessArticle(topSuggestion.article_id, topSuggestion.title, topSuggestion.url);
@@ -34,7 +34,31 @@ class Suggestion {
             const suggestion = suggestions[event.target.id];
             await guessArticle(suggestion.article_id, suggestion.title, suggestion.url);
         }
-        event.target.classList.remove('suggestionHighlighted');
+        event.target.classList.remove('boxHighlighted');
+    }
+}
+
+class TopKeywordsBox {
+    constructor (keyword = '', score = -1, idx = -1) {
+        this.keyword = keyword;
+        this.score = score;
+        this.displayScore = score.toFixed(2);
+        this.idx = idx;
+    }
+
+    makeElem() {
+        const box = document.createElement('div');
+        box.classList.add('topKeywordsBox');
+
+        const boxText = document.createElement('p');
+        boxText.innerText = `(${this.idx}) ${this.keyword}`;
+        box.appendChild(boxText);
+
+        const boxScore = document.createElement('p');
+        boxScore.innerText = this.displayScore;
+        box.appendChild(boxScore);  
+
+        return box;
     }
 }
 
@@ -57,21 +81,9 @@ class TopGuessesBox {
     }
 
     getFullDisplayChunk(chunk) {
-        return chunk.slice(0, 50) + '... <span>More</span>';
+        return chunk.slice(0, 35) + '... <span>More</span>';
     }
-
-    // getDisplayButton() {
-    //     const button = document.createElement('span');
-    //     button.id = this.idx;
-    //     button.innerText = this.isOpen ? 'Less' : 'More';
-    //     button.addEventListener('click', (e) => {
-    //         topGuessesRef[e.target.id].isOpen = !topGuessesRef[e.target.id].isOpen
-    //         const topGuessesContainer = document.getElementById('topGuessesContainer');
-    //         updateContainer(topGuessesSorted, topGuessesContainer);
-    //     })
-    //     return button;
-    // }
-
+    
     getDisplayChunk() {
         const chunkText = document.createElement('p');
         chunkText.innerText = this.isOpen ? this.chunk : this.chunk.slice(0, 100) + '...';
@@ -79,19 +91,19 @@ class TopGuessesBox {
     }
 
     makeElem() { 
-        const color = calculateDistanceColor(this.distance);
+        const color = calculateDistanceBackgroundColor(this.distance);
         const topGuessesBox = document.createElement('div');
         topGuessesBox.classList.add('topGuessesBox');
-        topGuessesBox.style.backgroundColor = color;
+        topGuessesBox.style.border = `3px solid ${color}`;
 
         const innerHTML = `
                 <div class="topGuessesBoxHeader">
                     <h5>
                         ${this.title}
                     </h5>
-                    <p>
+                    <h5 style="background-color: ${color};">
                         ${this.distance}
-                    </p>
+                    </h5>
                 </div>
         `;
 
@@ -103,11 +115,20 @@ class TopGuessesBox {
         topGuessesBox.addEventListener('click', (e) => {
             console.log(e.currentTarget)
             topGuessesRef[e.currentTarget.id].isOpen = !topGuessesRef[e.currentTarget.id].isOpen
-            const topGuessesContainer = document.getElementById('topGuessesContainer');
-            updateContainer(topGuessesSorted, topGuessesContainer);
+            updateContainer(topGuessesSorted, 'topGuessesContainer');
         })
 
         return topGuessesBox;
+    }
+}
+
+class SkeletonGuessFeatureBox {
+    constructor() {}
+
+    makeElem() {
+        const skeleton = document.createElement('div');
+        skeleton.classList.add('skeletonGuessFeatureBox');
+        return skeleton;
     }
 }
 
@@ -127,11 +148,10 @@ class GuessFeatureBox {
     }
 
     makeElem() {
-        const color = calculateDistanceColor(this.distance);
+        const color = calculateDistanceBackgroundColor(this.distance);
 
         const guessFeatureBox = document.createElement('div');
         guessFeatureBox.classList.add('guessFeatureBox');
-
 
         const innerHTML = `
             <div class="guessFeatureTitle">
@@ -144,6 +164,7 @@ class GuessFeatureBox {
         `;
 
         guessFeatureBox.innerHTML = innerHTML;
+        guessFeatureBox.style.border = `3px solid ${color}`;
 
         return guessFeatureBox;
     }
@@ -158,32 +179,37 @@ function clipText(text) {
     return text;
 }
 
-function calculateDistanceColor(distance) {
-    if (distance > .7) {
-        return "var(--cold)"
-    } else if (distance > .5) {
-        return "var(--warm)"
-    } else if (distance > .3) {
-        return "var(--hot)"
+function calculateDistanceBackgroundColor(distance) {
+    console.log(`color: ${distance}`)
+    if (distance > .65) {
+        return "var(--one)"
+    } else if (distance > .50) {
+        return "var(--two)"
+    } else if (distance > .35) {
+        return "var(--three)"
+    } else if (distance > .20) {
+        return "var(--four)"
     } else {
-        return "var(--blazing)"
+        return "var(--five)"
     }
 }
 
 function calculateDistanceLabel(distance) {
-    if (distance > .7) {
-        return "Ice cold..."
-    } else if (distance > .5) {
-        return "Getting somewhere..."
-    } else if (distance > .3) {
-        return "Wait! Unless..."
+    if (distance > .65) {
+        return "Brr... you are DISTANT"
+    } else if (distance > .50) {
+        return "You are still approximately very far away"
+    } else if (distance > .35) {
+        return "Ok yeah wait you're onto something..."
+    } else if (distance > .20) {
+        return "You are GETTING THERE"
     } else {
-        return "You're in the danger zone!"
+        return "Ow oh shit ow that's hot as fuck ow"
     }
 }
 
-
-function updateContainer(items, container) {
+function updateContainer(items, containerID) {
+    const container = document.getElementById(containerID);
     container.innerHTML = '';
     for (const item of items) {
         container.appendChild(item.makeElem())
@@ -192,9 +218,6 @@ function updateContainer(items, container) {
 
 async function getSuggestion(input, limit=6) {
     if (input === '') return;
-
-    const suggestionsContainer = document.getElementById('suggestionContainer');
-    const topSuggestionBox = document.getElementById('topSuggestionBox');
 
     const url = `http://127.0.0.1:5000/suggestion/${input}/limit/${limit}`;
     const result = await fetch(url);
@@ -208,17 +231,16 @@ async function getSuggestion(input, limit=6) {
                 new Suggestion(), 
                 new Suggestion()
             ], 
-            suggestionsContainer
+            'suggestionsContainer'
         );
         return
     }
 
     const text = await result.json();
 
-
     if (text.length > 0) {
         topSuggestion = new Suggestion(...text.pop(), ...[-1, 'topSuggestionCard']);
-        updateContainer([topSuggestion], topSuggestionBox);
+        updateContainer([topSuggestion], 'topSuggestionBox');
     }
 
     let idx = 0;
@@ -233,10 +255,30 @@ async function getSuggestion(input, limit=6) {
         suggestions.push(blankSuggestion);
     }
 
-    updateContainer(suggestions, suggestionsContainer);
+    updateContainer(suggestions, 'suggestionContainer');
 }
 
-function add_form_listeners() {
+function addSidepanelButtonListeners() {
+    chunksButton = document.getElementById('chunksButton');
+    chunksButton.addEventListener('click', ((e) => {
+        pastGuessesChunkMode = true;
+        e.currentTarget.classList.add('boxHighlighted');
+        document.getElementById('keywordsButton').classList.remove('boxHighlighted');
+        document.getElementById('topGuessesArticleTitle').innerText = "Top Chunks";
+        updateTopGuessesContainer();
+    }));
+
+    keywordsButton = document.getElementById('keywordsButton');
+    keywordsButton.addEventListener('click', ((e) => {
+        pastGuessesChunkMode = false;
+        e.currentTarget.classList.add('boxHighlighted');
+        document.getElementById('chunksButton').classList.remove('boxHighlighted');
+        document.getElementById('topGuessesArticleTitle').innerText = "Top Keywords";
+        updateTopGuessesContainer();
+    }));
+}
+
+function addFormListeners() {
     const form = document.getElementById("form");
 
     form.addEventListener("input", async (event) => {
@@ -280,7 +322,6 @@ async function getWikiImage(url) {
         console.error(error);
         return defaultImage;
     }
-    // return data.originalimage?.source || data.thumbnail?.source || null;
 }
 
 function updateScoreBar() {
@@ -291,9 +332,10 @@ function updateScoreBar() {
     */
     const scoreBar = document.getElementById('scoreBar');
     scoreBar.value = Math.max(2 - bestScore, 1) - 1;
-    scoreBar.style.accentColor = calculateDistanceColor(bestScore);
+    scoreBar.style.accentColor = calculateDistanceBackgroundColor(bestScore);
  
     const scoreMessage = document.getElementById('scoreMessage');
+    console.log(`${calculateDistanceLabel(bestScore)} ${bestScore}`)
     scoreMessage.innerText = calculateDistanceLabel(bestScore);
 }
 
@@ -307,7 +349,7 @@ async function getTargetStats() {
     return responseJSON
 }
 
-async function getTokenScores() {
+async function getKeywordScores() {
     /* 
         Combine the raw counts from the target and each guess into a score-per-token.
     */
@@ -318,24 +360,6 @@ async function getTokenScores() {
     for (const token of targetStats.token_counts.keys()) {
         if (!guessStats.token_counts.has(token)) continue;
 
-        // console.log(`
-        //     --${token}--
-
-        //     target tokens: ${targetStats.n_tokens},
-        //     guess tokens: ${guessStats.n_tokens},
-
-        //     target chunks: ${targetStats.n_chunks},
-        //     guess chunks: ${guessStats.n_chunks},
-
-        //     target chunks with token: ${targetStats.chunks_with_token.get(token)},
-        //     guess chunks with token: ${guessStats.chunks_with_token.get(token)}
-        // `)
-
-        // const termFrequency = (
-        //     (targetStats.token_counts.get(token) + guessStats.token_counts.get(token)) / 
-        //     (targetStats.n_tokens + guessStats.n_tokens)
-        // );
-
         const termFrequency = (
             guessStats.token_counts.get(token) / guessStats.n_tokens
         );
@@ -344,15 +368,10 @@ async function getTokenScores() {
             (targetStats.n_chunks + guessStats.n_chunks) /
             (1 + targetStats.chunks_with_token.get(token) + guessStats.chunks_with_token.get(token))
         );
-        scores.push(
-            {
-                'token': token,
-                'score': termFrequency * inverseDocumentFrequency,
-                'termFrequency': termFrequency,
-                'IDF': inverseDocumentFrequency
-            }
-        );
+        scores.push({'keyword': token, 'score': termFrequency * inverseDocumentFrequency});
     }
+
+    scores.sort((a, b) => b.score - a.score);
 
     return scores
 }
@@ -370,7 +389,10 @@ function updateBOWStats(chunkText) {
     guessStats.n_tokens = guessStats.n_tokens + tokens.length;
 
     const seenToken = new Set();
-    for (const token of tokens) {
+    for (const rawToken of tokens) {
+        // const token = rawToken.replace(/[^A-Za-z0-9]+/g, '');
+        const token = rawToken;
+
         if (guessStats.token_counts.has(token)) {
             guessStats.token_counts.set(token, guessStats.token_counts.get(token) + 1)
         } else {
@@ -387,34 +409,60 @@ function updateBOWStats(chunkText) {
     }
 }
 
+async function updateTopGuessesContainer() {
+    if (pastGuessesChunkMode) {
+        updateContainer(topGuessesSorted, 'topGuessesContainer');
+    } else {
+        const keywordScores = await getKeywordScores();
+        const topKeywords = keywordScores.slice(0, 10).map(
+            (row, idx) => new TopKeywordsBox(row.keyword, row.score, idx + 1)
+        )
+        updateContainer(topKeywords, 'topGuessesContainer');
+    }
+}
+
+async function loadGuessHeader(url, title) {
+    const guessFeatureArticleTitle = document.getElementById('guessFeatureArticleTitle');
+    guessFeatureArticleTitle.innerText = title;
+
+    const guessImage = document.getElementById('guessImage');
+    const imagePromise = getWikiImage(url);
+    guessImage.src = await imagePromise;
+    guessImage.classList.add('guessImageLoaded');  
+}
+
+function updateGuessCount() {
+    guessCount += 1;
+    const counter = document.getElementById('guessCountMessage');
+    counter.innerText = guessCount;
+}
+
+function makeSkeletonGuessFeatureBoxes() {
+    return [
+        new SkeletonGuessFeatureBox(),
+        new SkeletonGuessFeatureBox(),
+        new SkeletonGuessFeatureBox(),
+        new SkeletonGuessFeatureBox(),
+        new SkeletonGuessFeatureBox()
+    ]
+}
+
 async function guessArticle(article_id, title, articleURL, limit=5) {
     guessingArticle = true;
 
     const url = `http://127.0.0.1:5000/guess_article/${article_id}/limit/${limit}`;
-    const guessFeatureBoxContainer = document.getElementById('guessFeatureBoxContainer');
-    const topGuessesContainer = document.getElementById('topGuessesContainer');
-    const topFeatureArticleTitle = document.getElementById('guessFeatureArticleTitle');
 
-    guessFeatureBoxContainer.innerHTML = "<progress></progress";
-    topFeatureArticleTitle.innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 10px;">
-            <img id="guessImage" class="guessImage" src=""></img>
-            <h2>${title}</h2>
-        </div>
-    `;
+    const chunksPromise = fetch(url).then(async (response) => await response.json());
 
-    const guessImage = document.getElementById('guessImage');
-    const imagePromise = getWikiImage(articleURL);
+    updateContainer(makeSkeletonGuessFeatureBoxes(), 'guessFeatureBoxContainer');
 
-    const chunks = await fetch(url).then(async (response) => await response.json());
+    loadGuessHeader(articleURL, title);
 
-    guessImage.src = await imagePromise;
-    guessImage.classList.add('guessImageLoaded');  
-    
+    const chunks = await chunksPromise;
     const guessFeatureBoxes = chunks.map(
         (chunk, i) => new GuessFeatureBox(chunk[1], chunk[2], article_id, i + 1, chunk[0])
     );
-    updateContainer(guessFeatureBoxes, guessFeatureBoxContainer);
+    updateContainer(guessFeatureBoxes, 'guessFeatureBoxContainer');
 
     for (const chunk of chunks) {
         const chunk_id = chunk[0];
@@ -423,7 +471,6 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
         updateBOWStats(chunk[1]);
 
         const nextRefId = topGuessesRef.length || 0;
-        console.log(nextRefId)
         const box = new TopGuessesBox(chunk[1], chunk[2], article_id, title, chunk_id, nextRefId);
 
         topGuessesChunkIds.add(box.chunk_id);
@@ -432,28 +479,18 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
     }
 
     topGuessesSorted.sort((a, b) => a.distance - b.distance);
-
     if (topGuessesSorted) {
         bestScore = Math.min(topGuessesSorted[0].distance, bestScore);
         updateScoreBar();
     }
 
-    updateContainer(topGuessesSorted, topGuessesContainer);
+    updateTopGuessesContainer();
 
     const topSuggestionCard = document.getElementsByClassName('topSuggestionCard');
     topSuggestionCard.backgroundColor = 'var(--light-mid)';
     topSuggestionCard.color = 'var(--dark-full)';
 
-    const tokenScoreMap = await getTokenScores();
-    const sortedTokenScores = tokenScoreMap.sort((a, b) => b.score - a.score);
-    console.log('\ntop tokens:');
-    for (const row of sortedTokenScores.slice(0, 10)) {
-        console.log(`${row.token}: ${row.score}`)
-    }
-
-    guessCount += 1;
-    const counter = document.getElementById('guessCountMessage');
-    counter.innerText = guessCount;
+    updateGuessCount();
 
     guessingArticle = false;
 }
@@ -468,7 +505,8 @@ const defaultImage = 'https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikip
 let topSuggestion = new Suggestion();
 let suggestions = [];
 
-add_form_listeners(); 
+addFormListeners(); 
+addSidepanelButtonListeners();
 
 //  Bag of words stats. Shared between target article and guess articles.
 const guessStats = {
@@ -485,4 +523,4 @@ let guessingArticle = false;
 
 let guessCount = 0;
 
-let pastGuessesChunks = true;  // Chunks or Keywords.
+let pastGuessesChunkMode = true;  // Chunks or Keywords.

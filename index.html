@@ -31,20 +31,25 @@
 
     <div class="mainPanel">
         <div id="guessFeatureArticle" class="guessFeatureArticle">
-            <div id="guessFeatureArticleTitle" class="guessFeatureArticleTitle">
+            <div id="guessFeatureArticleHeader" class="guessFeatureArticleHeader">
+                <img id="guessImage" class="guessImage" src=""></img>
+                <h2 id="guessFeatureArticleTitle"></h2>
             </div>
-            <div id="guessFeatureBoxContainer" class="guessFeatureBoxContainer"></div>
+            <div id="guessFeatureBoxContainer" class="guessFeatureBoxContainer">   
+            </div>
         </div>
 
         <div id="topGuesses" class="topGuesses">
-            <h3>Past Guesses</h3>
             <div class="topGuessesArticleHeader">
-                <button class="chunksButton suggestionHighlighted">
-                    <h3>Chunks</h3>
-                </button>
-                <button class="keywordsButton">
-                    <h3>Keywords</h3>
-                </button>
+                <h3 id="topGuessesArticleTitle">Top Chunks</h3>
+                <div class="topGuessesArticleSubHeader">
+                    <button id="chunksButton" class="chunksButton boxHighlighted">
+                        <h3>Chunks</h3>
+                    </button>
+                    <button id="keywordsButton" class="keywordsButton">
+                        <h3>Keywords</h3>
+                    </button>
+                </div>
             </div>
             
             <div id="topGuessesContainer" class="topGuessesContainer"></div>

@@ -9,6 +9,7 @@ from openai import OpenAI
 import os 
 from collections import Counter, defaultdict
 from typing import List
+import re
 
 load_dotenv()
 
@@ -17,6 +18,10 @@ DB_PATH = 'preprocessing/data/data.db'
 
 STOP_WORDS = set([
     'a',
+    'on',
+    'had',
+    'it',
+    'any',
     'and',
     'of',
     'in',
@@ -45,65 +50,14 @@ STOP_WORDS = set([
     'he',
     'his',
     'at',
-    '–'
+    '–',
+    'are',
+    'all',
+    'both',
+    'she',
+    'her',
+    'there'
 ])
-
-# def log_guess(guess_id, timestamp, ip):
-#     conn = sqlite3.Connection('stable/data/data.db')
-#     cur = conn.cursor()
-#     try:
-#         cur.execute("""
-#             insert into guesses (
-#                 guess_id, timestamp, ip
-#             ) values (?, ?, ?)
-#         """, (guess_id, timestamp, ip)
-#         )
-#         conn.commit()
-#     except Exception as e:
-#         print(e)
-
-#     conn.close()
-
-# @app.route("/ping/<width>/<height>/<innerWidth>/<innerHeight>/<pixelRatio>")
-# def ping(width, height, innerWidth, innerHeight, pixelRatio):
-#     user = request.headers.get('User-Agent', '')
-#     referer = request.headers.get('Referer', '')
-#     ip = request.remote_addr
-#     timestamp = time.time()
-
-#     conn = sqlite3.Connection('stable/data/data.db')
-#     cur = conn.cursor()
-#     try:
-#         cur.execute("""
-#             insert into ping (
-#                 user_agent,
-#                 referer,
-#                 ip,
-#                 timestamp,
-#                 width,
-#                 height,
-#                 inner_width,
-#                 inner_height,
-#                 pixelRatio
-#             ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
-#         """, (
-#             user, 
-#             referer, 
-#             ip, 
-#             timestamp, 
-#             width, 
-#             height, 
-#             innerWidth, 
-#             innerHeight, 
-#             pixelRatio
-#         ))
-#         conn.commit()
-#     except Exception as e:
-#         print(e)
-
-#     conn.close()
-
-#     return jsonify([])
 
 class Article:
     def __init__(self, article_id, clean_title, count, title, url):
@@ -158,6 +112,7 @@ def get_daily_word_stats(article_id: int):
 
     tokens = ' '.join(chunks).split()
     tokens = [token.lower().strip() for token in tokens]
+    # tokens = [re.sub(r'[^A-Za-z0-9]+', '', token) for token in tokens]
     n_tokens = len(tokens)
 
     token_counts = {token: val for token, val in Counter(tokens).items() if token not in STOP_WORDS}
@@ -223,7 +178,7 @@ CORS(app)
 
 # Global variables.
 articles = get_articles()
-DAILY_WORD = 180546
+DAILY_WORD = 165584
 daily_vec = get_daily_word_vector_live(DAILY_WORD)
 
 @app.route("/target_stats")
@@ -274,27 +229,27 @@ def guess_article(article_id, limit):
         """, (article_id, article_id))
         guess = cur.fetchall()
 
-        # result = client.embeddings.create(
-        #     input=[x[1] for x in guess],
-        #     model="text-embedding-3-small"
-        # )
+        result = client.embeddings.create(
+            input=[x[1] for x in guess],
+            model="text-embedding-3-small"
+        )
 
-        # guess_matrix = np.array([np.array(x.embedding) for x in result.data])
+        guess_matrix = np.array([np.array(x.embedding) for x in result.data])
 
-        # # Vectorized cosine distance.
-        # # Faster than iteratively calling distance.cosine().
-        # numerator = guess_matrix @ daily_vec
-        # denominator_rhs = np.sqrt(np.sum(daily_vec ** 2)) 
-        # denominator_lhs = np.sqrt(np.sum(guess_matrix ** 2, axis=1))
-        # denominator = denominator_lhs * denominator_rhs
-        # distances = 1 - (numerator / denominator)
+        # Vectorized cosine distance.
+        # Faster than iteratively calling distance.cosine().
+        numerator = guess_matrix @ daily_vec
+        denominator_rhs = np.sqrt(np.sum(daily_vec ** 2)) 
+        denominator_lhs = np.sqrt(np.sum(guess_matrix ** 2, axis=1))
+        denominator = denominator_lhs * denominator_rhs
+        distances = 1 - (numerator / denominator)
 
-        # indices = np.argsort(distances)
+        indices = np.argsort(distances)
 
-        # return [
-        #     (guess[i][0], guess[i][1], distances[i], guess[i][2]) 
-        #     for i in indices
-        # ][: limit]
+        return [
+            (guess[i][0], guess[i][1], distances[i], guess[i][2]) 
+            for i in indices
+        ][: limit]
 
         return [
             (guess[i][0], guess[i][1], 0.99, guess[i][2]) 
