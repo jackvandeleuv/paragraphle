@@ -69,7 +69,13 @@ STOP_WORDS = set([
     'new',
     'their',
     'such',
-    'not'
+    'not',
+    'been',
+    'this',
+    'can',
+    'more',
+    'many',
+    'this'
 ])
 
 class Article:
@@ -219,7 +225,7 @@ CORS(app)
 
 # Global variables.
 EMBEDDING_MODEL = "text-embedding-3-small"
-DAILY_WORD = 14666430
+DAILY_WORD = 262108
 articles = get_articles()
 daily_vec = get_daily_word_vector_live(DAILY_WORD)
 
