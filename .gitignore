@@ -1,4 +1,5 @@
 .env
+backend/.env
 data.db
 /archive
 jeo/master_season1-35.tsv
