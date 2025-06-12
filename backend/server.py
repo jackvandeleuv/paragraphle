@@ -253,6 +253,11 @@ def make_suggestion_cache(cache_limit):
 app = Flask(__name__)
 CORS(app)
 
+app.config.update(
+    DEBUG=False,      
+    ENV="production", 
+)
+
 # Global variables.
 EMBEDDING_MODEL = "text-embedding-3-small"
 DAILY_WORD = 57841
