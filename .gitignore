@@ -16,3 +16,4 @@ preprocessing/.bsp
 .metals
 preprocessing/wiki
 .bsp
+backend/data_no_chunks.db

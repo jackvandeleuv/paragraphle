@@ -14,7 +14,7 @@ import re
 load_dotenv()
 
 client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
-DB_PATH = 'data.db'
+DB_PATH = os.environ.get('DB_PATH')
 
 STOP_WORDS = set([
     'a',
@@ -82,13 +82,30 @@ class Article:
     def __init__(self, article_id, clean_title, count, title, url):
         self.clean_title = escape(clean_title)  # Equivalent to: escape(title.lower().strip())
         self.count = count
-        self.data = (article_id, clean_title, count, title, url)
+        self.article_id = article_id
+        self.title = title
+        self.url = url
     
     def unpack(self) -> str:
         return (self.article_id, self.clean_title, self.count, self.title, self.url)
     
     def deep_copy(self):
-        return Article(*deepcopy(self.data))
+        return Article(
+            self.article_id, 
+            self.clean_title, 
+            self.count, 
+            self.title, 
+            self.url
+        )
+    
+    def to_json(self):
+        return {
+            'article_id': self.article_id, 
+            'clean_title': self.clean_title, 
+            'count': self.count, 
+            'title': self.title, 
+            'url': self.url
+        }
 
 def get_articles() -> List[Article]:
     conn = sqlite3.Connection(DB_PATH)
@@ -220,14 +237,29 @@ def get_cached_embedding(conn, article_id):
         return None
     return np.array([np.frombuffer(row[0]) for row in rows])
 
+def make_suggestion_cache(cache_limit):
+    strings = list('abcdefghijklmnopqrstuvwxyz')
+
+    cache = {}
+
+    for string1 in strings:
+        cache[string1] = bin_prefix_search(articles, string1, cache_limit)
+        for string2 in strings:
+            cache[string1 + string2] = bin_prefix_search(articles, string1 + string2, cache_limit)
+ 
+    return cache
+
+
 app = Flask(__name__)
 CORS(app)
 
 # Global variables.
 EMBEDDING_MODEL = "text-embedding-3-small"
-DAILY_WORD = 262108
+DAILY_WORD = 57841
+CACHE_LIMIT = 50
 articles = get_articles()
 daily_vec = get_daily_word_vector_live(DAILY_WORD)
+suggestion_cache = make_suggestion_cache(CACHE_LIMIT)
 
 @app.route("/target_stats")
 def target_stats():
@@ -242,12 +274,16 @@ def suggestion(q, limit):
     except ValueError as e:
         print(e)
         return "Invalid ID.", 404
+    
+    if (cached_result := suggestion_cache.get(q, [])) and limit < CACHE_LIMIT:
+        return jsonify([row.to_json() for row in cached_result[-limit :]])
 
     result = bin_prefix_search(articles, q, limit)
 
     if result:
-        return jsonify([row.data for row in result]), 200
-    return "No matching article.", 404
+        return jsonify([row.to_json() for row in result]), 200
+    
+    return "No matching article.", 200
     
 @app.route("/guess_article/<article_id>/limit/<limit>")
 def guess_article(article_id, limit):
@@ -297,10 +333,15 @@ def guess_article(article_id, limit):
 
         indices = np.argsort(distances)
 
-        return [
-            (guess[i][0], guess[i][1], distances[i], guess[i][2]) 
-            for i in indices
-        ][: limit]
+        return jsonify([
+            {
+                'chunk_id': guess[i][0], 
+                'chunk': guess[i][1], 
+                'distance': distances[i], 
+                'url': guess[i][2]
+            }
+            for i in indices[: limit]
+        ])
         
     except Exception as e:
         print(e)
