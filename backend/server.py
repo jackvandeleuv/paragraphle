@@ -323,6 +323,7 @@ def guess_article(article_id, limit):
         guess = cur.fetchall()
 
         guess_matrix = get_cached_embedding(conn, article_id)
+        print('guess_matrix is none', guess_matrix is None)
         if guess_matrix is None:
             result = client.embeddings.create(input=[x[1] for x in guess], model=EMBEDDING_MODEL)
             cache_embedding(conn, EMBEDDING_MODEL, article_id, result.data, guess)
