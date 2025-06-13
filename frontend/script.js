@@ -223,7 +223,7 @@ function updateContainer(items, containerID) {
 async function getSuggestion(input, limit=6) {
     if (input === '') return;
 
-    const url = `http://127.0.0.1:5000/suggestion/${input}/limit/${limit}`;
+    const url = `http://127.0.0.1:8000/suggestion/${input}/limit/${limit}`;
     const result = await fetch(url);
     
     if (!result.ok) {
@@ -243,14 +243,32 @@ async function getSuggestion(input, limit=6) {
     const text = await result.json();
 
     if (text.length > 0) {
-        topSuggestion = new Suggestion(...text.pop(), ...[-1, 'topSuggestionCard']);
+        const first_row = text.pop();
+        topSuggestion = new Suggestion(
+            first_row.article_id,
+            first_row.clean_title,
+            first_row.count, 
+            first_row.title, 
+            first_row.url, 
+            -1, 
+            'topSuggestionCard'
+        );
         updateContainer([topSuggestion], 'topSuggestionBox');
     }
 
     let idx = 0;
     suggestions = [];
     while (text.length > 0) {
-        suggestions.push(new Suggestion(...text.pop(), ...[idx++, 'suggestionCard']))
+        const row = text.pop();
+        suggestions.push(new Suggestion(
+            row.article_id,
+            row.clean_title,
+            row.count, 
+            row.title, 
+            row.url, 
+            idx++, 
+            'suggestionCard'
+        ));
     }
 
     while (suggestions.length < limit - 1) {
@@ -352,7 +370,7 @@ function updateScoreBar() {
 }
 
 async function getTargetStats() {
-    const response = await fetch('http://127.0.0.1:5000/target_stats');
+    const response = await fetch('http://127.0.0.1:8000/target_stats');
     const responseJSON = await response.json();
 
     responseJSON.token_counts = new Map(Object.entries(responseJSON.token_counts));
@@ -462,7 +480,7 @@ function makeSkeletonGuessFeatureBoxes() {
 async function guessArticle(article_id, title, articleURL, limit=5) {
     guessingArticle = true;
 
-    const url = `http://127.0.0.1:5000/guess_article/${article_id}/limit/${limit}`;
+    const url = `http://127.0.0.1:8000/guess_article/${article_id}/limit/${limit}`;
 
     const chunksPromise = fetch(url);
 
