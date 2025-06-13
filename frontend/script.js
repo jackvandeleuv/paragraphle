@@ -497,8 +497,10 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
     }
     const chunks = await chunksResponse.json();
 
+    console.log(chunks)
+
     const guessFeatureBoxes = chunks.map(
-        (chunk, i) => new GuessFeatureBox(chunk[1], chunk[2], article_id, i + 1, chunk[0])
+        (chunk, i) => new GuessFeatureBox(chunk.chunk, chunk.distance, article_id, i + 1, chunk[0])
     );
     updateContainer(guessFeatureBoxes, 'guessFeatureBoxContainer');
 
@@ -506,10 +508,10 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
         const chunk_id = chunk[0];
         if (topGuessesChunkIds.has(chunk_id)) continue;
 
-        updateBOWStats(chunk[1]);
+        updateBOWStats(chunk.chunk);
 
         const nextRefId = topGuessesRef.length || 0;
-        const box = new TopGuessesBox(chunk[1], chunk[2], article_id, title, chunk_id, nextRefId);
+        const box = new TopGuessesBox(chunk.chunk, chunk.distance, article_id, title, chunk_id, nextRefId);
 
         topGuessesChunkIds.add(box.chunk_id);
         topGuessesSorted.push(box);
