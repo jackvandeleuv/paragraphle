@@ -18,3 +18,4 @@ preprocessing/wiki
 .bsp
 backend/data_no_chunks.db
 backend/.venv
+testing

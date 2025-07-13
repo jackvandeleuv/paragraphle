@@ -226,11 +226,6 @@ async function getSuggestion(input, limit=6) {
     const resultJSON = await result.json();
     const text = resultJSON.data;
 
-    console.log('resultJSON:')
-    console.log(resultJSON);
-    console.log('resultJSON.has_match === true')
-    console.log(resultJSON.has_match === true)
-
     if (!result.ok || !resultJSON.has_match) {
         updateContainer(
             [
@@ -564,7 +559,7 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
 }
 
 // Globals.
-const API_URI = 'http://165.22.10.98/'
+const API_URI = 'http://api.hoiuyg324yjg4o26ku5h63.uk/'
 
 const topGuessesSorted = [];
 const topGuessesRef = [];
