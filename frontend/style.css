@@ -1,5 +1,9 @@
+[hidden] { display: none !important; }
+
 :root {
     --accent: rgb(179, 167, 254);
+    --accent-dark: rgb(158, 144, 248);
+    --win-modal: rgb(246, 177, 117);
     --light-full: rgb(243, 234, 234);
     --dark-full: rgb(18, 18, 18);
     --light-mid: rgb(228, 228, 222);
@@ -194,8 +198,22 @@ h5 {
 }
 
 .guessImage {
-    max-height: 200px;
-    height: 200px;
+    max-height: 150px;
+    height: 150px;
+}
+
+@media (max-width: 768px) {
+    .guessImage {
+        max-height: 100px;
+        height: 100px; 
+    }
+}
+
+@media (max-height: 600px) {
+    .guessImage {
+        max-height: 100px;
+        height: 100px; 
+    }
 }
 
 .guessImageLoaded {
@@ -353,7 +371,6 @@ h5 {
     border: 1px solid var(--dark-mid);
     border-radius: 3px;
     background-color: var(--light-mid);
-    padding: 5px;
     min-height: 28px;
 }
 
@@ -384,4 +401,183 @@ h5 {
     border-radius: 3px;
     border: 2px solid var(--dark-full);
     background-color: var(--light-full);
+}
+
+/* Win Modal */
+
+.winModal {
+    position: absolute;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.winModalInner {
+    background-color: var(--win-modal);
+    height: 30%;
+    width: 40%;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    padding-left: 10%;
+    padding-right: 10%;
+    gap: 3px;
+    user-select: none;
+}
+
+.winModalTitle {
+    color: var(--dark-full);
+    font-weight: bold;
+    font-size: 40px;
+}
+
+.winModalContent {
+    color: var(--dark-full);
+    font-size: 20px;
+}
+
+@media (max-width: 768px) {
+    .winModalInner { 
+        height: 30%;
+        width: 80%; 
+        padding-left: 5%;
+        padding-right: 5%;
+    }
+
+    .winModalTitle {
+        font-size: 30px;
+    }
+
+    .winModalContent {
+        font-size: 20px;
+    }
+}
+
+/* Intro Modal  */
+
+.introModal {
+    background-color: var(--accent-dark);
+    opacity: 95%;
+    position: absolute;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.introModalInner {
+    height: 70%;
+    width: 70%;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    padding-left: 10%;
+    padding-right: 10%;
+    gap: 8px;
+    user-select: none;
+}
+
+.introModalTitle {
+    color: var(--light-full);
+    font-weight: bold;
+    font-size: 40px;
+}
+
+.introModalContent {
+    color: var(--light-full);
+    font-size: 20px;
+}
+
+@media (max-width: 768px) {
+    .introModalInner { 
+        padding-left: 5%;
+        padding-right: 5%;
+        height: 80%;
+        width: 80%;
+    }
+}
+
+.playButton {
+    margin-top: 20px;
+    font-size: 18px;
+    padding: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+    background-color: var(--accent-dark);
+    color: var(--light-full);
+    border: 1px var(--light-full) solid;
+    border-radius: 10px;
+}
+
+.playButton:hover {
+    background-color: var(--accent);
+}
+
+/* Screen Size Modal  */
+
+.screenWidthModal {
+    /* display: none; */
+    background-color: var(--accent-dark);
+    position: absolute;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.screenWidthModalInner {
+    height: 70%;
+    width: 70%;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    padding-left: 10%;
+    padding-right: 10%;
+    gap: 8px;
+    user-select: none;
+}
+
+@media (max-width: 480px) {
+    .screenWidthModal {
+        display: flex !important;
+    }
+
+    .screenWidthModalInner { 
+        padding-left: 5%;
+        padding-right: 5%;
+        height: 80%;
+        width: 80%;
+    }
+}
+
+@media (max-height: 550px) {
+    .screenWidthModal {
+        display: flex !important;
+    }
+
+    .screenWidthModalInner { 
+        padding-left: 5%;
+        padding-right: 5%;
+        height: 80%;
+        width: 80%;
+    }
 }

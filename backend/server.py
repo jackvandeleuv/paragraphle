@@ -2,14 +2,14 @@ from flask import Flask, jsonify
 import sqlite3
 from markupsafe import escape
 from flask_cors import CORS
-from copy import deepcopy
 import numpy as np
 from dotenv import load_dotenv
 from openai import OpenAI
 import os 
 from collections import Counter, defaultdict
 from typing import List
-import re
+import json
+import time
 
 load_dotenv()
 
@@ -17,65 +17,26 @@ client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 DB_PATH = os.environ.get('DB_PATH')
 
 STOP_WORDS = set([
-    'a',
-    'on',
-    'had',
-    'it',
-    'any',
-    'and',
-    'of',
-    'in',
-    'is',
-    'as',
-    'was',
-    'or',
-    'by',
-    'for',
-    'that',
-    'from',
-    'be',
-    'which',
-    'use', 
-    'they',
-    'known',
-    'may', 
-    'other',
-    'has', 
-    'into', 
-    'the',
-    'with',
-    'an',
-    'to',
-    'its',
-    'he',
-    'his',
-    'at',
-    '–',
-    'are',
-    'all',
-    'both',
-    'she',
-    'her',
-    'there',
-    'were',
-    'during',
-    'used',
-    'have',
-    'also',
-    'these',
-    'after',
-    'who',
-    'but',
-    'new',
-    'their',
-    'such',
-    'not',
-    'been',
-    'this',
-    'can',
-    'more',
-    'many',
-    'this'
+    'a', 'on', 'had',
+    'it', 'any', 'and',
+    'of', 'in', 'is',
+    'as', 'was', 'or',
+    'by', 'for', 'that',
+    'from', 'be', 'which',
+    'use',  'they', 'known',
+    'may',  'other', 'has', 
+    'into',  'the', 'with',
+    'an', 'to', 'its',
+    'he', 'his', 'at',
+    '–', 'are', 'all',
+    'both', 'she', 'her',
+    'there', 'were', 'during',
+    'used', 'have', 'also',
+    'these', 'after', 'who',
+    'but', 'new', 'their',
+    'such', 'not', 'been',
+    'this', 'can', 'more',
+    'many', 'this'
 ])
 
 class Article:
@@ -123,17 +84,8 @@ def get_articles() -> List[Article]:
 def get_daily_word_vector_live(article_id: int):
     conn = sqlite3.Connection(DB_PATH)
     cur = conn.cursor()
-    cur.execute("""
-        select chunk
-        from chunks
-        where article_id == ?
-    """, (article_id,))
-    chunks = [x[0] for x in cur.fetchall()]
-    result = client.embeddings.create(
-        input=chunks,
-        model="text-embedding-3-small"
-    )
-    return np.array([np.array(x.embedding) for x in result.data]).mean(axis=0)
+    _, guess_matrix = get_guess_info(conn, cur, article_id)
+    return guess_matrix.mean(axis=0)
 
 def get_daily_word_stats(article_id: int):
     conn = sqlite3.Connection(DB_PATH)
@@ -249,6 +201,47 @@ def make_suggestion_cache(cache_limit):
  
     return cache
 
+def get_target_word_choices():
+    data = []
+    with open('ai_targets.jsonl', 'r', encoding='utf-8') as file:
+        for line in file:
+            data.append(json.loads(line)['article_id'])
+    return data
+
+def get_daily_word():
+    index = int(int(time.time()) / (60 * 60 * 24))
+    return target_word_choices[index % len(target_word_choices)]
+
+def get_daily_word_vec():
+    index = int(int(time.time()) / (60 * 60 * 24))
+    return daily_vec_choices[index % len(daily_vec_choices)]
+
+def get_guess_info(conn, cur, article_id):
+    cur.execute("""
+        select chunk_id, chunk, url
+        from (
+            select chunk_id, chunk, article_id
+            from chunks
+            where article_id == ?
+        ) as c
+        join (
+            select article_id, url
+            from articles
+            where article_id == ?    
+        ) as a
+            on c.article_id == a.article_id
+        order by chunk_id desc
+    """, (article_id, article_id))
+    guess = cur.fetchall()
+
+    guess_matrix = get_cached_embedding(conn, article_id)
+    if guess_matrix is None:
+        result = client.embeddings.create(input=[x[1] for x in guess], model=EMBEDDING_MODEL)
+        cache_embedding(conn, EMBEDDING_MODEL, article_id, result.data, guess)
+        guess_matrix = np.array([np.array(x.embedding) for x in result.data])
+
+    return guess, guess_matrix
+
 
 app = Flask(__name__)
 CORS(app)
@@ -258,17 +251,24 @@ app.config.update(
     ENV="production", 
 )
 
+
 # Global variables.
 EMBEDDING_MODEL = "text-embedding-3-small"
-DAILY_WORD = 57841
+target_word_choices = get_target_word_choices()
 CACHE_LIMIT = 50
 articles = get_articles()
-daily_vec = get_daily_word_vector_live(DAILY_WORD)
+
+daily_vec_choices = []
+for i, article_id in enumerate(target_word_choices):
+    print(f"Loading vectors: {i + 1} / {len(target_word_choices)}")
+    daily_vec_choices.append(get_daily_word_vector_live(article_id))
+
 suggestion_cache = make_suggestion_cache(CACHE_LIMIT)
+
 
 @app.route("/target_stats")
 def target_stats():
-    return jsonify(get_daily_word_stats(DAILY_WORD)), 200
+    return jsonify(get_daily_word_stats(get_daily_word())), 200
 
 @app.route("/suggestion/<q>/limit/<limit>")
 def suggestion(q, limit):
@@ -281,56 +281,41 @@ def suggestion(q, limit):
         return "Invalid ID.", 404
     
     if (cached_result := suggestion_cache.get(q, [])) and limit < CACHE_LIMIT:
-        return jsonify([row.to_json() for row in cached_result[-limit :]])
+        return jsonify({
+            'has_match': True, 
+            'data': [row.to_json() for row in cached_result[-limit :]]
+        })
 
     result = bin_prefix_search(articles, q, limit)
 
     if result:
-        return jsonify([row.to_json() for row in result]), 200
+        return jsonify({
+            'has_match': True, 
+            'data': [row.to_json() for row in result]
+        }), 200
     
-    return "No matching article.", 200
+    return jsonify({
+        'has_match': False, 
+        'data': []
+    }), 200
     
 @app.route("/guess_article/<article_id>/limit/<limit>")
 def guess_article(article_id, limit):
     try:
+        article_id = int(escape(article_id))
+        limit = int(escape(limit))
+
         conn = sqlite3.Connection(DB_PATH)
         cur = conn.cursor()
 
-        article_id = int(escape(article_id))
-        if article_id == -1:
+        if article_id < 0:
             return 'Invalid article ID.', 404
         
-        limit = int(escape(limit))
-
-        if article_id == DAILY_WORD:
-            return jsonify([(-1, 'YOU WON!', 0)])
-
-        cur.execute("""
-            select chunk_id, chunk, url
-            from (
-                select chunk_id, chunk, article_id
-                from chunks
-                where article_id == ?
-            ) as c
-            join (
-                select article_id, url
-                from articles
-                where article_id == ?    
-            ) as a
-                on c.article_id == a.article_id
-            order by chunk_id desc
-        """, (article_id, article_id))
-        guess = cur.fetchall()
-
-        guess_matrix = get_cached_embedding(conn, article_id)
-        print('guess_matrix is none', guess_matrix is None)
-        if guess_matrix is None:
-            result = client.embeddings.create(input=[x[1] for x in guess], model=EMBEDDING_MODEL)
-            cache_embedding(conn, EMBEDDING_MODEL, article_id, result.data, guess)
-            guess_matrix = np.array([np.array(x.embedding) for x in result.data])
+        guess, guess_matrix = get_guess_info(conn, cur, article_id)
 
         # Vectorized cosine distance.
         # Faster than iteratively calling distance.cosine().
+        daily_vec = get_daily_word_vec()
         numerator = guess_matrix @ daily_vec
         denominator_rhs = np.sqrt(np.sum(daily_vec ** 2)) 
         denominator_lhs = np.sqrt(np.sum(guess_matrix ** 2, axis=1))
@@ -344,7 +329,8 @@ def guess_article(article_id, limit):
                 'chunk_id': guess[i][0], 
                 'chunk': guess[i][1], 
                 'distance': distances[i], 
-                'url': guess[i][2]
+                'url': guess[i][2],
+                'is_win': article_id == get_daily_word()
             }
             for i in indices[: limit]
         ])

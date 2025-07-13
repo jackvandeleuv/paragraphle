@@ -189,8 +189,6 @@ function calculateDistanceBackgroundColor(distance) {
         return "var(--three)"
     } else if (distance > .20) {
         return "var(--four)"
-    } else if (distance === 0) {
-        return "var(--accent)"
     } else {
         return "var(--five)"
     }
@@ -225,8 +223,15 @@ async function getSuggestion(input, limit=6) {
 
     const url = `http://127.0.0.1:8000/suggestion/${input}/limit/${limit}`;
     const result = await fetch(url);
-    
-    if (!result.ok) {
+    const resultJSON = await result.json();
+    const text = resultJSON.data;
+
+    console.log('resultJSON:')
+    console.log(resultJSON);
+    console.log('resultJSON.has_match === true')
+    console.log(resultJSON.has_match === true)
+
+    if (!result.ok || !resultJSON.has_match) {
         updateContainer(
             [
                 new Suggestion(), 
@@ -239,8 +244,6 @@ async function getSuggestion(input, limit=6) {
         );
         return
     }
-
-    const text = await result.json();
 
     if (text.length > 0) {
         const first_row = text.pop();
@@ -301,17 +304,11 @@ function addSidepanelButtonListeners() {
 
     expandButton = document.getElementById('expandButton');
     expandButton.addEventListener('click', (_) => {
-        for (const box of topGuessesSorted) box.isOpen = true;
-        defaultBoxIsOpen = true;
+        for (const box of topGuessesSorted) box.isOpen = !box.isOpen;
+        defaultBoxIsOpen = !defaultBoxIsOpen;
         updateTopGuessesContainer();
+        document.getElementById('expandButtonMessage').innerHTML = defaultBoxIsOpen ? 'Collapse All' : 'Expand All';
     });
-
-    collapseButton = document.getElementById('collapseButton');
-    collapseButton.addEventListener('click', ((_) => {
-        for (const box of topGuessesSorted) box.isOpen = false;
-        defaultBoxIsOpen = false;
-        updateTopGuessesContainer();
-    }));
 }
 
 function addFormListeners() {
@@ -338,6 +335,18 @@ function addFormListeners() {
 
         formInput.disabled = false;
         formInput.focus();
+    })
+}
+
+function addModalListeners() {
+    document.getElementById('winModal').addEventListener("click", async (event) => {
+        event.preventDefault();
+        document.getElementById('winModal').hidden = true;
+    })
+
+    document.getElementById('introModal').addEventListener("click", async (event) => {
+        event.preventDefault();
+        document.getElementById('introModal').hidden = true;
     })
 }
 
@@ -477,7 +486,24 @@ function makeSkeletonGuessFeatureBoxes() {
     ]
 }
 
+function renderWin(title) {
+    isWin = true;
+
+    const form = document.getElementById('form-input')
+    form.disabled = true;
+    form.value = '';
+
+    document.getElementById('scoreBar').value = 1;
+    document.getElementById('scoreMessage').innerHTML = `That wasn't too hard, was it?`;
+
+    document.getElementById('winModal').hidden = false;
+    document.getElementById('winModalGuesses').innerHTML = guessCount;
+    document.getElementById('winModalArticle').innerHTML = title;
+}
+
 async function guessArticle(article_id, title, articleURL, limit=5) {
+    if (isWin) return;
+
     guessingArticle = true;
 
     const url = `http://127.0.0.1:8000/guess_article/${article_id}/limit/${limit}`;
@@ -497,15 +523,13 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
     }
     const chunks = await chunksResponse.json();
 
-    console.log(chunks)
-
     const guessFeatureBoxes = chunks.map(
         (chunk, i) => new GuessFeatureBox(chunk.chunk, chunk.distance, article_id, i + 1, chunk[0])
     );
     updateContainer(guessFeatureBoxes, 'guessFeatureBoxContainer');
 
     for (const chunk of chunks) {
-        const chunk_id = chunk[0];
+        const chunk_id = chunk.chunk_id;
         if (topGuessesChunkIds.has(chunk_id)) continue;
 
         updateBOWStats(chunk.chunk);
@@ -531,6 +555,10 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
     topSuggestionCard.color = 'var(--dark-full)';
 
     updateGuessCount();
+
+    if (chunks.length > 0 && chunks[0].is_win === true) {
+        renderWin(title);
+    }
 
     guessingArticle = false;
 }
@@ -564,5 +592,10 @@ let pastGuessesChunkMode = true;  // Chunks or Keywords.
 
 let defaultBoxIsOpen = false;
 
+let isWin = false;
+
 addFormListeners(); 
 addSidepanelButtonListeners();
+addModalListeners();
+
+document.getElementById('dailyNumber').innerHTML = Math.floor(Date.now() / (1000 * 60 * 60 * 24)) - 20280;

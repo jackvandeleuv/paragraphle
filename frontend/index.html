@@ -8,13 +8,39 @@
 </head>
 <body>
     <header>
-        <h1>Find the Article</h1>
-        <!-- <p>May 17, 2025</p> -->
+        <h1>Find the Article #<span id="dailyNumber"></span></h1>
     </header>
+
+    <div id="screenWidthModal" class="screenWidthModal" hidden>
+        <div class="screenWidthModalInner">
+            <p class="introModalTitle">Screen Too Small</p>
+            <p class="introModalContent">
+                This game does not currently support small screens.
+            </p>
+        </div>   
+    </div>
+
+    <div id="introModal" class="introModal">
+        <div class="introModalInner">
+            <p class="introModalTitle">Find the Article!</p>
+            <p class="introModalContent">
+                Try to guess the article of the day. Every time you guess, you'll see the 
+                semantic distance between your guess and the article of the day.
+            </p>
+            <button class="playButton">Play</button>
+        </div>   
+    </div>
+
+    <div id="winModal" class="winModal" hidden>
+        <div class="winModalInner">
+            <p class="winModalTitle" id="winModalArticle"></p>
+            <p class="winModalContent">You got it! Guesses: <span id="winModalGuesses" class="winModalContentBold">0</span></p>
+        </div>   
+    </div>
 
     <div class="subHeader">
         <div class="scoreBox">
-            <h4 id="scoreMessage">Miles away...</h4>
+            <h4 id="scoreMessage" class="scoreMessage">Miles away...</h4>
             <progress 
                 max="1" 
                 value="0" 
@@ -54,10 +80,7 @@
 
             <div class="topGuessesArticleSubHeaderSmall">
                 <button id="expandButton" class="expandButton">
-                    <h3>Expand All</h3>
-                </button>
-                <button id="collapseButton" class="collapseButton">
-                    <h3>Collapse All</h3>
+                    <h3 id="expandButtonMessage">Expand All</h3>
                 </button>
             </div>
             
