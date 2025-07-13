@@ -221,7 +221,7 @@ function updateContainer(items, containerID) {
 async function getSuggestion(input, limit=6) {
     if (input === '') return;
 
-    const url = `http://127.0.0.1:8000/suggestion/${input}/limit/${limit}`;
+    const url = `${API_URI}/suggestion/${input}/limit/${limit}`;
     const result = await fetch(url);
     const resultJSON = await result.json();
     const text = resultJSON.data;
@@ -379,7 +379,7 @@ function updateScoreBar() {
 }
 
 async function getTargetStats() {
-    const response = await fetch('http://127.0.0.1:8000/target_stats');
+    const response = await fetch(`${API_URI}/target_stats`);
     const responseJSON = await response.json();
 
     responseJSON.token_counts = new Map(Object.entries(responseJSON.token_counts));
@@ -506,7 +506,7 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
 
     guessingArticle = true;
 
-    const url = `http://127.0.0.1:8000/guess_article/${article_id}/limit/${limit}`;
+    const url = `${API_URI}/guess_article/${article_id}/limit/${limit}`;
 
     const chunksPromise = fetch(url);
 
@@ -564,6 +564,8 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
 }
 
 // Globals.
+const API_URI = 'http://165.22.10.98/'
+
 const topGuessesSorted = [];
 const topGuessesRef = [];
 const topGuessesChunkIds = new Set();
