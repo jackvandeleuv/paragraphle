@@ -226,11 +226,6 @@ async function getSuggestion(input, limit=6) {
     const resultJSON = await result.json();
     const text = resultJSON.data;
 
-    console.log('resultJSON:')
-    console.log(resultJSON);
-    console.log('resultJSON.has_match === true')
-    console.log(resultJSON.has_match === true)
-
     if (!result.ok || !resultJSON.has_match) {
         updateContainer(
             [
