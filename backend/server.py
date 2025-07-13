@@ -267,7 +267,6 @@ daily_vec_choices = np.load('ai_target_vecs.npy')
 
 suggestion_cache = make_suggestion_cache(CACHE_LIMIT)
 
-
 @app.route("/target_stats")
 def target_stats():
     return jsonify(get_daily_word_stats(get_daily_word())), 200
