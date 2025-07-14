@@ -258,11 +258,11 @@ target_word_choices = get_target_word_choices()
 CACHE_LIMIT = 50
 articles = get_articles()
 
-daily_vec_choices = []
-for i, article_id in enumerate(target_word_choices):
-    print(f"Loading vectors: {i + 1} / {len(target_word_choices)}")
-    daily_vec_choices.append(get_daily_word_vector_live(article_id))
-np.save('ai_target_vecs', np.array(daily_vec_choices))
+# daily_vec_choices = []
+# for i, article_id in enumerate(target_word_choices):
+#     print(f"Loading vectors: {i + 1} / {len(target_word_choices)}")
+#     daily_vec_choices.append(get_daily_word_vector_live(article_id))
+# np.save('ai_target_vecs', np.array(daily_vec_choices))
 daily_vec_choices = np.load('ai_target_vecs.npy')
 
 suggestion_cache = make_suggestion_cache(CACHE_LIMIT)
