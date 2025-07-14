@@ -19,4 +19,4 @@ preprocessing/wiki
 backend/data_no_chunks.db
 backend/.venv
 testing
-backend/__pycache__/server.cpython-312.pyc
+backend/__pycache__
