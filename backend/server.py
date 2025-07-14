@@ -244,7 +244,11 @@ def get_guess_info(conn, cur, article_id):
 
 
 app = Flask(__name__)
-CORS(app)
+
+CORS(app,
+     resources={r"/suggestion/*": {"origins": "https://jackvandeleuv.github.io"}},
+     methods=["GET", "OPTIONS"],
+     allow_headers=["Content-Type"])
 
 app.config.update(
     DEBUG=False,      
