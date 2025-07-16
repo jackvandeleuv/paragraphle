@@ -559,7 +559,7 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
 }
 
 // Globals.
-const API_URI = 'https://api.jackvandeleuv.com'
+const API_URI = 'https://api.wiki-guess.com'
 
 const topGuessesSorted = [];
 const topGuessesRef = [];
