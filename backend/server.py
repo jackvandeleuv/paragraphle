@@ -246,7 +246,7 @@ def get_guess_info(conn, cur, article_id):
 app = Flask(__name__)
 
 CORS(app,
-     resources={r"/suggestion/*": {"origins": "https://wiki-guess.com"}},
+     resources={r"/suggestion/*": {"origins": "https://jackvandeleuv.github.io/wiki-guess/"}},
      methods=["GET", "OPTIONS"],
      allow_headers=["Content-Type"])
 
