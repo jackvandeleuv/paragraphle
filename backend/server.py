@@ -248,7 +248,7 @@ app = Flask(__name__)
 CORS(
     app,
     resources={r"/.*": {
-        "origins": "https://jackvandeleuv.github.io/wiki-guess/",
+        "origins": "https://jackvandeleuv.github.io",
     }},
     methods=["GET", "OPTIONS"],
     allow_headers=["Content-Type"]
