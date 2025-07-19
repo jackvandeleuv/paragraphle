@@ -279,23 +279,23 @@ async function getSuggestion(input, limit=6) {
 }
 
 function addSidepanelButtonListeners() {
-    chunksButton = document.getElementById('chunksButton');
-    chunksButton.addEventListener('click', ((e) => {
-        pastGuessesChunkMode = true;
-        e.currentTarget.classList.add('boxHighlighted');
-        document.getElementById('keywordsButton').classList.remove('boxHighlighted');
-        document.getElementById('topGuessesArticleTitle').innerText = "Top Chunks";
-        updateTopGuessesContainer();
-    }));
+    // chunksButton = document.getElementById('chunksButton');
+    // chunksButton.addEventListener('click', ((e) => {
+    //     pastGuessesChunkMode = true;
+    //     e.currentTarget.classList.add('boxHighlighted');
+    //     document.getElementById('keywordsButton').classList.remove('boxHighlighted');
+    //     document.getElementById('topGuessesArticleTitle').innerText = "Top Chunks";
+    //     updateTopGuessesContainer();
+    // }));
 
-    keywordsButton = document.getElementById('keywordsButton');
-    keywordsButton.addEventListener('click', ((e) => {
-        pastGuessesChunkMode = false;
-        e.currentTarget.classList.add('boxHighlighted');
-        document.getElementById('chunksButton').classList.remove('boxHighlighted');
-        document.getElementById('topGuessesArticleTitle').innerText = "Top Keywords";
-        updateTopGuessesContainer();
-    }));
+    // keywordsButton = document.getElementById('keywordsButton');
+    // keywordsButton.addEventListener('click', ((e) => {
+    //     pastGuessesChunkMode = false;
+    //     e.currentTarget.classList.add('boxHighlighted');
+    //     document.getElementById('chunksButton').classList.remove('boxHighlighted');
+    //     document.getElementById('topGuessesArticleTitle').innerText = "Top Keywords";
+    //     updateTopGuessesContainer();
+    // }));
 
     expandButton = document.getElementById('expandButton');
     expandButton.addEventListener('click', (_) => {
@@ -444,15 +444,18 @@ function updateBOWStats(chunkText) {
 }
 
 async function updateTopGuessesContainer() {
-    if (pastGuessesChunkMode) {
-        updateContainer(topGuessesSorted, 'topGuessesContainer');
-    } else {
-        const keywordScores = await getKeywordScores();
-        const topKeywords = keywordScores.slice(0, 10).map(
-            (row, idx) => new TopKeywordsBox(row.keyword, row.score, idx + 1)
-        )
-        updateContainer(topKeywords, 'topGuessesContainer');
-    }
+    // Removed keyword mode for now.
+    updateContainer(topGuessesSorted, 'topGuessesContainer');
+
+    // if (pastGuessesChunkMode) {
+    //     updateContainer(topGuessesSorted, 'topGuessesContainer');
+    // } else {
+    //     const keywordScores = await getKeywordScores();
+    //     const topKeywords = keywordScores.slice(0, 10).map(
+    //         (row, idx) => new TopKeywordsBox(row.keyword, row.score, idx + 1)
+    //     )
+    //     updateContainer(topKeywords, 'topGuessesContainer');
+    // }
 }
 
 async function loadGuessHeader(url, title) {
@@ -559,7 +562,8 @@ async function guessArticle(article_id, title, articleURL, limit=5) {
 }
 
 // Globals.
-const API_URI = 'https://api.wiki-guess.com'
+// const API_URI = 'https://api.wiki-guess.com'
+const API_URI = 'http://localhost:8000'
 
 const topGuessesSorted = [];
 const topGuessesRef = [];

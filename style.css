@@ -232,6 +232,7 @@ h5 {
 /* TOP GUESSES */
 
 .topGuesses {
+    width: 335px;
     display: flex;
     flex-direction: column;
     overflow-y: hidden;

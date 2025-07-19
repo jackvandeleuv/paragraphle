@@ -218,14 +218,14 @@ def get_daily_word_vec():
 
 def get_guess_info(conn, cur, article_id):
     cur.execute("""
-        select chunk_id, chunk, url
+        select chunk_id, chunk, url, title
         from (
             select chunk_id, chunk, article_id
             from chunks
             where article_id == ?
         ) as c
         join (
-            select article_id, url
+            select article_id, url, title
             from articles
             where article_id == ?    
         ) as a
@@ -248,7 +248,10 @@ app = Flask(__name__)
 CORS(
     app,
     resources={r"/.*": {
-        "origins": "https://jackvandeleuv.github.io",
+        "origins": [
+            "https://jackvandeleuv.github.io",
+            "http://127.0.0.1:5500/"
+        ]
     }},
     methods=["GET", "OPTIONS"],
     allow_headers=["Content-Type"]
@@ -339,7 +342,8 @@ def guess_article(article_id, limit):
                 'chunk': guess[i][1], 
                 'distance': distances[i], 
                 'url': guess[i][2],
-                'is_win': article_id == get_daily_word()
+                'is_win': article_id == get_daily_word(),
+                'title': guess[i][3]
             }
             for i in indices[: limit]
         ])

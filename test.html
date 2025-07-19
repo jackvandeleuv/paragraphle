@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wordle‑Style Layout</title>
+    <!-- Tailwind CDN (utility classes only) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Utility‑style classes that Tailwind's CDN cannot build with @apply. */
+      :root {
+        /* tweak these numbers if you want slightly larger/smaller tiles */
+        --tile-size: 3.5rem;      /* ~56 px */
+        --tile-size-md: 4rem;     /* ~64 px on ≥ 768 px screens */
+        --key-size: 2.5rem;       /* ~40 px */
+        --key-size-md: 2.75rem;   /* ~44 px on ≥ 768 px screens */
+      }
+
+      .tile {
+        width: var(--tile-size);
+        height: var(--tile-size);
+        border: 1px solid rgb(71 85 105 / 1); /* slate‑600 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-transform: uppercase;
+        font-weight: 700; /* bold */
+        font-size: 1.125rem; /* text‑lg */
+        letter-spacing: 0.05em; /* tracking‑widest */
+        user-select: none;
+      }
+      @media (min-width: 768px) {
+        .tile {
+          width: var(--tile-size-md);
+          height: var(--tile-size-md);
+          font-size: 1.25rem; /* text‑xl */
+        }
+      }
+
+      .key {
+        width: var(--key-size);
+        height: var(--key-size);
+        background-color: rgb(51 65 85 / 1); /* slate‑700 */
+        border-radius: 0.25rem; /* rounded */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-weight: 500; /* medium */
+        user-select: none;
+      }
+      @media (min-width: 768px) {
+        .key {
+          width: var(--key-size-md);
+          height: 3rem; /* 48 px ≈ h‑12 */
+          font-size: 1rem; /* text‑base */
+        }
+      }
+      .key.wide {
+        width: calc(var(--key-size) * 1.5);
+      }
+      @media (min-width: 768px) {
+        .key.wide {
+          width: calc(var(--key-size-md) * 1.5);
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 text-white">
+    <!-- ─────────────── Game Board ─────────────── -->
+    <div class="flex flex-col items-center mb-12">
+      <div
+        id="board"
+        class="grid gap-1 md:gap-2"
+        style="grid-template-columns: repeat(5, 1fr);"
+      >
+        <!-- Row 1 (prefilled for the mock‑up) -->
+        <div class="tile">W</div>
+        <div class="tile">O</div>
+        <div class="tile">R</div>
+        <div class="tile">D</div>
+        <div class="tile">A</div>
+
+        <!-- Row 2 → 6 (empty squares) -->
+        <!-- 25 blank tiles -->
+        <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+        <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+        <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+        <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+        <div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div>
+      </div>
+    </div>
+
+    <!-- ─────────────── On‑Screen Keyboard ─────────────── -->
+    <div class="flex flex-col items-center gap-1 md:gap-2 text-sm md:text-base">
+      <!-- Row 1 -->
+      <div class="flex gap-1 md:gap-2">
+        <button class="key">Q</button><button class="key">W</button><button class="key">E</button><button class="key">R</button><button class="key">T</button><button class="key">Y</button><button class="key">U</button><button class="key">I</button><button class="key">O</button><button class="key">P</button>
+      </div>
+      <!-- Row 2 -->
+      <div class="flex gap-1 md:gap-2">
+        <button class="key">A</button><button class="key">S</button><button class="key">D</button><button class="key">F</button><button class="key">G</button><button class="key">H</button><button class="key">J</button><button class="key">K</button><button class="key">L</button>
+      </div>
+      <!-- Row 3 -->
+      <div class="flex gap-1 md:gap-2">
+        <button class="key wide">ENTER</button>
+        <button class="key">Z</button><button class="key">X</button><button class="key">C</button><button class="key">V</button><button class="key">B</button><button class="key">N</button><button class="key">M</button>
+        <button class="key wide">←</button>
+      </div>
+    </div>
+  </body>
+</html>
