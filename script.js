@@ -74,6 +74,11 @@ function addSuggestionButtonListeners() {
             loadGuess(e.target.id);
         })
     });
+
+    document.getElementById('mainSuggestion').addEventListener('click', () => {
+        loadGuess(mainSuggestion.article_id);
+    });
+    
 }
 
 async function loadSuggestionButtons(suggestions) {
