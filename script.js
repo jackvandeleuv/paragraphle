@@ -2,59 +2,33 @@ function tempToColor(value) {
   const clamped = Math.max(0, Math.min(2, value));
 
   const palette = [
-    'red-700',   // 0.000
-    'red-600',   // 0.125
-    'orange-600',// 0.250
-    'orange-500',// 0.375
-    'amber-500', // 0.500
-    'amber-400', // 0.625
-    'yellow-400',// 0.750
-    'lime-400',  // 0.875
-    'lime-300',  // 1.000
-    'green-300', // 1.125
-    'emerald-300',//1.250
-    'teal-300',  // 1.375
-    'cyan-300',  // 1.500
-    'sky-400',   // 1.625
-    'blue-400',  // 1.750
-    'blue-500',  // 1.875
-    'blue-600'   // 2.000
+    'red-700',   
+    'red-700',   
+    'red-600',    
+    'red-600',
+    'orange-600',
+    'amber-500',
+    'amber-500', 
+    'emerald-300', 
+    'emerald-300',
+    'emerald-300',  
+    'emerald-300',
+    'blue-400',     
+    'blue-400', 
+    'blue-400', 
+    'blue-400', 
+    'blue-400',
+    'blue-400',
+    'blue-600', 
+    'blue-600', 
+    'blue-600', 
+    'blue-600', 
+    'blue-600' 
   ];
 
   const idx = Math.round((clamped / 2) * (palette.length - 1));
   return palette[idx];
 }
-
-// function tempToColor(value) {
-
-//   // 0 → 1 : red → orange → yellow → green
-//   // 1 → 2 : greenish transition → blues (cold)
-//   const warm = [
-//     'red-600',    // 0.00
-//     'orange-500', // 0.25
-//     'orange-500',  // 0.50 (yellow)
-//     'lime-400',   // 0.75 (yellow‑green bridge)
-//     'green-500'   // 1.00
-//   ];
-
-//   const cold = [
-//     'sky-400',  // 1.00
-//     'blue-400', // 1.25
-//     'blue-500', // 1.50
-//     'blue-600', // 1.75
-//     'blue-700'  // 2.00
-//   ];
-
-//   if (value <= 1) {
-//     const t = value / 1; // 0..1
-//     const idx = Math.round(t * (warm.length - 1));
-//     return warm[idx];
-//   } else {
-//     const t = (value - 1) / 1; // 0..1 over the compressed cold half
-//     const idx = Math.round(t * (cold.length - 1));
-//     return cold[idx];
-//   }
-// }
 
 function addCardListeners() {
     document.querySelectorAll('[data-card]').forEach(card => {
@@ -177,13 +151,14 @@ function renderCardHTML(row) {
 
 function renderGuesses() {
     const guessCards = guesses
-        .slice(0, 50)
+        .slice(0, 100)
         .map((row) => renderCardHTML(row))
         .join('');
     document.getElementById('article-list').innerHTML = guessCards;
 }
 
 async function loadGuess(guessArticleId) {
+    console.log(`loading: ${guessArticleId}`)
     document.getElementById('lastGuessText').innerHTML = '...';
     document.getElementById('lastGuessDistance').innerHTML = '...';
     document.getElementById('guessCount').innerHTML = ++guessCount;
@@ -209,10 +184,12 @@ async function loadGuess(guessArticleId) {
     const displayDistance = guessData[0].distance.toFixed(2);
     const guessDataTop = guessData[0].distance;
     const color = tempToColor(guessDataTop);
-    document.getElementById('lastGuessBox').classList.add(
-        `bg-${color}/${highlightOpacity}`,
-        `border-${color}/${highlightOpacity}`
-    );
+
+    document.getElementById('lastGuessBox').className = `
+        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        px-3 py-1 rounded border border-${color}/${highlightOpacity} 
+        bg-${color}/${highlightOpacity} text-white
+    `;
     document.getElementById('lastGuessDistance').innerHTML = `Distance: ${displayDistance}`;
 
     addCardListeners();
