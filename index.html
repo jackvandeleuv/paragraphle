@@ -3,44 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Find the Article #5</title>
+  <title>Find the Article</title>
 
-  <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* KEYBOARD CAP */
     :root { --key-h: 2.4rem; --key-h-md: 2.8rem; }
     .key{flex:1 1 0%;min-width:0;height:var(--key-h);display:flex;align-items:center;justify-content:center;border-radius:0.25rem;background:#334155;color:#fff;font-weight:600;user-select:none}
     .key.wide{flex:1.5 1 0%;font-size:.65rem}
     @media (min-width:768px){.key{height:var(--key-h-md);font-size:.9rem}.key.wide{font-size:.75rem}}
 
-    /* TAG + CHIP */
     .chip,.suggestion-main{background-color:rgba(30,41,59,.4);border:1px solid #475569;border-radius:.25rem;text-transform:uppercase;font-weight:700;color:#fff;white-space:nowrap;user-select:none}
     .chip{padding:.35rem .75rem;font-size:.6rem;letter-spacing:.025em}
     .suggestion-main{padding:.5rem .75rem;font-size:.9rem;letter-spacing:.05em;text-align:center;box-shadow:0 0 10px 2px rgba(0, 0, 0, 0.6)}
 
-    /* SCROLLBAR */
     .scrollbar-dark::-webkit-scrollbar{width:.45rem}
     .scrollbar-dark::-webkit-scrollbar-track{background:transparent}
     .scrollbar-dark::-webkit-scrollbar-thumb{background:#1e293b;border-radius:.25rem}
 
-    /* CARD */
     [data-card]{cursor:pointer;transition:all .2s ease}
-    [data-card].expanded{border-color:#34d399;background:rgba(30,41,59,.35)}
+    [data-card].expanded{background:rgba(30,41,59,.35)}
 
-    /* smooth size changes for title & score */
     .card-title,.card-score{transition:all .2s ease}
 
-    /* ───────── FAKE CURSOR FOR SUGGESTION BAR ───────── */
     @keyframes blink {
         0%, 50%   { opacity: 1; }
         50.01%,100% { opacity: 0; }
     }
     .caret-after::after {
-        content: '';                   /* empty char – just a block */
+        content: '';                 
         display: inline-block;
-        width: 1px;                    /* slim vertical line */
+        width: 1px;                 
         height: 1em;
         background: currentColor;
         margin-left: 0.25rem;
@@ -52,19 +45,16 @@
         width:1px;
         height:1em;
         background:currentColor;
-        /* remove the gap: */
-        margin-left:0;          /* was 0.25rem */
+        margin-left:0;       
         animation:blink 1s steps(1) infinite;
     }
   </style>
 </head>
 <body class="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
-
-  <!-- ───────── HEADER ───────── -->
-  <header class="shrink-0 px-4 pt-6 pb-2 w-full max-w-xl mx-auto">
+  <header class="shrink-0 px-4 pt-6 pb-2 w-full max-w-xl mx-auto select-none">
     <div class="flex items-baseline justify-between mb-2">
       <h1 class="text-xl font-extrabold tracking-tight md:text-2xl">
-        Find the Article&nbsp;#5
+        Find the Article&nbsp;#<span id="dailyNumber"></span>
       </h1>
       <span class="whitespace-nowrap font-semibold text-sm md:text-base">
         Guesses:&nbsp;<span id="guessCount">0</span>
@@ -72,134 +62,48 @@
     </div>
     <div class="h-1 bg-slate-700 rounded overflow-hidden">
       <div 
-        class="h-full bg-emerald-500" 
-        style="width:20%"
+        class="h-full" 
+        style="width:0%"
         id="progressBar"
       ></div>
     </div>
   </header>
 
-  <!-- ───────── MAIN ───────── -->
-  <main class="flex-1 px-4 w-full max-w-xl mx-auto pt-4 pb-4 flex flex-col min-h-0">
-    <!-- Current result bar -->
+  <main class="flex-1 px-4 w-full max-w-xl mx-auto pt-4 pb-4 flex flex-col min-h-0 select-none">
     <div
         class="mb-4 flex items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border border-emerald-600 text-emerald-400"
+        px-3 py-1 rounded border border-white-600 text-white"
         id="lastGuessBox"
       >
-        <span id="lastGuessText" class="uppercase tracking-wide">Indiana</span>
-        <span id="lastGuessDistance">Distance: 0.56</span>
+        <span id="lastGuessText" class="uppercase tracking-wide">...</span>
+        <span id="lastGuessDistance">...</span>
     </div>
 
-    <!-- Tiny note about the section below -->
     <p class="text-xs text-slate-400 mb-2">
       Top Guesses
     </p>
 
-    <!-- Scrollable Article List -->
     <div id="article-list"
         class="scrollbar-dark flex-1 overflow-y-auto min-h-0 space-y-4 pr-1 pt-2">
-
-      <!-- CARD TEMPLATE – copy / duplicate as needed -->
-      <article data-card
-            class="relative bg-slate-700/30 border border-slate-600 rounded p-4 pt-5 text-sm leading-snug">
-        <span class="card-title absolute -top-2 left-2 bg-slate-900 px-1 text-xs font-bold uppercase">
-          JOHN F. KENNEDY
-        </span>
-        <span class="card-score absolute -top-2 right-2 bg-slate-900 px-1 text-xs font-bold">
-          0.75
-        </span>
-
-        <p>
-          <span class="short">
-            as the Cold War, Bay of Pigs fiasco, and the situation in Southeast Asia. As articulated by his brot...
-          </span>
-
-          <span class="full hidden">
-            as the Cold War, Bay of Pigs fiasco, and the situation in Southeast Asia. As articulated by his brother Robert, the administration's early priority was to "keep the president out of this civil rights mess". Civil rights movement participants, mainly
-          </span>
-        </p>
-
-        <!-- Wikipedia button (hidden by default) -->
-        <button
-          class="wiki-btn hidden mt-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3 py-1 rounded">
-          See on Wikipedia
-        </button>
-      </article>
-
-      <!-- CARD 2 -->
-      <article data-card
-            class="relative bg-slate-700/30 border border-slate-600 rounded p-4 pt-5 text-sm leading-snug">
-        <span class="card-title absolute -top-2 left-2 bg-slate-900 px-1 text-xs font-bold uppercase">
-          JOHN F. KENNEDY
-        </span>
-        <span class="card-score absolute -top-2 right-2 bg-slate-900 px-1 text-xs font-bold">
-          0.76
-        </span>
-
-        <p>
-          <span class="short">
-            as the Cold War, Bay of Pigs fiasco, and the situation in Southeast Asia. As articulated by his brot...
-          </span>
-
-          <span class="full hidden">
-            as the Cold War, Bay of Pigs fiasco, and the situation in Southeast Asia. As articulated by his brother Robert, the administration's early priority was to "keep the president out of this civil rights mess". Civil rights movement participants, mainly
-          </span>
-        </p>
-
-        <button
-          class="wiki-btn hidden mt-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3 py-1 rounded">
-          See on Wikipedia
-        </button>
-      </article>
-
-      <!-- CARD 3 -->
-      <article data-card
-            class="relative bg-slate-700/30 border border-slate-600 rounded p-4 pt-5 text-sm leading-snug">
-        <span class="card-title absolute -top-2 left-2 bg-slate-900 px-1 text-xs font-bold uppercase">
-          JOHN F. KENNEDY
-        </span>
-        <span class="card-score absolute -top-2 right-2 bg-slate-900 px-1 text-xs font-bold">
-          0.77
-        </span>
-
-        <p>
-          <span class="short">
-            as the Cold War, Bay of Pigs fiasco, and the situation in Southeast Asia. As articulated by his brot...
-          </span>
-
-          <span class="full hidden">
-            as the Cold War, Bay of Pigs fiasco, and the situation in Southeast Asia. As articulated by his brother Robert, the administration's early priority was to "keep the president out of this civil rights mess". Civil rights movement participants, mainly
-          </span>
-        </p>
-
-        <button
-          class="wiki-btn hidden mt-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3 py-1 rounded">
-          See on Wikipedia
-        </button>
-      </article>
     </div>
   </main>
 
-  <!-- ───────── FOOTER ───────── -->
   <footer
     class="shrink-0 pb-safe pb-4 px-4 w-full max-w-xl mx-auto flex flex-col items-center gap-3 md:gap-4 bg-slate-900">
 
     <div class="w-full flex flex-col items-center gap-2">
       <div id="mainSuggestion" class="suggestion-main w-full">
-        <span id="mainSuggestionText">INTERNET ARCH</span><span class="blink-caret"></span><span id="mainSuggestionPrompt" class="text-gray-500/60">IVE</span>
+        <span id="mainSuggestionText"></span><span class="blink-caret"></span><span id="mainSuggestionPrompt" class="text-gray-500/60"></span>
       </div>
       <div id="suggestionBox" class="w-full flex justify-center gap-2 md:gap-3 flex-nowrap">
-        <button class="chip">Islam</button>
-        <button class="chip">IGN</button>
-        <button class="chip">Israel</button>
+        <button class="chip">-</button>
+        <button class="chip">-</button>
+        <button class="chip" >-</button>
       </div>
     </div>
 
-    <!-- KEYBOARD ------------------------------------------------------------>
     <div class="flex flex-col items-center gap-1 md:gap-2 text-xs md:text-sm w-full">
 
-      <!-- Row 1 : Q – P ----------------------------------------------------->
       <div class="flex gap-1 md:gap-2 w-full">
         <button class="key px-3 py-2 md:px-4">Q</button>
         <button class="key px-3 py-2 md:px-4">W</button>
@@ -213,7 +117,6 @@
         <button class="key px-3 py-2 md:px-4">P</button>
       </div>
 
-      <!-- Row 2 : A – L ----------------------------------------------------->
       <div class="flex gap-1 md:gap-2 w-full">
         <button class="key px-3 py-2 md:px-4">A</button>
         <button class="key px-3 py-2 md:px-4">S</button>
@@ -226,33 +129,25 @@
         <button class="key px-3 py-2 md:px-4">L</button>
       </div>
 
-      <!-- Row 3 : Enter | ZXC | SPACE | VBNM | Backspace -------------------->
       <div class="flex gap-1 md:gap-2 w-full">
-        <!-- wide “Enter” -->
         <button class="key px-4 py-2 md:px-6 md:py-2.5">Enter</button>
 
-        <!-- left‑side letters -->
         <button class="key px-3 py-2 md:px-4">Z</button>
         <button class="key px-3 py-2 md:px-4">X</button>
         <button class="key px-3 py-2 md:px-4">C</button>
 
-        <!-- space bar grows to fill remaining space -->
         <button class="key flex-1 px-4 py-2 md:px-6 md:py-2.5 text-center">Space</button>
 
-        <!-- right‑side letters -->
         <button class="key px-3 py-2 md:px-4">V</button>
         <button class="key px-3 py-2 md:px-4">B</button>
         <button class="key px-3 py-2 md:px-4">N</button>
         <button class="key px-3 py-2 md:px-4">M</button>
 
-        <!-- wide “Backspace” -->
         <button class="key px-4 py-2 md:px-6 md:py-2.5">←</button>
       </div>
 
     </div>
-    <!-- END KEYBOARD -------------------------------------------------------->
-
   </footer>
-  <script src="test-script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
