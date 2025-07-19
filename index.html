@@ -9,6 +9,12 @@
 
   <style>
     :root { --key-h: 2.4rem; --key-h-md: 2.8rem; }
+
+    .h-dvh { height:100vh; }
+        @supports (height: 100dvh) {
+        .h-dvh { height:100dvh; }
+    }
+
     .key{flex:1 1 0%;min-width:0;height:var(--key-h);display:flex;align-items:center;justify-content:center;border-radius:0.25rem;background:#334155;color:#fff;font-weight:600;user-select:none}
     .key.wide{flex:1.5 1 0%;font-size:.65rem}
     @media (min-width:768px){.key{height:var(--key-h-md);font-size:.9rem}.key.wide{font-size:.75rem}}
@@ -50,7 +56,7 @@
     }
   </style>
 </head>
-<body class="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
+<body class="h-dvh bg-slate-900 text-white flex flex-col">
   <header class="shrink-0 px-4 pt-6 pb-2 w-full max-w-xl mx-auto select-none">
     <div class="flex items-baseline justify-between mb-2">
       <h1 class="text-xl font-extrabold tracking-tight md:text-2xl">
