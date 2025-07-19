@@ -26,7 +26,6 @@ function tempToColor(value) {
 }
 
 // function tempToColor(value) {
-//     console.log(value)
 
 //   // 0 → 1 : red → orange → yellow → green
 //   // 1 → 2 : greenish transition → blues (cold)
@@ -49,12 +48,10 @@ function tempToColor(value) {
 //   if (value <= 1) {
 //     const t = value / 1; // 0..1
 //     const idx = Math.round(t * (warm.length - 1));
-//     console.log(warm[idx])
 //     return warm[idx];
 //   } else {
 //     const t = (value - 1) / 1; // 0..1 over the compressed cold half
 //     const idx = Math.round(t * (cold.length - 1));
-//     console.log(cold[idx])
 //     return cold[idx];
 //   }
 // }
@@ -106,8 +103,6 @@ function addSuggestionButtonListeners() {
 }
 
 async function loadSuggestionButtons(suggestions) {
-    console.log('received:')
-    console.log(suggestions)
     const input = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
     if (input === '') return;
 
@@ -271,7 +266,6 @@ async function updateMainSuggestion() {
 
 function addButtonListeners() {
     document.addEventListener('keydown', (e) => {
-        console.log(e.key)
         if (e.key === 'Backspace') {
             document.getElementById('mainSuggestionPrompt').innerHTML = '';
             const current = document.getElementById('mainSuggestionText').innerText;

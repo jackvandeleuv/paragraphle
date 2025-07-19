@@ -50,7 +50,8 @@
     }
   </style>
 </head>
-<body class="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
+
+<body class="min-h-[100dvh] flex flex-col bg-slate-900 text-white">
   <header class="shrink-0 px-4 pt-6 pb-2 w-full max-w-xl mx-auto select-none">
     <div class="flex items-baseline justify-between mb-2">
       <h1 class="text-xl font-extrabold tracking-tight md:text-2xl">
@@ -88,17 +89,13 @@
     </div>
   </main>
 
-  <footer
-    class="shrink-0 pb-safe pb-4 px-4 w-full max-w-xl mx-auto flex flex-col items-center gap-3 md:gap-4 bg-slate-900">
-
+  <footer class="shrink-0 pb-4 px-4 pt-? ... [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
     <div class="w-full flex flex-col items-center gap-2">
       <div id="mainSuggestion" class="suggestion-main w-full">
         <span id="mainSuggestionText"></span><span class="blink-caret"></span><span id="mainSuggestionPrompt" class="text-gray-500/60"></span>
       </div>
       <div id="suggestionBox" class="w-full flex justify-center gap-2 md:gap-3 flex-nowrap">
-        <button class="chip">-</button>
-        <button class="chip">-</button>
-        <button class="chip" >-</button>
+        <button class="chip">Try guessing an article!</button>
       </div>
     </div>
 
