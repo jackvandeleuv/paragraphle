@@ -288,8 +288,8 @@ suggestion_cache = make_suggestion_cache(CACHE_LIMIT)
 def target_stats():
     return jsonify(get_daily_word_stats(get_daily_word())), 200
 
-@app.route("/suggestion/<q>/limit/<limit>")
-def suggestion(q, limit):
+@app.route("/suggestion/<q>/limit/<limit>/session_id/<session_id>")
+def suggestion(q, limit, _):
     q = escape(q).lower()
 
     try:
@@ -317,8 +317,8 @@ def suggestion(q, limit):
         'data': []
     }), 200
     
-@app.route("/guess_article/<article_id>/limit/<limit>")
-def guess_article(article_id, limit):
+@app.route("/guess_article/<article_id>/limit/<limit>/session_id/<session_id>")
+def guess_article(article_id, limit, _):
     try:
         article_id = int(escape(article_id))
         limit = int(escape(limit))
