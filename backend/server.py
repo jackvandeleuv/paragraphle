@@ -289,7 +289,7 @@ def target_stats():
     return jsonify(get_daily_word_stats(get_daily_word())), 200
 
 @app.route("/suggestion/<q>/limit/<limit>/session_id/<session_id>")
-def suggestion(q, limit, _):
+def suggestion(q, limit, session_id):
     q = escape(q).lower()
 
     try:
@@ -318,7 +318,7 @@ def suggestion(q, limit, _):
     }), 200
     
 @app.route("/guess_article/<article_id>/limit/<limit>/session_id/<session_id>")
-def guess_article(article_id, limit, _):
+def guess_article(article_id, limit, session_id):
     try:
         article_id = int(escape(article_id))
         limit = int(escape(limit))
