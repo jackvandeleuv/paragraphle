@@ -173,7 +173,7 @@ async function loadGuess(guessArticleId) {
     document.getElementById('mainSuggestionText').innerHTML = '';
     document.getElementById('mainSuggestionPrompt').innerHTML = '';
 
-    const guessResponse = await fetch(`https://api.wiki-guess.com/guess_article/${guessArticleId}/limit/10`);
+    const guessResponse = await fetch(`https://api.wiki-guess.com/guess_article/${guessArticleId}/limit/10/session_id/${SESSION_ID}`);
     const guessData = await guessResponse.json();
 
     guessData.sort((a, b) => a.distance - b.distance);
@@ -227,7 +227,7 @@ async function updateMainSuggestion() {
 
     document.getElementById('mainSuggestionPrompt').innerHTML = '...';
 
-    const suggestionsResponse = await fetch(encodeURI(`https://api.wiki-guess.com/suggestion/${input}/limit/6`));
+    const suggestionsResponse = await fetch(encodeURI(`https://api.wiki-guess.com/suggestion/${input}/limit/6/session_id/${SESSION_ID}`));
     const suggestionsJSON = await suggestionsResponse.json();
     const suggestions = suggestionsJSON.data;
 
@@ -332,6 +332,7 @@ let mainSuggestion;
 let bestScore = 2;
 const guesses = [];
 const guessSet = new Set();
+const SESSION_ID = Date.now();
 
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
@@ -341,6 +342,7 @@ for (let i = 0; i < 26; i++) {
 acceptedKeys.add('Enter');
 acceptedKeys.add('Backspace');
 acceptedKeys.add('.');
+acceptedKeys.add(',');
 acceptedKeys.add(':');
 acceptedKeys.add('-');
 acceptedKeys.add(' ');
