@@ -56,6 +56,17 @@
     }
   </style>
 </head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8LNTR512CH"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8LNTR512CH');
+</script>
+
 <body class="h-dvh bg-slate-900 text-white flex flex-col">
     
   <!-- Intro Modal -->
@@ -88,8 +99,9 @@
         </p>
         <ul class="list-disc space-y-3 pl-5 marker:text-neutral-200">
           <li>Each guess must be an existing Wikipedia article.</li>
-          <li>After each guess the game tells you how close you are to the Article of the Day.</li>
+          <li>The game tells you how close you are to the Article of the Day.</li>
           <li>Paragraphs from the articles you guess are scored individually.</li>
+          <li>Start typing and then pick from the provided list!</li>
         </ul>
       </div>
     </div>
@@ -212,20 +224,15 @@
       </div>
 
       <div class="flex gap-1 md:gap-2 w-full">
-        <button class="key px-4 py-2 md:px-6 md:py-2.5">Enter</button>
-
+        <button class="key flex-1 px-4 py-2 md:px-6 md:py-2.5 text-center">Space</button>
         <button class="key px-3 py-2 md:px-4">Z</button>
         <button class="key px-3 py-2 md:px-4">X</button>
         <button class="key px-3 py-2 md:px-4">C</button>
-
-        <button class="key flex-1 px-4 py-2 md:px-6 md:py-2.5 text-center">Space</button>
-
         <button class="key px-3 py-2 md:px-4">V</button>
         <button class="key px-3 py-2 md:px-4">B</button>
         <button class="key px-3 py-2 md:px-4">N</button>
         <button class="key px-3 py-2 md:px-4">M</button>
-
-        <button class="key px-4 py-2 md:px-6 md:py-2.5">←</button>
+        <button class="key px-4 py-2 md:px-6 md:py-2.5">Back</button>
       </div>
 
     </div>

@@ -272,7 +272,7 @@ function addButtonListeners() {
     for (const key of keys) {
         key.addEventListener('click', (e) => {
             const value = e.currentTarget.innerHTML;
-            if (value === '←') {
+            if (value === 'Back') {
                 const current = document.getElementById('mainSuggestionText').innerText;
                 document.getElementById('mainSuggestionText').innerHTML = current.slice(0, current.length - 1);
                 updateMainSuggestion();
