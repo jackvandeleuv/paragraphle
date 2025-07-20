@@ -97,35 +97,39 @@
 
   <!-- Win Modal -->
   <div
-    class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-sm px-3 py-6 sm:py-0"
+    id="winModal"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="howto-title"
-    aria-describedby="howto-desc"
-    id="winModal"
-    
+    aria-labelledby="winModalTitle"
+    aria-describedby="winModalDesc"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+    style="display: none"
   >
-    <div class="relative w-full max-w-sm rounded-md bg-sky-500/80 text-neutral-100 shadow-2xl ring-1 ring-neutral-700/60 overflow-hidden">
+    <div
+      class="relative w-full max-w-sm origin-center rounded-xl bg-gradient-to-br from-red-500/60 to-red-600/60 text-neutral-50 shadow-2xl ring-1 ring-white/15
+            animate-[fadeIn_0.25s_ease,scaleIn_0.25s_ease]"
+    >
       <button
         type="button"
         aria-label="Close dialog"
-        class="absolute top-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded hover:bg-neutral-700/60 focus:outline-none focus-visible:ring focus-visible:ring-emerald-400/70 transition"
+        class="absolute top-2.5 right-2.5 inline-flex h-9 w-9 items-center justify-center rounded-md
+              text-sky-50/80 hover:text-white hover:bg-white/10 focus:outline-none
+              focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-sky-600
+              transition"
       >
-        <span class="block h-4 w-4 relative">
-          <span class="absolute inset-0 rotate-45 bg-current origin-center" style="height:2px;width:100%;top:50%;transform:translateY(-50%) rotate(45deg);"></span>
-          <span class="absolute inset-0 -rotate-45 bg-current origin-center" style="height:2px;width:100%;top:50%;transform:translateY(-50%) rotate(-45deg);"></span>
+        <span class="relative block h-4 w-4">
+          <span class="absolute inset-0 h-[2px] w-full bg-current rotate-45" aria-hidden="true"></span>
+          <span class="absolute inset-0 h-[2px] w-full bg-current -rotate-45" aria-hidden="true"></span>
         </span>
       </button>
 
-      <div class="px-6 pt-7 pb-8 text-[15px] leading-relaxed">
-        <h2 id="winArticle" class="text-2xl font-extrabold tracking-tight mb-3">
-          Jodie Foster
+      <div class="px-6 pt-9 pb-8 text-[15px] leading-relaxed">
+        <h2 id="winModalTitle" class="text-2xl font-extrabold tracking-tight leading-tight mb-3">
         </h2>
-        <p>
-          You got it!
-        <p>
-        <p id="howto-desc" class="mb-4">
-          Guesses: <span id="winModalGuessCount">73</span>
+        <p class="mb-2 font-medium">You got it!</p>
+        <p id="winModalDesc" class="text-sm text-sky-50/90">
+          Guesses:
+          <span id="winModalGuessCount" aria-live="polite" class="font-semibold text-white"></span>
         </p>
       </div>
     </div>

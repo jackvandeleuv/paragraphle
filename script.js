@@ -156,14 +156,15 @@ function renderCardHTML(row) {
 
 function renderGuesses() {
     const guessCards = guesses
-        .slice(0, 100)
+        .slice(0, 150)
         .map((row) => renderCardHTML(row))
         .join('');
     document.getElementById('article-list').innerHTML = guessCards;
 }
 
 async function loadGuess(guessArticleId) {
-    console.log(`loading: ${guessArticleId}`)
+    if (isWin) return;
+
     document.getElementById('lastGuessText').innerHTML = '...';
     document.getElementById('lastGuessDistance').innerHTML = '...';
     document.getElementById('guessCount').innerHTML = ++guessCount;
@@ -185,7 +186,6 @@ async function loadGuess(guessArticleId) {
     guesses.sort((a, b) => a.distance - b.distance);
     renderGuesses();
 
-    // const displayDistance = Math.round((Math.pow(guessData[0].distance + 1, 1.5) * 500) - 500);
     const displayDistance = guessData[0].distance.toFixed(2);
     const guessDataTop = guessData[0].distance;
     const color = tempToColor(guessDataTop);
@@ -207,6 +207,8 @@ async function loadGuess(guessArticleId) {
     if (guessData[0].is_win) {
         renderWin();
     }
+
+    mainSuggestion = null;
 }
 
 function flagNoSuggestion() {
@@ -292,7 +294,8 @@ function addButtonListeners() {
 }
 
 function addDailyNumber() {
-    const index = Math.floor(Date.now() / (1000 * 60 * 60 * 24)) - 20287;
+    const offsetTimestamp = Date.now() - (1000 * 3600 * 4);
+    const index = Math.floor(offsetTimestamp / (1000 * 60 * 60 * 24)) - 20287;
     document.getElementById('dailyNumber').innerHTML = index;
 }
 
@@ -306,8 +309,19 @@ function renderWin() {
     document.getElementById('progressBar').style.width = `100%`;
     document.getElementById('progressBar').classList.add(`bg-red-700/${highlightOpacity}`);
     document.getElementById('lastGuessDistance').innerHTML = `Distance: 0`;
+
+    document.getElementById('winModalGuessCount').innerHTML = guessCount;
+    document.getElementById('winModalTitle').innerHTML = mainSuggestion.title.toUpperCase().trim();
+    
+    document.getElementById('winModal').style.display = 'flex'
+    document.getElementById('winModal').addEventListener('click', () => {
+        document.getElementById('winModal').style.display = 'none';
+    })
+
+    isWin = true;
 }
 
+let isWin = false;
 const highlightOpacity = 60;
 let guessCount = 0;
 let text = '';
