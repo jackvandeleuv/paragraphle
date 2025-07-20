@@ -188,8 +188,16 @@
     class="shrink-0 pb-safe pb-4 px-4 w-full max-w-xl mx-auto flex flex-col items-center gap-3 md:gap-4 bg-slate-900">
 
     <div class="w-full flex flex-col items-center gap-2">
-      <div id="mainSuggestion" class="suggestion-main w-full">
+      <div id="mainSuggestion" class="suggestion-main w-full relative pr-12">
         <span id="mainSuggestionText"></span><span class="blink-caret"></span><span id="mainSuggestionPrompt" class="text-gray-500/60"></span>
+        <button type="button" aria-label="Submit"
+          class="absolute inset-y-0 right-3 my-auto w-7 h-7 flex items-center justify-center rounded">
+          <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+            <path fill-rule="evenodd"
+              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 11-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+              clip-rule="evenodd" />
+          </svg>
+        </button>
       </div>
       <div id="suggestionBox" class="w-full flex justify-center gap-2 md:gap-3 flex-nowrap">
         <button class="chip">Try guessing an article!</button>
