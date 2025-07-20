@@ -200,12 +200,13 @@ async function loadGuess(guessArticleId) {
     addCardListeners();
 
     bestScore = Math.min(bestScore, guessDataTop)
-    // const progress = Math.round(
-    //     (1 - Math.pow(Math.min(bestScore, 1), 2)) * 100
-    // );
     const progress = Math.round(Math.max(0, 100 - (100 * bestScore)))
     document.getElementById('progressBar').style.width = `${progress}%`;
     document.getElementById('progressBar').classList.add(`bg-${tempToColor(bestScore)}/${highlightOpacity}`);
+
+    if (guessData[0].is_win) {
+        renderWin();
+    }
 }
 
 function flagNoSuggestion() {
@@ -295,6 +296,18 @@ function addDailyNumber() {
     document.getElementById('dailyNumber').innerHTML = index;
 }
 
+function addIntroModalListener() {
+    document.getElementById('introModal').addEventListener('click', () => {
+        document.getElementById('introModal').classList.add('hidden');
+    })
+}
+
+function renderWin() {
+    document.getElementById('progressBar').style.width = `100%`;
+    document.getElementById('progressBar').classList.add(`bg-red-700/${highlightOpacity}`);
+    document.getElementById('lastGuessDistance').innerHTML = `Distance: 0`;
+}
+
 const highlightOpacity = 60;
 let guessCount = 0;
 let text = '';
@@ -320,3 +333,4 @@ acceptedKeys.add(`"`);
 addCardListeners();
 addButtonListeners();
 addDailyNumber();
+addIntroModalListener();

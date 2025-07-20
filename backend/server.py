@@ -208,12 +208,17 @@ def get_target_word_choices():
             data.append(json.loads(line)['article_id'])
     return data
 
+def get_daily_index():
+    timestamp = int(time.time())
+    timestamp_adj = timestamp - (3600 * 4)  # Roughly ET.
+    return int(timestamp_adj / (60 * 60 * 24))
+
 def get_daily_word():
-    index = int(int(time.time()) / (60 * 60 * 24))
+    index = get_daily_index()
     return target_word_choices[index % len(target_word_choices)]
 
 def get_daily_word_vec():
-    index = int(int(time.time()) / (60 * 60 * 24))
+    index = get_daily_index()
     return daily_vec_choices[index % len(daily_vec_choices)]
 
 def get_guess_info(conn, cur, article_id):
