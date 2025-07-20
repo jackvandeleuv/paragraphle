@@ -73,12 +73,13 @@ function addSuggestionButtonListeners() {
         card.addEventListener('click', (e) => {
             loadGuess(e.target.id);
         })
-    });
+    });    
+}
 
+function addMainSuggestionListener() {
     document.getElementById('mainSuggestion').addEventListener('click', () => {
         loadGuess(mainSuggestion.article_id);
     });
-    
 }
 
 async function loadSuggestionButtons(suggestions) {
@@ -250,6 +251,7 @@ async function updateMainSuggestion() {
 }
 
 function addButtonListeners() {
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Backspace') {
             document.getElementById('mainSuggestionPrompt').innerHTML = '';
@@ -273,6 +275,7 @@ function addButtonListeners() {
         key.addEventListener('click', (e) => {
             const value = e.currentTarget.innerHTML;
             if (value === 'Back') {
+                document.getElementById('mainSuggestionPrompt').innerHTML = '';
                 const current = document.getElementById('mainSuggestionText').innerText;
                 document.getElementById('mainSuggestionText').innerHTML = current.slice(0, current.length - 1);
                 updateMainSuggestion();
@@ -348,3 +351,4 @@ addCardListeners();
 addButtonListeners();
 addDailyNumber();
 addIntroModalListener();
+addMainSuggestionListener();
