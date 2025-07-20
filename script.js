@@ -173,7 +173,7 @@ async function loadGuess(guessArticleId) {
     document.getElementById('mainSuggestionText').innerHTML = '';
     document.getElementById('mainSuggestionPrompt').innerHTML = '';
 
-    const guessResponse = await fetch(`https://api.wiki-guess.com/guess_article/${guessArticleId}/limit/10/session_id/${SESSION_ID}`);
+    const guessResponse = await fetch(`${URI}/guess_article/${guessArticleId}/limit/10/session_id/${SESSION_ID}`);
     const guessData = await guessResponse.json();
 
     guessData.sort((a, b) => a.distance - b.distance);
@@ -227,7 +227,7 @@ async function updateMainSuggestion() {
 
     document.getElementById('mainSuggestionPrompt').innerHTML = '...';
 
-    const suggestionsResponse = await fetch(encodeURI(`https://api.wiki-guess.com/suggestion/${input}/limit/6/session_id/${SESSION_ID}`));
+    const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion/${input}/limit/6/session_id/${SESSION_ID}`));
     const suggestionsJSON = await suggestionsResponse.json();
     const suggestions = suggestionsJSON.data;
 
@@ -324,6 +324,9 @@ function renderWin() {
     isWin = true;
 }
 
+const URI = 'https://api.wiki-guess.com';
+// const URI = 'http://localhost:8000';
+
 let isWin = false;
 const highlightOpacity = 60;
 let guessCount = 0;
@@ -339,15 +342,17 @@ for (let i = 0; i < 26; i++) {
     const letter = String.fromCharCode(65 + i);
     acceptedKeys.add(letter);
 }
-acceptedKeys.add('Enter');
-acceptedKeys.add('Backspace');
-acceptedKeys.add('.');
-acceptedKeys.add(',');
-acceptedKeys.add(':');
-acceptedKeys.add('-');
-acceptedKeys.add(' ');
-acceptedKeys.add(`'`);
-acceptedKeys.add(`"`);
+
+WHITELIST_KEYS = [
+    'Enter', 'Backspace', '.',
+    ',', ':', '-',
+    ' ', `'`, `"`,
+    '(', ')', '+',
+    '-', '_'
+];
+for (const key of WHITELIST_KEYS) {
+    acceptedKeys.add(key)
+}
 
 addCardListeners();
 addButtonListeners();

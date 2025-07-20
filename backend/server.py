@@ -203,7 +203,7 @@ def make_suggestion_cache(cache_limit):
 
 def get_target_word_choices():
     data = []
-    with open('ai_targets.jsonl', 'r', encoding='utf-8') as file:
+    with open('targets.jsonl', 'r', encoding='utf-8') as file:
         for line in file:
             data.append(json.loads(line)['article_id'])
     return data
@@ -211,7 +211,7 @@ def get_target_word_choices():
 def get_daily_index():
     timestamp = int(time.time())
     timestamp_adj = timestamp - (3600 * 4)  # Roughly ET.
-    return int(timestamp_adj / (60 * 60 * 24))
+    return int(timestamp_adj / (60 * 60 * 24)) - 20288
 
 def get_daily_word():
     index = get_daily_index()
@@ -247,6 +247,13 @@ def get_guess_info(conn, cur, article_id):
 
     return guess, guess_matrix
 
+def calculate_daily_vecs():
+    daily_vec_choices = []
+    for i, article_id in enumerate(target_word_choices):
+        print(f"Loading vectors: {i + 1} / {len(target_word_choices)}")
+        daily_vec_choices.append(get_daily_word_vector_live(article_id))
+    np.save('target_vecs', np.array(daily_vec_choices))
+
 
 app = Flask(__name__)
 
@@ -256,7 +263,8 @@ CORS(
         "origins": [
             "https://jackvandeleuv.github.io",
             "http://127.0.0.1:5500",
-            "https://wiki-guess.com"
+            "https://wiki-guess.com",
+            "http://localhost:5500"
         ]
     }},
     methods=["GET", "OPTIONS"],
@@ -275,12 +283,9 @@ target_word_choices = get_target_word_choices()
 CACHE_LIMIT = 50
 articles = get_articles()
 
-# daily_vec_choices = []
-# for i, article_id in enumerate(target_word_choices):
-#     print(f"Loading vectors: {i + 1} / {len(target_word_choices)}")
-#     daily_vec_choices.append(get_daily_word_vector_live(article_id))
-# np.save('ai_target_vecs', np.array(daily_vec_choices))
-daily_vec_choices = np.load('ai_target_vecs.npy')
+# calculate_daily_vecs()
+
+daily_vec_choices = np.load('target_vecs.npy')
 
 suggestion_cache = make_suggestion_cache(CACHE_LIMIT)
 
