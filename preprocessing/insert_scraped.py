@@ -7,6 +7,7 @@ DB_PATH = 'backend/data.db'
 conn = sqlite3.Connection(DB_PATH)
 
 pd.read_parquet('preprocessing/data/scraped_articles_top5_len40_stride15.parquet') \
+    .drop('text', axis=1) \
     .rename(columns={'lower_title': 'clean_title'}) \
     .to_sql('articles', conn, if_exists='append', index=False)
 
@@ -17,7 +18,7 @@ with open('preprocessing/data/scraped_chunks_top5_len40_stride15.jsonl', 'r') as
     for line in file:
         buffer.append(json.loads(line))
 
-        if len(buffer) > 100000:
+        if len(buffer) > 10000:
             print('Clearing buffer.')
             pd.DataFrame(buffer).to_sql('chunks', conn, if_exists='append', index=False)
             buffer = []
