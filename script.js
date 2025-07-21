@@ -1,33 +1,30 @@
 function tempToColor(value) {
-  const clamped = Math.max(0, Math.min(2, value));
+    const clamped = Math.max(0, Math.min(2, value));
 
-  const palette = [
-    'red-700',   
-    'red-700',   
-    'red-600',    
-    'red-600',
-    'orange-600',
-    'amber-500',
-    'amber-500', 
-    'emerald-300', 
-    'emerald-300',
-    'emerald-300',  
-    'emerald-300',
-    'blue-400',     
-    'blue-400', 
-    'blue-400', 
-    'blue-400', 
-    'blue-400',
-    'blue-400',
-    'blue-600', 
-    'blue-600', 
-    'blue-600', 
-    'blue-600', 
-    'blue-600' 
-  ];
+    const palette = [
+        'orange-800',
+        'orange-700',
+        'orange-600',
+        'orange-500',
+        'orange-400',
+        'orange-300',
+        'sky-600',
+        'sky-600',
+        'sky-600',
+        'sky-600',
+        'sky-700',
+        'sky-700',
+        'sky-700',
+        'sky-700',
+        'sky-700',
+        'sky-700',
+        'sky-700',
+        'sky-700',
+        'sky-700'
+    ];
 
-  const idx = Math.round((clamped / 2) * (palette.length - 1));
-  return palette[idx];
+    const idx = Math.round((clamped / 2) * (palette.length - 1));
+    return palette[idx];
 }
 
 function addCardListeners() {
@@ -206,7 +203,7 @@ async function loadGuess(guessArticleId) {
     document.getElementById('progressBar').classList.add(`bg-${tempToColor(bestScore)}/${highlightOpacity}`);
 
     if (guessData[0].is_win) {
-        renderWin();
+        renderWin(guessData[0].title.toUpperCase().trim());
     }
 
     mainSuggestion = null;
@@ -308,13 +305,13 @@ function addIntroModalListener() {
     })
 }
 
-function renderWin() {
+function renderWin(title) {
     document.getElementById('progressBar').style.width = `100%`;
     document.getElementById('progressBar').classList.add(`bg-red-700/${highlightOpacity}`);
     document.getElementById('lastGuessDistance').innerHTML = `Distance: 0`;
 
     document.getElementById('winModalGuessCount').innerHTML = guessCount;
-    document.getElementById('winModalTitle').innerHTML = mainSuggestion.title.toUpperCase().trim();
+    document.getElementById('winModalTitle').innerHTML = title;
     
     document.getElementById('winModal').style.display = 'flex'
     document.getElementById('winModal').addEventListener('click', () => {
