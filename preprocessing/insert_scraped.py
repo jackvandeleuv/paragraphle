@@ -6,8 +6,7 @@ DB_PATH = 'backend/data.db'
 
 conn = sqlite3.Connection(DB_PATH)
 
-pd.read_parquet('preprocessing/data/scraped_articles_top5_len40_stride15.parquet') \
-    .drop('text', axis=1) \
+pd.read_parquet('preprocessing/data/scraped_articles_top5_len40_stride15.csv') \
     .rename(columns={'lower_title': 'clean_title'}) \
     .to_sql('articles', conn, if_exists='append', index=False)
 
