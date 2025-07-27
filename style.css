@@ -1,9 +1,3 @@
-@config "./tailwind.config.js";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root { --key-h: 3.6rem; --key-h-md: 4.2rem; }
 
 .h-dvh { height:100vh; }
