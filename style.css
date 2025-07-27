@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root { --key-h: 3.6rem; --key-h-md: 4.2rem; }
 
 .h-dvh { height:100vh; }
