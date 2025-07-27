@@ -3,58 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Find the Article</title>
-
+  <title>WikiGuess &mdash; Daily Wikipedia Game</title>
+  <meta name="description" content="Play WikiGuess, a daily game based on Wikipedia. Each guess you make gives you a hint about the article of the day!">
+  <link rel="canonical" href="https://wiki-guess.com/">
+  <meta property="og:type" content="game" />
+  <meta property="og:title" content="WikiGuess &mdash; Daily Wikipedia Game" />
+  <meta property="og:description" content="Each guess you make gives you a hint about the article of the day!" />
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <style>
-    :root { --key-h: 3.6rem; --key-h-md: 4.2rem; }
-
-    .h-dvh { height:100vh; }
-        @supports (height: 100dvh) {
-        .h-dvh { height:100dvh; }
-    }
-
-    .key{flex:1 1 0%;min-width:0;height:var(--key-h);display:flex;align-items:center;justify-content:center;border-radius:0.25rem;background:#334155;color:#fff;font-weight:600;user-select:none}
-    .key.wide{flex:1.5 1 0%;font-size:.65rem}
-    @media (min-width:768px){.key{height:var(--key-h-md);font-size:.9rem}.key.wide{font-size:.75rem}}
-
-    .chip,.suggestion-main{background-color:rgba(30,41,59,.4);border:1px solid #475569;border-radius:.25rem;text-transform:uppercase;font-weight:700;color:#fff;white-space:nowrap;user-select:none}
-    .chip{padding:.35rem .75rem;font-size:.6rem;letter-spacing:.025em}
-    .suggestion-main{padding:.5rem .75rem;font-size:.9rem;letter-spacing:.05em;text-align:center;box-shadow:0 0 10px 2px rgba(0, 0, 0, 0.6)}
-
-    .scrollbar-dark::-webkit-scrollbar{width:.45rem}
-    .scrollbar-dark::-webkit-scrollbar-track{background:transparent}
-    .scrollbar-dark::-webkit-scrollbar-thumb{background:#1e293b;border-radius:.25rem}
-
-    [data-card]{cursor:pointer;transition:all .2s ease}
-    [data-card].expanded{background:rgba(30,41,59,.35)}
-
-    .card-title,.card-score{transition:all .2s ease}
-
-    @keyframes blink {
-        0%, 50%   { opacity: 1; }
-        50.01%,100% { opacity: 0; }
-    }
-    .caret-after::after {
-        content: '';                 
-        display: inline-block;
-        width: 1px;                 
-        height: 1em;
-        background: currentColor;
-        margin-left: 0.25rem;
-        animation: blink 1s steps(1) infinite;
-    }
-
-    .blink-caret{
-        display:inline-block;
-        width:1px;
-        height:1em;
-        background:currentColor;
-        margin-left:0;       
-        animation:blink 1s steps(1) infinite;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <!-- Google tag (gtag.js) -->
@@ -150,7 +106,7 @@
   <header class="shrink-0 px-4 pt-6 pb-2 w-full max-w-xl mx-auto select-none">
     <div class="flex items-baseline justify-between mb-2">
       <h1 class="text-xl font-extrabold tracking-tight md:text-2xl">
-        Find the Article&nbsp;#<span id="dailyNumber"></span>
+        WikiGuess&nbsp;#<span id="dailyNumber"></span>
       </h1>
       <span class="whitespace-nowrap font-semibold text-sm md:text-base">
         Guesses:&nbsp;<span id="guessCount">0</span>
