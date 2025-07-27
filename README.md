@@ -1,0 +1,1 @@
+Rebuild output.css with npx tailwindcss -c tailwind.config.js -i style.css -o output.css --watch
