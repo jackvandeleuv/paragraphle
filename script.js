@@ -162,15 +162,37 @@ function renderGuesses() {
 
 async function loadGuess(guessArticleId) {
     if (isWin) return;
+    if (isGuessing) return;
+    isGuessing = true;
 
     document.getElementById('lastGuessText').innerHTML = '...';
     document.getElementById('lastGuessDistance').innerHTML = '...';
+    document.getElementById('lastGuessBox').className = `
+        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        px-3 py-1 rounded border border-slate-700
+        bg-slate-700 text-slate-700 animate-[loadingBox_0.5s_linear_infinite_alternate]
+    `;
+
+    // const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    // await sleep(5000).then(() => {});
+
     document.getElementById('guessCount').innerHTML = ++guessCount;
 
     document.getElementById('mainSuggestionText').innerHTML = '';
     document.getElementById('mainSuggestionPrompt').innerHTML = '';
 
     const guessResponse = await fetch(`${URI}/guess_article/${guessArticleId}/limit/10/session_id/${SESSION_ID}`);
+    if (!guessResponse.ok) {
+        document.getElementById('lastGuessText').innerHTML = 'Error! please try again';
+        document.getElementById('lastGuessDistance').innerHTML = '';
+        document.getElementById('lastGuessBox').className = `
+            mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+            px-3 py-1 rounded border border-white-600 text-white
+        `;
+        isGuessing = false;
+        return;
+    }
+
     const guessData = await guessResponse.json();
 
     guessData.sort((a, b) => a.distance - b.distance);
@@ -207,6 +229,7 @@ async function loadGuess(guessArticleId) {
     }
 
     mainSuggestion = null;
+    isGuessing = false;
 }
 
 function flagNoSuggestion() {
@@ -324,6 +347,7 @@ function renderWin(title) {
 const URI = 'https://api.wiki-guess.com';
 // const URI = 'http://localhost:8000';
 
+let isGuessing = false;
 let isWin = false;
 const highlightOpacity = 60;
 let guessCount = 0;
@@ -345,7 +369,10 @@ WHITELIST_KEYS = [
     ',', ':', '-',
     ' ', `'`, `"`,
     '(', ')', '+',
-    '-', '_'
+    '-', '_', '1',
+    '2', '3', '4',
+    '5', '6', '7', 
+    '8', '9', '0'
 ];
 for (const key of WHITELIST_KEYS) {
     acceptedKeys.add(key)
