@@ -1,8 +1,13 @@
-:root { --key-h: 3.6rem; --key-h-md: 4.2rem; }
+:root { 
+    --key-h: 3.6rem; 
+    --key-h-md: 4.2rem; 
+}
 
 .h-dvh { height:100vh; }
     @supports (height: 100dvh) {
-    .h-dvh { height:100dvh; }
+    .h-dvh { 
+        height:100dvh; 
+    }
 }
 
 .key{
@@ -24,14 +29,14 @@
     font-size:.65rem
 }
 
-@media (min-width:768px){
+@media (min-width:768px) {
     .key{
-        height:var(--key-h-md);
-        font-size:.9rem
+        height: var(--key-h-md);
+        font-size: .9rem
     }
     
     .key.wide{
-        font-size:.75rem
+        font-size: .75rem
     }
 }
 
@@ -43,15 +48,22 @@
 .scrollbar-dark::-webkit-scrollbar-track{background:transparent}
 .scrollbar-dark::-webkit-scrollbar-thumb{background:#1e293b;border-radius:.25rem}
 
-[data-card]{cursor:pointer;transition:all .2s ease}
-[data-card].expanded{background:rgba(30,41,59,.35)}
+[data-card]{
+    cursor:pointer;transition:all .2s ease
+}
+[data-card].expanded{
+    background:rgba(30,41,59,.35)
+}
 
-.card-title,.card-score{transition:all .2s ease}
+.card-title,.card-score{
+    transition:all .2s ease
+}
 
 @keyframes blink {
     0%, 50%   { opacity: 1; }
     50.01%,100% { opacity: 0; }
 }
+
 .caret-after::after {
     content: '';                 
     display: inline-block;
@@ -62,11 +74,16 @@
     animation: blink 1s steps(1) infinite;
 }
 
-.blink-caret{
+.blink-caret {
     display:inline-block;
     width:1px;
     height:1em;
     background:currentColor;
     margin-left:0;       
-    animation:blink 1s steps(1) infinite;
+    animation: blink 1s steps(1) infinite;
+}
+
+@keyframes loadingBox {
+  0%   { opacity: .5; }
+  100% { opacity: 1; }
 }
