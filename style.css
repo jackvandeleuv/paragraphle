@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root { 
     --key-h: 3.6rem; 
     --key-h-md: 4.2rem; 
@@ -50,9 +52,6 @@
 
 [data-card]{
     cursor:pointer;transition:all .2s ease
-}
-[data-card].expanded{
-    background:rgba(30,41,59,.35)
 }
 
 .card-title,.card-score{

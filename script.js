@@ -1,27 +1,52 @@
-function tempToColor(value) {
+function tempToColor(value, elemType) {
     const clamped = Math.max(0, Math.min(2, value));
 
-    const palette = [
-        'orange-800',
-        'orange-700',
-        'orange-600',
-        'orange-500',
-        'orange-400',
-        'orange-300',
-        'sky-600',
-        'sky-600',
-        'sky-600',
-        'sky-600',
-        'sky-700',
-        'sky-700',
-        'sky-700',
-        'sky-700',
-        'sky-700',
-        'sky-700',
-        'sky-700',
-        'sky-700',
-        'sky-700'
-    ];
+    let palette = [];
+    if (elemType === 'border') {
+        palette = [
+            'border-orange-800/60',
+            'border-orange-700/60',
+            'border-orange-600/60',
+            'border-orange-500/60',
+            'border-orange-400/60',
+            'border-orange-300/60',
+            'border-sky-600/60',
+            'border-sky-600/60',
+            'border-sky-600/60',
+            'border-sky-600/60',
+            'border-sky-700/60',
+            'border-sky-700/60',
+            'border-sky-700/60',
+            'border-sky-700/60',
+            'border-sky-700/60',
+            'border-sky-700/60',
+            'border-sky-700/60',
+            'border-sky-700/60',
+            'border-sky-700/60'
+        ];
+    } else {
+        palette = [
+            'bg-orange-800/60',
+            'bg-orange-700/60',
+            'bg-orange-600/60',
+            'bg-orange-500/60',
+            'bg-orange-400/60',
+            'bg-orange-300/60',
+            'bg-sky-600/60',
+            'bg-sky-600/60',
+            'bg-sky-600/60',
+            'bg-sky-600/60',
+            'bg-sky-700/60',
+            'bg-sky-700/60',
+            'bg-sky-700/60',
+            'bg-sky-700/60',
+            'bg-sky-700/60',
+            'bg-sky-700/60',
+            'bg-sky-700/60',
+            'bg-sky-700/60',
+            'bg-sky-700/60'
+        ];
+    }
 
     const idx = Math.round((clamped / 2) * (palette.length - 1));
     return palette[idx];
@@ -116,13 +141,34 @@ function loadDefaultSuggestion() {
     `;
 }
 
+function urlToName(title) {
+    const titleSplit = title.split('/wiki/');
+    return titleSplit[titleSplit.length - 1];
+}
+
+async function getWikiImage(url) {
+    // const defaultImage = 'https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/263px-Wikipedia-logo-v2.svg.png';
+    const defaultImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Wikipedia-logo-v2-square.svg/1024px-Wikipedia-logo-v2-square.svg.png';
+    try {
+        const name = urlToName(url);
+        const imageURL = `https://en.wikipedia.org/api/rest_v1/page/summary/${name}`;
+        const res = await fetch(imageURL, {headers: {'Accept': 'application/json'}});
+        if (!res.ok) return defaultImage;
+        const data = await res.json();
+        console.log(data)
+        return data.originalimage?.source || defaultImage;
+    } catch (error) {
+        console.error(error);
+        return defaultImage;
+    }
+}
 
 function renderCardHTML(row) {
-    const color = tempToColor(row.distance);
+    const borderColor = tempToColor(row.distance, 'border');
     return `
         <article data-card
             class="
-                relative bg-slate-700/30 border border-${color}/${highlightOpacity}
+                relative bg-slate-700/70 border ${borderColor}
                 rounded p-4 pt-5 text-sm leading-snug select-none
             ">
             <span class="card-title absolute -top-2 left-2 bg-slate-900 px-1 text-xs font-bold uppercase">
@@ -208,24 +254,27 @@ async function loadGuess(guessArticleId) {
 
     const displayDistance = guessData[0].distance.toFixed(2);
     const guessDataTop = guessData[0].distance;
-    const color = tempToColor(guessDataTop);
+    const borderColor = tempToColor(guessDataTop, 'border');
+    const backgroundColor = tempToColor(guessDataTop, 'bg');
 
     document.getElementById('lastGuessBox').className = `
         mb-4 flex items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border border-${color}/${highlightOpacity} 
-        bg-${color}/${highlightOpacity} text-white
+        px-3 py-1 rounded border ${borderColor} 
+        ${backgroundColor} text-white
     `;
     document.getElementById('lastGuessDistance').innerHTML = `Distance: ${displayDistance}`;
+    document.getElementById('lastGuessImage').src = await getWikiImage(guessData[0].url);
+    document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.04]';
 
     addCardListeners();
 
-    bestScore = Math.min(bestScore, guessDataTop)
-    const progress = Math.round(Math.max(0, 100 - (100 * bestScore)))
+    bestScore = Math.min(bestScore, guessDataTop);
+    const progress = Math.round(Math.max(0, 100 - (100 * bestScore)));
     document.getElementById('progressBar').style.width = `${progress}%`;
-    document.getElementById('progressBar').classList.add(`bg-${tempToColor(bestScore)}/${highlightOpacity}`);
+    document.getElementById('progressBar').classList.add(tempToColor(bestScore, 'bg'));
 
     if (guessData[0].is_win) {
-        renderWin(guessData[0].title.toUpperCase().trim());
+        await renderWin(guessData[0].title.toUpperCase().trim(), guessData[0].url);
     }
 
     mainSuggestion = null;
@@ -328,14 +377,15 @@ function addIntroModalListener() {
     })
 }
 
-function renderWin(title) {
+async function renderWin(title, imageURL) {
     document.getElementById('progressBar').style.width = `100%`;
-    document.getElementById('progressBar').classList.add(`bg-red-700/${highlightOpacity}`);
+    document.getElementById('progressBar').classList.add(`bg-red-700/60`);
     document.getElementById('lastGuessDistance').innerHTML = `Distance: 0`;
 
     document.getElementById('winModalGuessCount').innerHTML = guessCount;
     document.getElementById('winModalTitle').innerHTML = title;
-    
+    document.getElementById('winImage').src = await getWikiImage(imageURL);
+
     document.getElementById('winModal').style.display = 'flex'
     document.getElementById('winModal').addEventListener('click', () => {
         document.getElementById('winModal').style.display = 'none';
@@ -349,7 +399,6 @@ const URI = 'https://api.wiki-guess.com';
 
 let isGuessing = false;
 let isWin = false;
-const highlightOpacity = 60;
 let guessCount = 0;
 let text = '';
 let mainSuggestion;
