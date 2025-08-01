@@ -19,9 +19,10 @@
   <meta property="og:type" content="game" />
   <meta property="og:title" content="WikiGuess &mdash; Daily Wikipedia Game" />
   <meta property="og:description" content="Each guess you make gives you a hint about the article of the day!" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="tailwind.css">
 </head>
+
+<img class="hidden absolute" id="lastGuessImage" src=""></img>
 
 <body class="h-dvh bg-slate-900 text-white flex flex-col">
   <img class="hidden" src="logo.png">
@@ -93,10 +94,12 @@
       </button>
 
       <div class="px-6 pt-9 pb-8 text-[15px] leading-relaxed">
-        <h2 id="winModalTitle" class="text-2xl font-extrabold tracking-tight leading-tight mb-3">
+        <h2 class="text-2xl font-extrabold tracking-tight leading-tight mb-3">
+          You got it!
         </h2>
-        <p class="mb-2 font-medium">You got it!</p>
-        <p id="winModalDesc" class="text-sm text-sky-50/90">
+        <img class="w-full max-w-2xl object-cover mb-4" id="winImage" src=""></img>
+        <p id="winModalTitle" class="mb-2 text-xl font-bold"></p>
+        <p id="winModalDesc" class="text-lg text-sky-50/90">
           Guesses:
           <span id="winModalGuessCount" aria-live="polite" class="font-semibold text-white"></span>
         </p>
@@ -142,9 +145,9 @@
   </main>
 
   <footer
-    class="shrink-0 pb-safe pb-4 px-4 w-full max-w-4xl mx-auto flex flex-col items-center gap-3 md:gap-4 bg-slate-900">
+    class="shrink-0 pb-safe pb-4 px-4 w-full max-w-4xl mx-auto flex flex-col items-center gap-3 md:gap-4">
 
-    <div class="w-full flex flex-col items-center gap-2 sm:mb-8">
+    <div class="w-full flex flex-col items-center gap-2 sm:mb-6">
       <div id="mainSuggestion" class="suggestion-main w-full relative pr-12">
         <span id="mainSuggestionText"></span><span class="blink-caret"></span><span id="mainSuggestionPrompt" class="text-gray-500/60"></span>
         <button type="button" aria-label="Submit"
