@@ -174,7 +174,7 @@ function urlToName(title) {
     return titleSplit[titleSplit.length - 1];
 }
 
-async function loadWikiImage(url, targetID) {
+async function loadWikiImage(url, targetID, title) {
     const defaultImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Wikipedia-logo-v2-square.svg/1024px-Wikipedia-logo-v2-square.svg.png';
     try {
         const name = urlToName(url);
@@ -184,9 +184,11 @@ async function loadWikiImage(url, targetID) {
         const data = await res.json();
         const image = data.originalimage?.source || defaultImage;
         document.getElementById(targetID).src = image;
+        document.getElementById(targetID).alt = title;
     } catch (error) {
         console.error(error);
         document.getElementById(targetID).src = defaultImage;
+        document.getElementById(targetID).alt = 'Wikipedia logo.';
         return defaultImage;
     }
 }
@@ -292,7 +294,7 @@ async function loadGuess(guessArticleId) {
     `;
     document.getElementById('lastGuessDistance').innerHTML = `Distance: ${displayDistance}`;
 
-    loadWikiImage(guessData[0].url, 'lastGuessImage');
+    loadWikiImage(guessData[0].url, 'lastGuessImage', guessData[0].title);
     document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.04]';
 
     addCardListeners();
@@ -422,7 +424,7 @@ async function renderWin(title, imageURL) {
     document.getElementById('winModalGuessCount').innerHTML = guessCount;
     document.getElementById('winModalTitle').innerHTML = title;
     
-    await loadWikiImage(imageURL, 'winImage');
+    await loadWikiImage(imageURL, 'winImage', title);
 
     document.getElementById('winModal').style.display = 'flex'
     document.getElementById('winModal').addEventListener('click', () => {
