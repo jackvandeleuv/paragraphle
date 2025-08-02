@@ -52,6 +52,34 @@ function tempToColor(value, elemType) {
     return palette[idx];
 }
 
+function tempToProgress(score) {
+    const progress = Math.max(0, 1 - Math.pow(score, 1.5));
+    const widths = [
+        'w-[5%]',
+        'w-[10%]',
+        'w-[15%]',
+        'w-[20%]',
+        'w-[25%]',
+        'w-[30%]',
+        'w-[35%]',
+        'w-[40%]',
+        'w-[45%]',
+        'w-[50%]',
+        'w-[55%]',
+        'w-[60%]',
+        'w-[65%]',
+        'w-[70%]',
+        'w-[75%]',
+        'w-[80%]',
+        'w-[85%]',
+        'w-[90%]',
+        'w-[100%]' 
+    ];
+
+    const idx = Math.round(progress * (widths.length - 1)); 
+    return widths[idx];
+}
+
 function addCardListeners() {
     document.querySelectorAll('[data-card]').forEach(card => {
         const title   = card.querySelector('.card-title');
@@ -146,8 +174,7 @@ function urlToName(title) {
     return titleSplit[titleSplit.length - 1];
 }
 
-async function getWikiImage(url) {
-    // const defaultImage = 'https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/263px-Wikipedia-logo-v2.svg.png';
+async function loadWikiImage(url, targetID) {
     const defaultImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Wikipedia-logo-v2-square.svg/1024px-Wikipedia-logo-v2-square.svg.png';
     try {
         const name = urlToName(url);
@@ -155,10 +182,11 @@ async function getWikiImage(url) {
         const res = await fetch(imageURL, {headers: {'Accept': 'application/json'}});
         if (!res.ok) return defaultImage;
         const data = await res.json();
-        console.log(data)
-        return data.originalimage?.source || defaultImage;
+        const image = data.originalimage?.source || defaultImage;
+        document.getElementById(targetID).src = image;
     } catch (error) {
         console.error(error);
+        document.getElementById(targetID).src = defaultImage;
         return defaultImage;
     }
 }
@@ -263,15 +291,16 @@ async function loadGuess(guessArticleId) {
         ${backgroundColor} text-white
     `;
     document.getElementById('lastGuessDistance').innerHTML = `Distance: ${displayDistance}`;
-    document.getElementById('lastGuessImage').src = await getWikiImage(guessData[0].url);
+
+    loadWikiImage(guessData[0].url, 'lastGuessImage');
     document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.04]';
 
     addCardListeners();
 
     bestScore = Math.min(bestScore, guessDataTop);
-    const progress = Math.round(Math.max(0, 100 - (100 * bestScore)));
-    document.getElementById('progressBar').style.width = `${progress}%`;
-    document.getElementById('progressBar').classList.add(tempToColor(bestScore, 'bg'));
+    const progress = tempToProgress(bestScore);
+    
+    document.getElementById('progressBar').className = `h-full ${progress} ${tempToColor(bestScore, 'bg')}`;   
 
     if (guessData[0].is_win) {
         await renderWin(guessData[0].title.toUpperCase().trim(), guessData[0].url);
@@ -334,6 +363,7 @@ function addButtonListeners() {
             return;
         } else {
             const text = document.getElementById('mainSuggestionText').innerHTML;
+            if (text.length > MAX_INPUT_CHARS) return;
             document.getElementById('mainSuggestionText').innerHTML = text + e.key;
             updateMainSuggestion();
         }
@@ -354,10 +384,12 @@ function addButtonListeners() {
                 loadGuess(mainSuggestion.article_id);
             } else if (value === 'Space') {
                 const text = document.getElementById('mainSuggestionText').innerHTML;
+                if (text.length > MAX_INPUT_CHARS) return;
                 document.getElementById('mainSuggestionText').innerHTML = text + ' ';
                 updateMainSuggestion();
             } else {
                 const text = document.getElementById('mainSuggestionText').innerHTML;
+                if (text.length > MAX_INPUT_CHARS) return;
                 document.getElementById('mainSuggestionText').innerHTML = text + value;
                 updateMainSuggestion();
             }
@@ -378,13 +410,19 @@ function addIntroModalListener() {
 }
 
 async function renderWin(title, imageURL) {
-    document.getElementById('progressBar').style.width = `100%`;
-    document.getElementById('progressBar').classList.add(`bg-red-700/60`);
+    document.getElementById('progressBar').className = `h-full bg-red-700/60 w-full`;   
+
     document.getElementById('lastGuessDistance').innerHTML = `Distance: 0`;
+    document.getElementById('lastGuessBox').className = `
+        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        px-3 py-1 rounded border border-red-700/60
+        bg-red-700/60 text-white
+    `;
 
     document.getElementById('winModalGuessCount').innerHTML = guessCount;
     document.getElementById('winModalTitle').innerHTML = title;
-    document.getElementById('winImage').src = await getWikiImage(imageURL);
+    
+    await loadWikiImage(imageURL, 'winImage');
 
     document.getElementById('winModal').style.display = 'flex'
     document.getElementById('winModal').addEventListener('click', () => {
@@ -406,6 +444,7 @@ let bestScore = 2;
 const guesses = [];
 const guessSet = new Set();
 const SESSION_ID = Date.now();
+const MAX_INPUT_CHARS = 15;
 
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {

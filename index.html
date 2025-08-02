@@ -24,9 +24,7 @@
 
 <img class="hidden absolute" id="lastGuessImage" src=""></img>
 
-<body class="h-dvh bg-slate-900 text-white flex flex-col">
-  <img class="hidden" src="logo.png">
-    
+<body class="h-dvh bg-slate-900 text-white flex flex-col">   
   <!-- Intro Modal -->
   <div
     class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-sm px-3 py-6 sm:py-0"
@@ -37,21 +35,11 @@
     id="introModal"
   >
     <div class="relative w-full max-w-sm rounded-md bg-neutral-900 text-neutral-100 shadow-2xl ring-1 ring-neutral-700/60 overflow-hidden">
-      <button
-        type="button"
-        aria-label="Close dialog"
-        class="absolute top-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded hover:bg-neutral-700/60 focus:outline-none focus-visible:ring focus-visible:ring-emerald-400/70 transition"
-      >
-        <span class="block h-4 w-4 relative">
-          <span class="absolute inset-0 rotate-45 bg-current origin-center" style="height:2px;width:100%;top:50%;transform:translateY(-50%) rotate(45deg);"></span>
-          <span class="absolute inset-0 -rotate-45 bg-current origin-center" style="height:2px;width:100%;top:50%;transform:translateY(-50%) rotate(-45deg);"></span>
-        </span>
-      </button>
-
       <div class="px-6 pt-7 pb-8 text-[15px] leading-relaxed">
         <h2 id="howto-title" class="text-2xl font-extrabold tracking-tight mb-3">
           How To Play
         </h2>
+        <img class="h-48 w-full object-cover mb-4" src="logo.png">
         <p id="howto-desc" class="mb-4">
           Find the Article of the Day!
         </p>
@@ -61,6 +49,9 @@
           <li>Paragraphs from the articles you guess are scored individually.</li>
           <li>The closer you get to zero, the better!</li>
         </ul>
+      </div>
+      <div class="flex justify-center w-full">
+        <button class="bg-neutral-300 hover:bg-neutral-200 text-black font-bold rounded-lg px-6 py-2 mb-4">Start</button>
       </div>
     </div>
   </div>
@@ -118,8 +109,7 @@
     </div>
     <div class="h-1 bg-slate-700 rounded overflow-hidden">
       <div 
-        class="h-full" 
-        style="width:0%"
+        class="h-full w-0" 
         id="progressBar"
       ></div>
     </div>
