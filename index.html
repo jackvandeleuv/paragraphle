@@ -14,15 +14,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WikiGuess &mdash; Daily Game</title>
-  <meta name="description" content="Play WikiGuess, a daily game based on Wikipedia. Each guess you make gives you a hint about the article of the day!">
+
+  <meta name="description" content="Play WikiGuess, a daily game based on Wikipedia. Each guess you make gives you a hint about the article of the day. Powered by dense vector search.">
   <link rel="canonical" href="https://wiki-guess.com/">
   <meta property="og:type" content="game" />
   <meta property="og:title" content="WikiGuess &mdash; Daily Wikipedia Game" />
   <meta property="og:description" content="Each guess you make gives you a hint about the article of the day!" />
+  <meta property="og:image" content="https://wiki-guess.com/lincoln_portrait.jpg">
+  <meta property="og:image:width" content="2200">
+  <meta property="og:image:height" content="1190">
+  <meta name="robots" content="max-image-preview:large">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://wiki-guess.com/lincoln_portrait.jpg">
+
   <link rel="stylesheet" href="tailwind.css">
 </head>
 
-<img class="hidden absolute" id="lastGuessImage" alt="Background image." src=""></img>
+<img class="hidden absolute" id="lastGuessImage" alt="Background image." src="lincoln_portrait.jpg"></img>
 
 <body class="h-dvh bg-slate-900 text-white flex flex-col">   
   <!-- Intro Modal -->
@@ -39,7 +47,7 @@
         <h2 id="howto-title" class="text-2xl font-extrabold tracking-tight mb-3">
           How To Play
         </h2>
-        <img class="h-48 w-full object-cover mb-4" alt="Portrait of Lincoln." src="lincoln-portrait.webp">
+        <img class="h-48 w-full object-cover mb-4" alt="Portrait of Lincoln." src="lincoln_portrait.jpg">
         <p id="howto-desc" class="mb-4">
           Find the Article of the Day!
         </p>
@@ -88,7 +96,7 @@
         <h2 class="text-2xl font-extrabold tracking-tight leading-tight mb-3">
           You got it!
         </h2>
-        <img class="w-full max-w-2xl object-cover mb-4" id="winImage" alt="Image of daily article." src=""></img>
+        <img class="w-full max-w-2xl object-cover mb-4" id="winImage" alt="Image of daily article." src="lincoln_portrait.jpg"></img>
         <p id="winModalTitle" class="mb-2 text-xl font-bold"></p>
         <p id="winModalDesc" class="text-lg text-sky-50/90">
           Guesses:

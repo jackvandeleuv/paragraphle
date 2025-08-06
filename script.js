@@ -295,7 +295,7 @@ async function loadGuess(guessArticleId) {
     document.getElementById('lastGuessDistance').innerHTML = `Distance: ${displayDistance}`;
 
     loadWikiImage(guessData[0].url, 'lastGuessImage', guessData[0].title);
-    document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.04]';
+    document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.05]';
 
     addCardListeners();
 
