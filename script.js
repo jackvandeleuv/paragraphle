@@ -198,7 +198,7 @@ function renderCardHTML(row) {
     return `
         <article data-card
             class="
-                relative bg-slate-700/70 border ${borderColor}
+                relative bg-slate-800 border ${borderColor}
                 rounded p-4 pt-5 text-sm leading-snug select-none
             ">
             <span class="card-title absolute -top-2 left-2 bg-slate-900 px-1 text-xs font-bold uppercase">
@@ -295,7 +295,7 @@ async function loadGuess(guessArticleId) {
     document.getElementById('lastGuessDistance').innerHTML = `Distance: ${displayDistance}`;
 
     loadWikiImage(guessData[0].url, 'lastGuessImage', guessData[0].title);
-    document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.05]';
+    document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.07]';
 
     addCardListeners();
 
