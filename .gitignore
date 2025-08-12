@@ -22,3 +22,4 @@ testing
 backend/__pycache__
 node_modules
 .vscode
+backend/test_embed.ipynb
