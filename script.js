@@ -351,12 +351,17 @@ async function updateMainSuggestion() {
 }
 
 function addButtonListeners() {
-
     document.addEventListener('keydown', (e) => {
+        e.preventDefault();
         if (e.key === 'Backspace') {
             document.getElementById('mainSuggestionPrompt').innerHTML = '';
             const current = document.getElementById('mainSuggestionText').innerText;
             document.getElementById('mainSuggestionText').innerHTML = current.slice(0, current.length - 1);
+            updateMainSuggestion();
+        } else if (e.key === ' ') {
+            const text = document.getElementById('mainSuggestionText').innerHTML;
+            if (text.length > MAX_INPUT_CHARS || text.trim().length === 0) return;
+            document.getElementById('mainSuggestionText').innerHTML = text + ' ';
             updateMainSuggestion();
         } else if (e.key === 'Enter') {
             if (mainSuggestion === null) return;
