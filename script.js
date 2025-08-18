@@ -241,16 +241,13 @@ async function loadGuess(guessArticleId) {
     if (isGuessing) return;
     isGuessing = true;
 
-    document.getElementById('lastGuessText').innerHTML = '...';
-    document.getElementById('lastGuessDistance').innerHTML = '...';
+    document.getElementById('lastGuessText').innerHTML = '&nbsp;';
+    document.getElementById('lastGuessDistance').innerHTML = '&nbsp;';
     document.getElementById('lastGuessBox').className = `
         mb-4 flex items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-slate-700
         bg-slate-700 text-slate-700 animate-[loadingBox_0.5s_linear_infinite_alternate]
     `;
-
-    // const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-    // await sleep(5000).then(() => {});
 
     document.getElementById('guessCount').innerHTML = ++guessCount;
 
@@ -350,6 +347,17 @@ async function updateMainSuggestion() {
     }
 }
 
+function getMaxInputChars() {
+    const width = window.innerWidth;
+    if (width < 400) {
+        return 15
+    } else if (width < 700) {
+        return 18
+    } else {
+        return 38
+    }
+}
+
 function addButtonListeners() {
     document.addEventListener('keydown', (e) => {
         e.preventDefault();
@@ -360,7 +368,7 @@ function addButtonListeners() {
             updateMainSuggestion();
         } else if (e.key === ' ') {
             const text = document.getElementById('mainSuggestionText').innerHTML;
-            if (text.length > MAX_INPUT_CHARS || text.trim().length === 0) return;
+            if (text.length > getMaxInputChars() || text.trim().length === 0) return;
             document.getElementById('mainSuggestionText').innerHTML = text + ' ';
             updateMainSuggestion();
         } else if (e.key === 'Enter') {
@@ -370,7 +378,7 @@ function addButtonListeners() {
             return;
         } else {
             const text = document.getElementById('mainSuggestionText').innerHTML;
-            if (text.length > MAX_INPUT_CHARS) return;
+            if (text.length > getMaxInputChars()) return;
             document.getElementById('mainSuggestionText').innerHTML = text + e.key;
             updateMainSuggestion();
         }
@@ -391,12 +399,12 @@ function addButtonListeners() {
                 loadGuess(mainSuggestion.article_id);
             } else if (value === 'Space') {
                 const text = document.getElementById('mainSuggestionText').innerHTML;
-                if (text.length > MAX_INPUT_CHARS) return;
+                if (text.length > getMaxInputChars()) return;
                 document.getElementById('mainSuggestionText').innerHTML = text + ' ';
                 updateMainSuggestion();
             } else {
                 const text = document.getElementById('mainSuggestionText').innerHTML;
-                if (text.length > MAX_INPUT_CHARS) return;
+                if (text.length > getMaxInputChars()) return;
                 document.getElementById('mainSuggestionText').innerHTML = text + value;
                 updateMainSuggestion();
             }
@@ -451,7 +459,6 @@ let bestScore = 2;
 const guesses = [];
 const guessSet = new Set();
 const SESSION_ID = Date.now();
-const MAX_INPUT_CHARS = 15;
 
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
