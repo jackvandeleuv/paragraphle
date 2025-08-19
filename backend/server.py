@@ -13,31 +13,7 @@ import time
 
 load_dotenv()
 
-client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 DB_PATH = os.environ.get('DB_PATH')
-
-STOP_WORDS = set([
-    'a', 'on', 'had',
-    'it', 'any', 'and',
-    'of', 'in', 'is',
-    'as', 'was', 'or',
-    'by', 'for', 'that',
-    'from', 'be', 'which',
-    'use',  'they', 'known',
-    'may',  'other', 'has', 
-    'into',  'the', 'with',
-    'an', 'to', 'its',
-    'he', 'his', 'at',
-    '–', 'are', 'all',
-    'both', 'she', 'her',
-    'there', 'were', 'during',
-    'used', 'have', 'also',
-    'these', 'after', 'who',
-    'but', 'new', 'their',
-    'such', 'not', 'been',
-    'this', 'can', 'more',
-    'many', 'this'
-])
 
 class Article:
     def __init__(self, article_id, clean_title, count, title, url):
@@ -87,39 +63,6 @@ def get_daily_word_vector_live(article_id: int):
     _, guess_matrix = get_guess_info(conn, cur, article_id)
     return guess_matrix.mean(axis=0)
 
-def get_daily_word_stats(article_id: int):
-    conn = sqlite3.Connection(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("""
-        select chunk
-        from chunks
-        where article_id == ?
-    """, (article_id,))
-    chunks = [x[0].lower().strip() for x in cur.fetchall()]
-    n_chunks = len(chunks)
-
-    tokens = ' '.join(chunks).split()
-    tokens = [token.lower().strip() for token in tokens]
-    n_tokens = len(tokens)
-
-    token_counts = {token: val for token, val in Counter(tokens).items() if token not in STOP_WORDS}
-
-    chunks_with_token = defaultdict(int)
-    for chunk in chunks:
-        seen = set()
-        for token in chunk.split():
-            if token in seen:
-                continue
-            chunks_with_token[token] += 1
-            seen.add(token)
-
-    return {
-        'n_chunks': n_chunks,
-        'n_tokens': n_tokens,
-        'chunks_with_token': chunks_with_token,
-        'token_counts': token_counts
-    }
-
 def bin_prefix_search(array, prefix, limit):
     left = 0
     right = len(array)
@@ -159,24 +102,7 @@ def bin_prefix_search(array, prefix, limit):
 
     return array_slice
 
-def cache_embedding(conn, model, article_id, result_data, guess):
-    cursor = conn.cursor()
-    rows = []
-    for i in range(len(result_data)):
-        rows.append((
-            np.array(result_data[i].embedding).tobytes(), 
-            article_id, 
-            guess[i][0], 
-            model
-        ))
-
-    cursor.executemany("""
-        insert into embeddings (vector, article_id, chunk_id, model) values (?, ?, ?, ?)
-    """, (rows))
-    
-    conn.commit()
-
-def get_cached_embedding(conn, article_id):
+def get_embedding(conn, article_id):
     cursor = conn.cursor()
     cursor.execute("""
         select vector 
@@ -187,7 +113,11 @@ def get_cached_embedding(conn, article_id):
     rows = cursor.fetchall()
     if not rows:
         return None
-    return np.array([np.frombuffer(row[0]) for row in rows])
+
+    return np.array([
+        np.frombuffer(row[0], dtype=np.float16, count=512) 
+        for row in rows
+    ])
 
 def make_suggestion_cache(cache_limit):
     strings = list('abcdefghijklmnopqrstuvwxyz')
@@ -217,10 +147,6 @@ def get_daily_word():
     index = get_daily_index()
     return target_word_choices[index % len(target_word_choices)]
 
-def get_daily_word_vec():
-    index = get_daily_index()
-    return daily_vec_choices[index % len(daily_vec_choices)]
-
 def get_guess_info(conn, cur, article_id):
     cur.execute("""
         select chunk_id, chunk, url, title
@@ -239,20 +165,9 @@ def get_guess_info(conn, cur, article_id):
     """, (article_id, article_id))
     guess = cur.fetchall()
 
-    guess_matrix = get_cached_embedding(conn, article_id)
-    if guess_matrix is None:
-        result = client.embeddings.create(input=[x[1] for x in guess], model=EMBEDDING_MODEL)
-        cache_embedding(conn, EMBEDDING_MODEL, article_id, result.data, guess)
-        guess_matrix = np.array([np.array(x.embedding) for x in result.data])
+    guess_matrix = get_embedding(conn, article_id)
 
     return guess, guess_matrix
-
-def calculate_daily_vecs():
-    daily_vec_choices = []
-    for i, article_id in enumerate(target_word_choices):
-        print(f"Loading vectors: {i + 1} / {len(target_word_choices)}")
-        daily_vec_choices.append(get_daily_word_vector_live(article_id))
-    np.save('target_vecs', np.array(daily_vec_choices))
 
 
 app = Flask(__name__)
@@ -278,20 +193,13 @@ app.config.update(
 
 
 # Global variables.
-EMBEDDING_MODEL = "text-embedding-3-small"
 target_word_choices = get_target_word_choices()
 CACHE_LIMIT = 50
 articles = get_articles()
-
-# calculate_daily_vecs()
-
-daily_vec_choices = np.load('target_vecs.npy')
+with open('test.json', 'w') as file:
+    file.write(json.dumps([x.to_json() for x in articles]))
 
 suggestion_cache = make_suggestion_cache(CACHE_LIMIT)
-
-@app.route("/target_stats")
-def target_stats():
-    return jsonify(get_daily_word_stats(get_daily_word())), 200
 
 @app.route("/suggestion/<q>/limit/<limit>/session_id/<session_id>")
 def suggestion(q, limit, session_id):
@@ -335,10 +243,13 @@ def guess_article(article_id, limit, session_id):
             return 'Invalid article ID.', 404
         
         guess, guess_matrix = get_guess_info(conn, cur, article_id)
+        print('guess matrix', guess_matrix.shape)
+        _, daily_vecs = get_guess_info(conn, cur, get_daily_word())
+        daily_vec = daily_vecs.mean(axis=0)
+        print('daily vec', daily_vec.shape)
 
         # Vectorized cosine distance.
         # Faster than iteratively calling distance.cosine().
-        daily_vec = get_daily_word_vec()
         numerator = guess_matrix @ daily_vec
         denominator_rhs = np.sqrt(np.sum(daily_vec ** 2)) 
         denominator_lhs = np.sqrt(np.sum(guess_matrix ** 2, axis=1))
@@ -351,7 +262,7 @@ def guess_article(article_id, limit, session_id):
             {
                 'chunk_id': guess[i][0], 
                 'chunk': guess[i][1], 
-                'distance': distances[i], 
+                'distance': float(distances[i]), 
                 'url': guess[i][2],
                 'is_win': article_id == get_daily_word(),
                 'title': guess[i][3]
