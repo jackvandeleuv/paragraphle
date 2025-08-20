@@ -249,8 +249,6 @@ async function loadGuess(guessArticleId) {
         bg-slate-700 text-slate-700 animate-[loadingBox_0.5s_linear_infinite_alternate]
     `;
 
-    document.getElementById('guessCount').innerHTML = ++guessCount;
-
     document.getElementById('mainSuggestionText').innerHTML = '';
     document.getElementById('mainSuggestionPrompt').innerHTML = '';
 
@@ -270,10 +268,15 @@ async function loadGuess(guessArticleId) {
 
     guessData.sort((a, b) => a.distance - b.distance);
     document.getElementById('lastGuessText').innerHTML = guessData[0].title;
+    
+    if (!guessIDSet.has(guessArticleId)) {
+        document.getElementById('guessCount').innerHTML = ++guessCount;
+    }
+    guessIDSet.add(guessArticleId);
 
     for (const guess of guessData) {
-        if (guessSet.has(guess.chunk_id)) continue;
-        guessSet.add(guess.chunk_id);
+        if (guessChunkSet.has(guess.chunk_id)) continue;
+        guessChunkSet.add(guess.chunk_id);
         guesses.push(guess);
     }
     guesses.sort((a, b) => a.distance - b.distance);
@@ -457,7 +460,8 @@ let text = '';
 let mainSuggestion;
 let bestScore = 2;
 const guesses = [];
-const guessSet = new Set();
+const guessChunkSet = new Set();
+const guessIDSet = new Set();
 const SESSION_ID = Date.now();
 
 const acceptedKeys = new Set();
