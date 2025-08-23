@@ -252,7 +252,7 @@ async function loadGuess(guessArticleId) {
     document.getElementById('mainSuggestionText').innerHTML = '';
     document.getElementById('mainSuggestionPrompt').innerHTML = '';
 
-    const guessResponse = await fetch(`${URI}/guess_article/${guessArticleId}/limit/10/session_id/${SESSION_ID}`);
+    const guessResponse = await fetch(`${URI}/guessarticle?article_id=${guessArticleId}&limit=10&session_id=${SESSION_ID}`);
     if (!guessResponse.ok) {
         document.getElementById('lastGuessText').innerHTML = 'Error! please try again';
         document.getElementById('lastGuessDistance').innerHTML = '';
@@ -327,15 +327,19 @@ async function updateMainSuggestion() {
 
     document.getElementById('mainSuggestionPrompt').innerHTML = '...';
 
-    const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion/${input}/limit/6/session_id/${SESSION_ID}`));
-    const suggestionsJSON = await suggestionsResponse.json();
-    const suggestions = suggestionsJSON.data;
+    const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=6&session_id=${SESSION_ID}`));
+    const suggestions = await suggestionsResponse.json();
 
-    if (suggestions.length === 0 || !suggestionsJSON.has_match) {
+    if (suggestions.length === 0) {
         return flagNoSuggestion();
     }
 
     suggestions.sort((a, b) => b.count - a.count);
+
+    const updatedInput = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
+    if (updatedInput !== input) {
+        return 
+    }
 
     document.getElementById('mainSuggestion').style.color = '#fff';
     document.getElementById('mainSuggestion').style.border = `1px solid #475569`;
