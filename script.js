@@ -252,7 +252,7 @@ async function loadGuess(guessArticleId) {
     document.getElementById('mainSuggestionText').innerHTML = '';
     document.getElementById('mainSuggestionPrompt').innerHTML = '';
 
-    const guessResponse = await fetch(`${URI}/guessarticle?article_id=${guessArticleId}&limit=10&session_id=${SESSION_ID}`);
+    const guessResponse = await fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${SESSION_ID}`);
     if (!guessResponse.ok) {
         document.getElementById('lastGuessText').innerHTML = 'Error! please try again';
         document.getElementById('lastGuessDistance').innerHTML = '';
