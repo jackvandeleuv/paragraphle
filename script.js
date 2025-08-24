@@ -157,8 +157,7 @@ function loadEmptySuggestions() {
     `;
 }
 
-function loadDefaultSuggestion() {
-    mainSuggestion = null;
+function loadDefaultSuggestion(message) {
     document.getElementById('mainSuggestion').classList.add(
         'text-gray-500/60',
         'bg-[rgba(30,41,59,0.4)]',
@@ -166,7 +165,7 @@ function loadDefaultSuggestion() {
         'border-[#475569]'
     );
     document.getElementById('suggestionBox').innerHTML = `
-        <button class="chip">Try guessing an article!</button>
+        <button class="chip">${message}</button>
     `;
 }
 
@@ -323,7 +322,7 @@ function flagNoSuggestion() {
 async function updateMainSuggestion() {
     const input = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
     if (input === '') {
-        return loadDefaultSuggestion();
+        return loadDefaultSuggestion("Try guessing an article!");
     }
 
     const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=4&session_id=${SESSION_ID}`));
@@ -349,11 +348,16 @@ async function updateMainSuggestion() {
         topSuggestionPostfix[0] === ' ' &&
         input.length !== 0 &&
         input[input.length - 1] === ' '
-    ) topSuggestionPostfix = topSuggestionPostfix.trim();
+    ) {
+        topSuggestionPostfix = topSuggestionPostfix.trim()
+
+    }
     document.getElementById('mainSuggestionPrompt').innerHTML = trimText(topSuggestionPostfix);
 
     if (suggestions.length > 1) {
         loadSuggestionButtons(suggestions.slice(1, suggestions.length));
+    } else if (suggestions.length === 1) {
+        loadDefaultSuggestion("Only one match.")
     }
 }
 
@@ -393,7 +397,6 @@ function handleEnter() {
 }
 
 function handleOtherInput(value) {
-    console.log(value)
     const text = document.getElementById('mainSuggestionText').innerHTML;
     if (text.length > getMaxInputChars()) return;
     document.getElementById('mainSuggestionText').innerHTML = text + value;
