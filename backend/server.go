@@ -355,6 +355,8 @@ func getTargetID(targets []Target) int64 {
 }
 
 func main() {
+	logger := log.Default()
+
 	var MAX_SUGGESTIONS int64 = 30
 	var MAX_CHUNKS int64 = 10
 
@@ -366,12 +368,16 @@ func main() {
 	db_path := os.Getenv("DB_PATH")
 	db, err := sql.Open("sqlite", db_path)
 	if err != nil {
-		fmt.Println("Could not connect to database.")
+		log.Fatal("could not connect to database")
 		return
 	}
+	logger.Println("connected to database")
 
 	targets := getTargets()
+	logger.Println("got targets from disk")
+
 	articles := loadSuggestions(db)
+	logger.Println("loaded suggestion array")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "This is not a valid endpoint.", http.StatusBadRequest)
