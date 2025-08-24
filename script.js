@@ -471,7 +471,7 @@ async function renderWin(title, imageURL) {
     isWin = true;
 }
 
-const URI = 'https://api.wiki-guess.com';
+const URI = 'https://api.paragraphle.com';
 // const URI = 'http://localhost:8000';
 
 let isGuessing = false;

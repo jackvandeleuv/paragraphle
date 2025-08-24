@@ -385,7 +385,7 @@ func main() {
 
 	http.HandleFunc("/suggestion", func(w http.ResponseWriter, r *http.Request) {
 		// w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
-		w.Header().Set("Access-Control-Allow-Origin", "https://wiki-guess.com")
+		w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
 
 		q := r.URL.Query().Get("q")
 		clean_q := strings.TrimSpace(strings.ToLower(q))
@@ -409,7 +409,7 @@ func main() {
 
 	http.HandleFunc("/guess-article", func(w http.ResponseWriter, r *http.Request) {
 		// w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
-		w.Header().Set("Access-Control-Allow-Origin", "https://wiki-guess.com")
+		w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
 
 		target_id := getTargetID(targets)
 
