@@ -128,6 +128,7 @@ function addSuggestionButtonListeners() {
 
 function addMainSuggestionListener() {
     document.getElementById('mainSuggestion').addEventListener('click', () => {
+        if (mainSuggestion === null) return;
         loadGuess(mainSuggestion.article_id);
     });
 }
@@ -325,16 +326,12 @@ async function updateMainSuggestion() {
         return loadDefaultSuggestion();
     }
 
-    document.getElementById('mainSuggestionPrompt').innerHTML = '...';
-
-    const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=6&session_id=${SESSION_ID}`));
+    const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=4&session_id=${SESSION_ID}`));
     const suggestions = await suggestionsResponse.json();
 
     if (suggestions.length === 0) {
         return flagNoSuggestion();
     }
-
-    suggestions.sort((a, b) => b.count - a.count);
 
     const updatedInput = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
     if (updatedInput !== input) {
@@ -346,7 +343,13 @@ async function updateMainSuggestion() {
     
     mainSuggestion = suggestions[0];
     const topSuggestion = mainSuggestion.title.toUpperCase().trim();
-    const topSuggestionPostfix = topSuggestion.replace(input, '');
+    let topSuggestionPostfix = topSuggestion.replace(input.trim(), '');
+    if (
+        topSuggestionPostfix.length !== 0 && 
+        topSuggestionPostfix[0] === ' ' &&
+        input.length !== 0 &&
+        input[input.length - 1] === ' '
+    ) topSuggestionPostfix = topSuggestionPostfix.trim();
     document.getElementById('mainSuggestionPrompt').innerHTML = trimText(topSuggestionPostfix);
 
     if (suggestions.length > 1) {
@@ -365,29 +368,51 @@ function getMaxInputChars() {
     }
 }
 
+function handleBackspace() {
+    document.getElementById('mainSuggestionPrompt').innerHTML = '';
+    const current = document.getElementById('mainSuggestionText').innerText;
+    document.getElementById('mainSuggestionText').innerHTML = current.slice(0, current.length - 1);
+    updateMainSuggestion();
+}
+
+function handleSpace() {
+    const text = document.getElementById('mainSuggestionText').innerHTML;
+    if (
+        text.length > getMaxInputChars() || 
+        text.length === 0 ||
+        text.trim().length === 0 ||
+        text[text.length - 1] === ' '
+    ) return;
+    document.getElementById('mainSuggestionText').innerHTML = text + ' ';
+    updateMainSuggestion();
+}
+
+function handleEnter() {
+    if (mainSuggestion === null) return;
+    loadGuess(mainSuggestion.article_id);
+}
+
+function handleOtherInput(value) {
+    console.log(value)
+    const text = document.getElementById('mainSuggestionText').innerHTML;
+    if (text.length > getMaxInputChars()) return;
+    document.getElementById('mainSuggestionText').innerHTML = text + value;
+    updateMainSuggestion();
+}
+
 function addButtonListeners() {
     document.addEventListener('keydown', (e) => {
         e.preventDefault();
         if (e.key === 'Backspace') {
-            document.getElementById('mainSuggestionPrompt').innerHTML = '';
-            const current = document.getElementById('mainSuggestionText').innerText;
-            document.getElementById('mainSuggestionText').innerHTML = current.slice(0, current.length - 1);
-            updateMainSuggestion();
+            handleBackspace()
         } else if (e.key === ' ') {
-            const text = document.getElementById('mainSuggestionText').innerHTML;
-            if (text.length > getMaxInputChars() || text.trim().length === 0) return;
-            document.getElementById('mainSuggestionText').innerHTML = text + ' ';
-            updateMainSuggestion();
+            handleSpace()
         } else if (e.key === 'Enter') {
-            if (mainSuggestion === null) return;
-            loadGuess(mainSuggestion.article_id);
+            handleEnter()
         } else if (!acceptedKeys.has(e.key.toUpperCase())) {
             return;
         } else {
-            const text = document.getElementById('mainSuggestionText').innerHTML;
-            if (text.length > getMaxInputChars()) return;
-            document.getElementById('mainSuggestionText').innerHTML = text + e.key;
-            updateMainSuggestion();
+            handleOtherInput(e.key)
         }
     });
 
@@ -396,24 +421,13 @@ function addButtonListeners() {
         key.addEventListener('click', (e) => {
             const value = e.currentTarget.innerHTML;
             if (value === 'Back') {
-                document.getElementById('mainSuggestionPrompt').innerHTML = '';
-                const current = document.getElementById('mainSuggestionText').innerText;
-                document.getElementById('mainSuggestionText').innerHTML = current.slice(0, current.length - 1);
-                updateMainSuggestion();
-            }
-            else if (value === 'Enter') {
-                if (mainSuggestion === null) return;
-                loadGuess(mainSuggestion.article_id);
+                handleBackspace()
+            } else if (value === 'Enter') {
+                handleEnter()
             } else if (value === 'Space') {
-                const text = document.getElementById('mainSuggestionText').innerHTML;
-                if (text.length > getMaxInputChars()) return;
-                document.getElementById('mainSuggestionText').innerHTML = text + ' ';
-                updateMainSuggestion();
+                handleSpace()
             } else {
-                const text = document.getElementById('mainSuggestionText').innerHTML;
-                if (text.length > getMaxInputChars()) return;
-                document.getElementById('mainSuggestionText').innerHTML = text + value;
-                updateMainSuggestion();
+                handleOtherInput(value)
             }
         })
     }
@@ -482,7 +496,8 @@ WHITELIST_KEYS = [
     '-', '_', '1',
     '2', '3', '4',
     '5', '6', '7', 
-    '8', '9', '0'
+    '8', '9', '0',
+    '?', '!', ';'
 ];
 for (const key of WHITELIST_KEYS) {
     acceptedKeys.add(key)
