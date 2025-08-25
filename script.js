@@ -442,12 +442,6 @@ function addDailyNumber() {
     document.getElementById('dailyNumber').innerHTML = index;
 }
 
-function addIntroModalListener() {
-    document.getElementById('introModal').addEventListener('click', () => {
-        document.getElementById('introModal').classList.add('hidden');
-    })
-}
-
 async function renderWin(title, imageURL) {
     document.getElementById('progressBar').className = `h-full bg-red-700/60 w-full`;   
 
@@ -509,5 +503,4 @@ for (const key of WHITELIST_KEYS) {
 addCardListeners();
 addButtonListeners();
 addDailyNumber();
-addIntroModalListener();
 addMainSuggestionListener();
