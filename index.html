@@ -15,196 +15,90 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Paragraphle &mdash; Daily Game</title>
 
-  <meta name="description" content="Play WikiGuess, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target.">
+  <meta name="description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target.">
   <link rel="canonical" href="https://paragraphle.com/">
   <meta property="og:type" content="game" />
   <meta property="og:title" content="Paragraphle &mdash; Daily Game" />
-  <meta property="og:description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target." />
-  <meta property="og:image" content="https://paragraphle.com/lincoln_portrait.jpg">
+  <meta property="og:description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target."/>
+  <meta property="og:image" content="https://paragraphle.com/public/nonplussed-lincoln.jpg">
   <meta property="og:image:width" content="2200">
   <meta property="og:image:height" content="1190">
   <meta name="robots" content="max-image-preview:large">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://paragraphle.com/lincoln_portrait.jpg">
+  <meta name="twitter:image" content="https://paragraphle.com/public/nonplussed-lincoln.jpg">
 
   <link rel="stylesheet" href="tailwind.css">
 </head>
 
-<img class="hidden absolute" id="lastGuessImage" alt="Background image." src="lincoln_portrait.jpg"></img>
-
 <body class="h-dvh bg-slate-900 text-white flex flex-col">   
-  <!-- Intro Modal -->
-  <div
-    class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-sm px-3 py-6 sm:py-0"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="howto-title"
-    aria-describedby="howto-desc"
-    id="introModal"
-  >
-    <div class="relative w-full max-w-sm rounded-md bg-neutral-900 text-neutral-100 shadow-2xl ring-1 ring-neutral-700/60 overflow-hidden">
-      <div class="px-6 pt-7 pb-8 text-[15px] leading-relaxed">
-        <h2 id="howto-title" class="text-2xl font-extrabold tracking-tight mb-3">
-          How To Play
-        </h2>
-        <img class="h-48 w-full object-cover mb-4" alt="Portrait of Lincoln." src="lincoln_portrait.jpg">
-        <p id="howto-desc" class="mb-4">
-          Find the article of the day!
-        </p>
-        <ul class="list-disc space-y-3 pl-5 marker:text-neutral-200">
-          <li>Each guess must be an existing Wikipedia article.</li>
-          <li>The game tells you how close you are to the article of the day.</li>
-          <li>Paragraphs from your guesses are ranked by how similar they are to the target.</li>
-          <li>The closer you get to zero, the better!</li>
-        </ul>
-      </div>
-      <div class="flex justify-center w-full">
-        <button class="bg-neutral-300 hover:bg-neutral-200 text-black font-bold rounded-lg px-6 py-2 mb-4">Start</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Win Modal -->
-  <div
-    id="winModal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="winModalTitle"
-    aria-describedby="winModalDesc"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-    style="display: none"
-  >
-    <div
-      class="relative w-full max-w-sm origin-center rounded-xl bg-gradient-to-br from-red-500/60 to-red-600/60 text-neutral-50 shadow-2xl ring-1 ring-white/15
-            animate-[fadeIn_0.25s_ease,scaleIn_0.25s_ease]"
-    >
-      <button
-        type="button"
-        aria-label="Close dialog"
-        class="absolute top-2.5 right-2.5 inline-flex h-9 w-9 items-center justify-center rounded-md
-              text-sky-50/80 hover:text-white hover:bg-white/10 focus:outline-none
-              focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-sky-600
-              transition"
-      >
-        <span class="relative block h-4 w-4">
-          <span class="absolute inset-0 h-[2px] w-full bg-current rotate-45" aria-hidden="true"></span>
-          <span class="absolute inset-0 h-[2px] w-full bg-current -rotate-45" aria-hidden="true"></span>
-        </span>
-      </button>
-
-      <div class="px-6 pt-9 pb-8 text-[15px] leading-relaxed">
-        <h2 class="text-2xl font-extrabold tracking-tight leading-tight mb-3">
-          You got it!
-        </h2>
-        <img class="w-full max-w-2xl object-cover mb-4" id="winImage" alt="Image of daily article." src="lincoln_portrait.jpg"></img>
-        <p id="winModalTitle" class="mb-2 text-xl font-bold"></p>
-        <p id="winModalDesc" class="text-lg text-sky-50/90">
-          Guesses:
-          <span id="winModalGuessCount" aria-live="polite" class="font-semibold text-white"></span>
-        </p>
-      </div>
-    </div>
-  </div>
 
   <header class="shrink-0 px-4 pt-6 pb-2 w-full max-w-4xl mx-auto select-none">
     <div class="flex items-baseline justify-between mb-2">
       <h1 class="text-xl font-extrabold tracking-tight md:text-2xl">
-        Paragraphle&nbsp;#<span id="dailyNumber"></span>
+        Paragraphle
       </h1>
-      <span class="whitespace-nowrap font-semibold text-sm md:text-base">
-        Guesses:&nbsp;<span id="guessCount">0</span>
-      </span>
-    </div>
-    <div class="h-1 bg-slate-700 rounded overflow-hidden">
-      <div 
-        class="h-full w-0" 
-        id="progressBar"
-      ></div>
     </div>
   </header>
 
-  <main class="flex-1 px-4 w-full max-w-4xl mx-auto pt-4 pb-4 flex flex-col min-h-0 select-none">
-    <div
-        class="mb-4 flex items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border border-white-600 text-white"
-        id="lastGuessBox"
-      >
-        <span id="lastGuessText" class="uppercase tracking-wide">&nbsp;</span>
-        <span id="lastGuessDistance">&nbsp;</span>
+<main class="flex-1 px-4 w-full max-w-4xl mx-auto pt-4 pb-4 flex flex-col min-h-0 select-none space-y-24 sm:space-y-32">
+  <section class="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center py-12 sm:pt-36 sm:pb-48">
+    <div class="order-2 md:order-2">
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
+        Play Paragraphle, a daily game based on Wikipedia.
+      </h1>
+      <p class="mb-6">
+        Each guess reveals new clues by matching paragraphs from your guess against the article of the day.
+      </p>
+<a
+  href="play.html"
+  class="inline-flex items-center justify-center px-6 py-3 rounded-xl
+         bg-slate-600 text-white font-semibold uppercase tracking-wide
+         border-b-4 border-slate-600
+         transition-colors hover:bg-slate-500"
+>
+  Play
+</a>
     </div>
 
-    <p class="text-xs text-slate-400 mb-2">
-      Closest Paragraphs
-    </p>
-
-    <div id="article-list"
-        class="scrollbar-dark flex-1 overflow-y-auto min-h-0 space-y-4 pr-1 pt-2">
+    <div class="order-1 md:order-1">
+      <img
+        src="public/nonplussed-lincoln.jpg"
+        alt="A cropped photo of Abraham Lincoln"
+        class="w-full h-auto"
+        loading="eager"
+        decoding="async"
+      />
     </div>
-  </main>
+  </section>
 
-  <footer
-    class="shrink-0 pb-safe pb-4 px-4 w-full max-w-4xl mx-auto flex flex-col items-center gap-3 md:gap-4">
-
-    <div class="w-full flex flex-col items-center gap-2 sm:mb-6">
-      <div id="mainSuggestion" class="suggestion-main w-full relative pr-12">
-        <span id="mainSuggestionText"></span><span class="blink-caret"></span><span id="mainSuggestionPrompt" class="text-gray-500/60"></span>
-        <div 
-          aria-label="Submit"
-          class="absolute inset-y-0 right-3 my-auto w-7 h-7 flex items-center justify-center rounded"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-            <path fill-rule="evenodd"
-              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 11-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-              clip-rule="evenodd" />
-          </svg>
-        </div>
-      </div>
-      <div id="suggestionBox" class="w-full flex justify-center gap-2 md:gap-3 flex-nowrap">
-        <button class="chip">Try guessing an article!</button>
-      </div>
+  <section class="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center py-12 sm:pt-36 sm:pb-48">
+    <div class="order-2 md:order-1">
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
+        How to Play
+      </h1>
+      <h2 id="howto-desc" class="mb-4">
+        Find the article of the day!
+      </h2>
+      <ul class="list-disc space-y-3 pl-5 marker:text-neutral-200">
+        <li>Each guess must be an existing Wikipedia article.</li>
+        <li>The game tells you how close you are to the article of the day.</li>
+        <li>Paragraphs from your guesses are ranked by how similar they are to the target.</li>
+        <li>The closer you get to zero, the better!</li>
+      </ul>
     </div>
 
-    <div class="flex flex-col items-center gap-1 md:gap-2 text-xs md:text-sm w-full sm:hidden">
-
-      <div class="flex gap-1 md:gap-2 w-full">
-        <button class="key px-3 py-2 md:px-4">Q</button>
-        <button class="key px-3 py-2 md:px-4">W</button>
-        <button class="key px-3 py-2 md:px-4">E</button>
-        <button class="key px-3 py-2 md:px-4">R</button>
-        <button class="key px-3 py-2 md:px-4">T</button>
-        <button class="key px-3 py-2 md:px-4">Y</button>
-        <button class="key px-3 py-2 md:px-4">U</button>
-        <button class="key px-3 py-2 md:px-4">I</button>
-        <button class="key px-3 py-2 md:px-4">O</button>
-        <button class="key px-3 py-2 md:px-4">P</button>
-      </div>
-
-      <div class="flex gap-1 md:gap-2 w-full">
-        <button class="key px-3 py-2 md:px-4">A</button>
-        <button class="key px-3 py-2 md:px-4">S</button>
-        <button class="key px-3 py-2 md:px-4">D</button>
-        <button class="key px-3 py-2 md:px-4">F</button>
-        <button class="key px-3 py-2 md:px-4">G</button>
-        <button class="key px-3 py-2 md:px-4">H</button>
-        <button class="key px-3 py-2 md:px-4">J</button>
-        <button class="key px-3 py-2 md:px-4">K</button>
-        <button class="key px-3 py-2 md:px-4">L</button>
-      </div>
-
-      <div class="flex gap-1 md:gap-2 w-full">
-        <button class="key flex-1 px-4 py-2 md:px-6 md:py-2.5 text-center">Space</button>
-        <button class="key px-3 py-2 md:px-4">Z</button>
-        <button class="key px-3 py-2 md:px-4">X</button>
-        <button class="key px-3 py-2 md:px-4">C</button>
-        <button class="key px-3 py-2 md:px-4">V</button>
-        <button class="key px-3 py-2 md:px-4">B</button>
-        <button class="key px-3 py-2 md:px-4">N</button>
-        <button class="key px-3 py-2 md:px-4">M</button>
-        <button class="key px-4 py-2 md:px-6 md:py-2.5">Back</button>
-      </div>
-
+    <div class="order-1 md:order-2">
+      <img
+        src="public/reading-robot.png"
+        alt="A robot reading a book"
+        class="w-full h-auto"
+        loading="eager"
+        decoding="async"
+      />
     </div>
-  </footer>
-  <script src="script.js"></script>
+  </section>
+</main>
+
+
 </body>
 </html>
