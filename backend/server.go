@@ -102,7 +102,7 @@ func logGuess(
 	best_chunk_score float64,
 	session_id string,
 ) {
-	created := time.Now().Unix()
+	created := time.Now().UnixMilli()
 	_, err := db.Exec(`
 		insert into guesses (
 			created_timestamp,
@@ -147,7 +147,6 @@ func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id int64, is
 		) as a
 			on c.article_id == a.article_id
 	`, chunk_id_string, article_id_string)
-	fmt.Println(query)
 
 	rows, err := db.Query(query)
 
@@ -166,7 +165,6 @@ func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id int64, is
 		var title string
 
 		if err := rows.Scan(&chunk_id, &chunk, &url, &title); err != nil {
-			fmt.Println("no decode")
 			return nil, fmt.Errorf("could not decode vector from blob storage")
 		}
 		chunks = append(chunks, Chunk{chunk_id, chunk, url, title, embeddings[i].Distance, is_win})
@@ -181,7 +179,6 @@ func getEmbeddings(db *sql.DB, article_id int64) ([]Embedding, error) {
 		from embeddings
 		where article_id = ?
 	`, article_id)
-	fmt.Println("queried")
 	if err != nil {
 		return nil, fmt.Errorf("could not decode vector from blob storage")
 	}
@@ -371,13 +368,11 @@ func scoreArticleID(db *sql.DB, guess_id int64, target_id int64) ([]Embedding, e
 	if err != nil {
 		return nil, fmt.Errorf("could not get guess chunks")
 	}
-	fmt.Println("guess embeddings")
 
 	targetEmbeddings, err := getEmbeddings(db, target_id)
 	if err != nil {
 		return nil, fmt.Errorf("could not get target chunks")
 	}
-	fmt.Println("here")
 
 	targetVec := averageTargetVec(targetEmbeddings)
 
@@ -403,8 +398,25 @@ func getTargetID(targets []Target) int64 {
 	return targets[idx].ArticleID
 }
 
+func openDB(dbPath string) (*sql.DB, error) {
+	dsn := fmt.Sprintf(
+		"file:%s?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=immediate",
+		dbPath,
+	)
+
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	return db, nil
+}
+
 func main() {
 	logger := log.Default()
+	logger.Println("starting server")
 
 	var MAX_SUGGESTIONS int64 = 30
 	var MAX_CHUNKS int64 = 10
@@ -415,7 +427,7 @@ func main() {
 	}
 
 	db_path := os.Getenv("DB_PATH")
-	db, err := sql.Open("sqlite", db_path)
+	db, err := openDB(db_path)
 	if err != nil {
 		log.Fatal("could not connect to database")
 		return
@@ -433,7 +445,7 @@ func main() {
 	})
 
 	http.HandleFunc("/suggestion", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5500")
 		// w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
 
 		q := r.URL.Query().Get("q")
@@ -461,7 +473,7 @@ func main() {
 	})
 
 	http.HandleFunc("/guess-article", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5500")
 		// w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
 
 		target_id := getTargetID(targets)
@@ -496,7 +508,7 @@ func main() {
 			best_chunk_score = scoredEmbeddings[0].Distance
 		}
 
-		logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
+		go logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
 
 		chunks, err := embeddingsToChunks(
 			db,
