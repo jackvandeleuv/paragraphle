@@ -37,13 +37,18 @@ type Article struct {
 }
 
 type Chunk struct {
-	ChunkID  int64     `json:"chunk_id"`
-	Chunk    string    `json:"chunk"`
-	URL      string    `json:"url"`
-	Title    string    `json:"title"`
-	Distance float64   `json:"distance"`
-	Vector   []float64 `json:"vector,omitempty"`
-	IsWin    bool      `json:"is_win"`
+	ChunkID  int64   `json:"chunk_id"`
+	Chunk    string  `json:"chunk"`
+	URL      string  `json:"url"`
+	Title    string  `json:"title"`
+	Distance float64 `json:"distance"`
+	IsWin    bool    `json:"is_win"`
+}
+
+type Embedding struct {
+	ChunkID  int64
+	Vector   []float64
+	Distance float64
 }
 
 func getTargets() []Target {
@@ -89,40 +94,105 @@ func blobToFloat(b []byte) ([]float64, error) {
 	return out, nil
 }
 
-func getChunks(db *sql.DB, article_id int64, is_win bool) ([]Chunk, error) {
-	rows, err := db.Query(`
-        select c.chunk_id, chunk, url, title, vector
-        from (
-            select chunk_id, chunk, article_id
-            from chunks
-            where article_id == ?
-        ) as c
-        join (
-            select article_id, url, title
-            from articles
-            where article_id == ?    
-        ) as a
-            on c.article_id == a.article_id
-		join (
-			select vector, chunk_id
-			from embeddings
-		) as e
-			on c.chunk_id == e.chunk_id
-	`, article_id, article_id)
+func logGuess(
+	db *sql.DB,
+	guess_article_id int64,
+	target_article_id int64,
+	best_chunk_id int64,
+	best_chunk_score float64,
+	session_id string,
+) {
+	created := time.Now().Unix()
+	_, err := db.Exec(`
+		insert into guesses (
+			created_timestamp,
+			guess_article_id,
+			target_article_id,
+			best_chunk_id,
+			best_chunk_score,
+			session_id
+		) values (
+			?, ?, ?,
+			?, ?, ?
+		)
+	`, created, guess_article_id, target_article_id,
+		best_chunk_id, best_chunk_score, session_id,
+	)
 	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id int64, is_win bool) ([]Chunk, error) {
+	chunk_ids := make([]string, 0)
+	for _, embedding := range embeddings {
+		chunk_id := strconv.Itoa(int(embedding.ChunkID))
+		chunk_ids = append(chunk_ids, chunk_id)
+	}
+	chunk_id_string := strings.Join(chunk_ids, ",")
+
+	article_id_string := strconv.Itoa(int(article_id))
+
+	query := fmt.Sprintf(`
+		select chunk_id, chunk, url, title
+		from (
+			select chunk_id, chunk, article_id
+			from chunks
+			where chunk_id in (%s)
+		) as c
+		join (
+			select article_id, url, title
+			from articles
+			where article_id in (%s)
+		) as a
+			on c.article_id == a.article_id
+	`, chunk_id_string, article_id_string)
+	fmt.Println(query)
+
+	rows, err := db.Query(query)
+
+	if err != nil {
+		fmt.Println(err)
 		return nil, fmt.Errorf("could not decode vector from blob storage")
 	}
 	defer rows.Close()
 
 	chunks := make([]Chunk, 0)
+	i := 0
 	for rows.Next() {
 		var chunk_id int64
 		var chunk string
 		var url string
 		var title string
+
+		if err := rows.Scan(&chunk_id, &chunk, &url, &title); err != nil {
+			fmt.Println("no decode")
+			return nil, fmt.Errorf("could not decode vector from blob storage")
+		}
+		chunks = append(chunks, Chunk{chunk_id, chunk, url, title, embeddings[i].Distance, is_win})
+
+	}
+	return chunks, nil
+}
+
+func getEmbeddings(db *sql.DB, article_id int64) ([]Embedding, error) {
+	rows, err := db.Query(`
+		select chunk_id, vector
+		from embeddings
+		where article_id = ?
+	`, article_id)
+	fmt.Println("queried")
+	if err != nil {
+		return nil, fmt.Errorf("could not decode vector from blob storage")
+	}
+	defer rows.Close()
+
+	embeddings := make([]Embedding, 0)
+	for rows.Next() {
+		var chunk_id int64
 		var blob []byte
 
-		if err := rows.Scan(&chunk_id, &chunk, &url, &title, &blob); err != nil {
+		if err := rows.Scan(&chunk_id, &blob); err != nil {
 			return nil, fmt.Errorf("could not decode vector from blob storage")
 		}
 
@@ -131,10 +201,10 @@ func getChunks(db *sql.DB, article_id int64, is_win bool) ([]Chunk, error) {
 			return nil, fmt.Errorf("could not decode vector from blob storage")
 		}
 
-		chunks = append(chunks, Chunk{chunk_id, chunk, url, title, -1.0, vector, is_win})
+		embeddings = append(embeddings, Embedding{chunk_id, vector, -1.0})
 	}
 
-	return chunks, nil
+	return embeddings, nil
 }
 
 func loadSuggestions(db *sql.DB) []Article {
@@ -164,22 +234,20 @@ func loadSuggestions(db *sql.DB) []Article {
 	return articles
 }
 
-func getSuggestions(articles []Article, prefix string, limit int64) []Article {
+func binarySearch(articles []Article, target string) int {
 	left := 0
 	right := len(articles)
 	mid := ((right - left) / 2) + left
-	size := len(prefix)
+	size := len(target)
 
-	found := false
 	for left < right {
 		mid_slice := len(articles[mid].CleanTitle)
 		if mid_slice > size {
 			mid_slice = size
 		}
-		if prefix == articles[mid].CleanTitle[:mid_slice] {
-			found = true
-			break
-		} else if prefix < articles[mid].CleanTitle[:mid_slice] {
+		if target == articles[mid].CleanTitle[:mid_slice] {
+			return mid
+		} else if target < articles[mid].CleanTitle[:mid_slice] {
 			right = mid
 			mid = ((right - left) / 2) + left
 		} else {
@@ -187,12 +255,18 @@ func getSuggestions(articles []Article, prefix string, limit int64) []Article {
 			mid = ((right - left) / 2) + left
 		}
 	}
+	return -1
+}
 
-	if !found {
+func getSuggestions(articles []Article, prefix string, limit int64) []Article {
+	size := len(prefix)
+	mid := binarySearch(articles, prefix)
+
+	if mid == -1 {
 		return make([]Article, 0)
 	}
 
-	left = mid
+	left := mid
 	for 0 <= left {
 		left_slice := len(articles[left].CleanTitle)
 		if size < left_slice {
@@ -206,7 +280,7 @@ func getSuggestions(articles []Article, prefix string, limit int64) []Article {
 	left += 1
 
 	// Don't add one to comparisons with right if using slices because it is exclusive
-	right = mid
+	right := mid
 	for right < len(articles) {
 		right_slice := len(articles[right].CleanTitle)
 		if size < right_slice {
@@ -254,37 +328,10 @@ func getSuggestions(articles []Article, prefix string, limit int64) []Article {
 	return matches[:limit]
 }
 
-func suggestionsToCache() []string {
-	// Cache all combinations of three letters.
-	suggestions := make([]string, 0, 26+26*26+26*26*26)
-
-	for i := byte('a'); i <= 'z'; i++ {
-		suggestions = append(suggestions, string(i))
-
-		for j := byte('a'); j <= 'z'; j++ {
-			suggestions = append(suggestions, string([]byte{i, j}))
-
-			for k := byte('a'); k <= 'z'; k++ {
-				suggestions = append(suggestions, string([]byte{i, j, k}))
-			}
-		}
-	}
-	return suggestions
-}
-
-func makeSuggestionCache(toCache []string, articles []Article, limit int64) map[string][]Article {
-	cache := make(map[string][]Article, len(toCache))
-
-	for _, key := range toCache {
-		cache[key] = getSuggestions(articles, key, limit)
-	}
-	return cache
-}
-
-func targetChunksToVec(targetChunks []Chunk) []float64 {
+func averageTargetVec(targetChunks []Embedding) []float64 {
 	targetVectorSums := make([]float64, 0)
-	for _, chunk := range targetChunks {
-		for i, val := range chunk.Vector {
+	for _, vec := range targetChunks {
+		for i, val := range vec.Vector {
 			if len(targetVectorSums) <= i {
 				targetVectorSums = append(targetVectorSums, val)
 			} else {
@@ -319,32 +366,34 @@ func cosineSimilarity(x []float64, y []float64) float64 {
 	return innerProduct / (x_norm * y_norm)
 }
 
-func scoreArticleID(db *sql.DB, guess_id int64, target_id int64) ([]Chunk, error) {
-	guessChunks, err := getChunks(db, guess_id, guess_id == target_id)
+func scoreArticleID(db *sql.DB, guess_id int64, target_id int64) ([]Embedding, error) {
+	guessEmbeddings, err := getEmbeddings(db, guess_id)
 	if err != nil {
 		return nil, fmt.Errorf("could not get guess chunks")
 	}
+	fmt.Println("guess embeddings")
 
-	targetChunks, err := getChunks(db, target_id, false)
+	targetEmbeddings, err := getEmbeddings(db, target_id)
 	if err != nil {
 		return nil, fmt.Errorf("could not get target chunks")
 	}
+	fmt.Println("here")
 
-	targetVec := targetChunksToVec(targetChunks)
+	targetVec := averageTargetVec(targetEmbeddings)
 
-	for i := range guessChunks {
-		guessChunks[i].Distance = 1 - cosineSimilarity(guessChunks[i].Vector, targetVec)
+	for i := range guessEmbeddings {
+		guessEmbeddings[i].Distance = 1 - cosineSimilarity(guessEmbeddings[i].Vector, targetVec)
 	}
 
-	sort.Slice(guessChunks, func(i, j int) bool {
-		return guessChunks[i].Distance < guessChunks[j].Distance
+	sort.Slice(guessEmbeddings, func(i, j int) bool {
+		return guessEmbeddings[i].Distance < guessEmbeddings[j].Distance
 	})
 
-	for i := range guessChunks {
-		guessChunks[i].Vector = nil
+	for i := range guessEmbeddings {
+		guessEmbeddings[i].Vector = nil
 	}
 
-	return guessChunks, nil
+	return guessEmbeddings, nil
 }
 
 func getTargetID(targets []Target) int64 {
@@ -384,11 +433,15 @@ func main() {
 	})
 
 	http.HandleFunc("/suggestion", func(w http.ResponseWriter, r *http.Request) {
-		// w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
-		w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
+		w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
+		// w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
 
 		q := r.URL.Query().Get("q")
 		clean_q := strings.TrimSpace(strings.ToLower(q))
+		if clean_q == "" {
+			http.Error(w, "Empty query.", http.StatusBadRequest)
+			return
+		}
 
 		limit := r.URL.Query().Get("limit")
 		num_limit, err := strconv.Atoi(limit)
@@ -408,8 +461,8 @@ func main() {
 	})
 
 	http.HandleFunc("/guess-article", func(w http.ResponseWriter, r *http.Request) {
-		// w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
-		w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
+		w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
+		// w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
 
 		target_id := getTargetID(targets)
 
@@ -421,14 +474,39 @@ func main() {
 			return
 		}
 
-		chunks, err := scoreArticleID(db, int64(guess_id), target_id)
+		session_id := r.URL.Query().Get("session_id")
+
+		scoredEmbeddings, err := scoreArticleID(db, int64(guess_id), target_id)
 		if err != nil {
 			http.Error(w, "Invalid article_id.", http.StatusBadRequest)
 			return
 		}
 
-		if len(chunks) > int(MAX_CHUNKS) {
-			chunks = chunks[:MAX_CHUNKS]
+		if len(scoredEmbeddings) > int(MAX_CHUNKS) {
+			scoredEmbeddings = scoredEmbeddings[:MAX_CHUNKS]
+		}
+
+		var best_chunk_id int64
+		var best_chunk_score float64
+		if len(scoredEmbeddings) == 0 {
+			best_chunk_id = -1
+			best_chunk_score = -1.0
+		} else {
+			best_chunk_id = scoredEmbeddings[0].ChunkID
+			best_chunk_score = scoredEmbeddings[0].Distance
+		}
+
+		logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
+
+		chunks, err := embeddingsToChunks(
+			db,
+			scoredEmbeddings,
+			int64(guess_id),
+			int64(guess_id) == target_id,
+		)
+		if err != nil {
+			http.Error(w, "Could not load chunk text.", http.StatusBadRequest)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")

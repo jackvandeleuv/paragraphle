@@ -294,8 +294,10 @@ async function loadGuess(guessArticleId) {
     `;
     document.getElementById('lastGuessDistance').innerHTML = `Distance: ${displayDistance}`;
 
-    loadWikiImage(guessData[0].url, 'lastGuessImage', guessData[0].title);
-    document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.07]';
+    if (window.innerWidth < 700) {
+        loadWikiImage(guessData[0].url, 'lastGuessImage', guessData[0].title);
+        document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.07]';
+    }
 
     addCardListeners();
 
@@ -465,8 +467,8 @@ async function renderWin(title, imageURL) {
     isWin = true;
 }
 
-const URI = 'https://api.paragraphle.com';
-// const URI = 'http://localhost:8000';
+// const URI = 'https://api.paragraphle.com';
+const URI = 'http://localhost:8000';
 
 let isGuessing = false;
 let isWin = false;
