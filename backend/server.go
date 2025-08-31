@@ -51,6 +51,11 @@ type Embedding struct {
 	Distance float64
 }
 
+type Stats struct {
+	CurrentUsers      int64   `json:"current_users"`
+	MeanGuessesPerWin float64 `json:"mean_guesses_per_win"`
+}
+
 func getTargets() []Target {
 	targets := make([]Target, 0)
 
@@ -94,6 +99,30 @@ func blobToFloat(b []byte) ([]float64, error) {
 	return out, nil
 }
 
+func logWin(db *sql.DB, session_id string) error {
+	created := time.Now().UnixMilli()
+	_, err := db.Exec(`
+		insert into wins (
+			created_timestamp,
+			session_id,
+			guesses
+		) values (
+			?, 
+			?,
+			(
+				select coalesce(count(guess_id), 1) 
+				from guesses 
+				where session_id == ?
+			)
+		)
+	`, created, session_id, session_id,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func logGuess(
 	db *sql.DB,
 	guess_article_id int64,
@@ -101,7 +130,7 @@ func logGuess(
 	best_chunk_id int64,
 	best_chunk_score float64,
 	session_id string,
-) {
+) error {
 	created := time.Now().UnixMilli()
 	_, err := db.Exec(`
 		insert into guesses (
@@ -119,8 +148,9 @@ func logGuess(
 		best_chunk_id, best_chunk_score, session_id,
 	)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("could not decode vector from blob storage")
 	}
+	return nil
 }
 
 func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id int64, is_win bool) ([]Chunk, error) {
@@ -395,6 +425,8 @@ func getTargetID(targets []Target) int64 {
 	now := time.Now().Unix()
 	now_et := now - (3600 * 4)
 	idx := int64(now_et/(3600*24)) - 20288
+	fmt.Println(idx)
+	fmt.Println(targets[idx].ArticleID)
 	return targets[idx].ArticleID
 }
 
@@ -414,6 +446,56 @@ func openDB(dbPath string) (*sql.DB, error) {
 	return db, nil
 }
 
+func getStats(db *sql.DB) (Stats, error) {
+	now := time.Now().UnixMilli()
+	day_start_utc := int64(now/(3600000*24)) * (3600000 * 24)
+	day_start_et := day_start_utc + (3600000 * 4)
+	current_users_start := now - (60000 * 3)
+
+	stats := Stats{-1, -1}
+
+	rows, err := db.Query(`
+		select count(distinct session_id) as current_users
+		from guesses
+		where created_timestamp >= ?
+	`, current_users_start)
+	if err != nil {
+		return Stats{-1, -1}, err
+	}
+
+	for rows.Next() {
+		var current_users int64
+		if err := rows.Scan(&current_users); err != nil {
+			return Stats{-1, -1}, err
+		}
+		stats.CurrentUsers = current_users
+	}
+
+	rows, err = db.Query(`
+		select coalesce(avg(guesses), -1) as mean_guesses_per_win
+		from wins
+		where created_timestamp >= ?
+	`, day_start_et)
+
+	if err != nil {
+		return Stats{-1, -1}, err
+	}
+
+	for rows.Next() {
+		var mean_guesses_per_win float64
+		if err := rows.Scan(&mean_guesses_per_win); err != nil {
+			return Stats{-1, -1}, err
+		}
+		stats.MeanGuessesPerWin = mean_guesses_per_win
+	}
+
+	return stats, nil
+}
+
+func buildGuessCache(target Target) {
+
+}
+
 func main() {
 	logger := log.Default()
 	logger.Println("starting server")
@@ -428,17 +510,17 @@ func main() {
 
 	db_path := os.Getenv("DB_PATH")
 	db, err := openDB(db_path)
+
 	if err != nil {
 		log.Fatal("could not connect to database")
 		return
 	}
-	logger.Println("connected to database")
 
 	targets := getTargets()
-	logger.Println("got targets from disk")
+	fmt.Println(targets)
 
 	articles := loadSuggestions(db)
-	logger.Println("loaded suggestion array")
+	logger.Println("creating handlers")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "This is not a valid endpoint.", http.StatusBadRequest)
@@ -487,6 +569,10 @@ func main() {
 		}
 
 		session_id := r.URL.Query().Get("session_id")
+		if session_id == "" {
+			http.Error(w, "Invalid session_id.", http.StatusBadRequest)
+			return
+		}
 
 		scoredEmbeddings, err := scoreArticleID(db, int64(guess_id), target_id)
 		if err != nil {
@@ -508,13 +594,21 @@ func main() {
 			best_chunk_score = scoredEmbeddings[0].Distance
 		}
 
-		go logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
+		logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
+
+		is_win := int64(guess_id) == target_id
+		if is_win {
+			err := logWin(db, session_id)
+			if err != nil {
+				logger.Println(err)
+			}
+		}
 
 		chunks, err := embeddingsToChunks(
 			db,
 			scoredEmbeddings,
 			int64(guess_id),
-			int64(guess_id) == target_id,
+			is_win,
 		)
 		if err != nil {
 			http.Error(w, "Could not load chunk text.", http.StatusBadRequest)
@@ -526,5 +620,22 @@ func main() {
 		json.NewEncoder(w).Encode(chunks)
 	})
 
+	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5500")
+		// w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
+
+		stats, err := getStats(db)
+		if err != nil {
+			logger.Println(err)
+			http.Error(w, "could not get stats", http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		json.NewEncoder(w).Encode(stats)
+	})
+
+	logger.Println("listening on 8000")
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }
