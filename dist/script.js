@@ -237,52 +237,38 @@ function renderCardHTML(row) {
         </article>
     `;
 }
-function renderGuesses() {
+function renderChunks() {
     const guessCards = game.guesses
-        .slice(0, 150)
+        .slice(0, 100)
         .map((row) => renderCardHTML(row))
         .join('');
     updateInnerHTML('article-list', guessCards);
 }
-function loadGuess(guessArticleId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (game.isWin)
-            return;
-        if (game.isGuessing)
-            return;
-        game.isGuessing = true;
-        updateInnerHTML('lastGuessText', '&nbsp;');
-        updateInnerHTML('lastGuessDistance', '&nbsp;');
-        updateClassName('lastGuessBox', `
+function renderIsGuessing() {
+    updateInnerHTML('lastGuessText', '&nbsp;');
+    updateInnerHTML('lastGuessDistance', '&nbsp;');
+    updateClassName('lastGuessBox', `
         mb-4 flex items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-slate-700
         bg-slate-700 text-slate-700 animate-[loadingBox_0.5s_linear_infinite_alternate]
     `);
-        updateInnerHTML('mainSuggestionText', '');
-        updateInnerHTML('mainSuggestionPrompt', '');
-        const session_id = yield getSessionID();
-        if (!session_id)
-            return;
-        const guessResponse = yield fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
-        if (!guessResponse.ok) {
-            updateInnerHTML('lastGuessText', 'Error! please try again');
-            updateInnerHTML('lastGuessDistance', '');
-            updateClassName('lastGuessBox', `
-            mb-4 flex items-center justify-between text-sm md:text-base font-semibold
-            px-3 py-1 rounded border border-white-600 text-white
-        `);
-            game.isGuessing = false;
-            return;
-        }
-        const guessData = yield guessResponse.json();
-        const guessCount = guessData.guesses;
-        const chunks = guessData.chunks;
+    updateInnerHTML('mainSuggestionText', '');
+    updateInnerHTML('mainSuggestionPrompt', '');
+}
+function renderFailedGuess() {
+    updateInnerHTML('lastGuessText', 'Error! please try again');
+    updateInnerHTML('lastGuessDistance', '');
+    updateClassName('lastGuessBox', `
+        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        px-3 py-1 rounded border border-white-600 text-white
+    `);
+}
+function renderGuess(chunks, guessCount, guessArticleId) {
+    return __awaiter(this, void 0, void 0, function* () {
         chunks.sort((a, b) => a.distance - b.distance);
         updateInnerHTML('lastGuessText', chunks[0].title);
-        if (!game.guessIDSet.has(guessArticleId)) {
-            game.guessCount = guessCount;
-            updateInnerHTML('guessCount', String(game.guessCount));
-        }
+        game.guessCount = guessCount;
+        updateInnerHTML('guessCount', String(game.guessCount));
         game.guessIDSet.add(guessArticleId);
         for (const guess of chunks) {
             if (game.guessChunkSet.has(guess.chunk_id))
@@ -291,7 +277,7 @@ function loadGuess(guessArticleId) {
             game.guesses.push(guess);
         }
         game.guesses.sort((a, b) => a.distance - b.distance);
-        renderGuesses();
+        renderChunks();
         const displayDistance = chunks[0].distance.toFixed(2);
         const guessDataTop = chunks[0].distance;
         const borderColor = tempToColor(guessDataTop, 'border');
@@ -302,7 +288,7 @@ function loadGuess(guessArticleId) {
         ${backgroundColor} text-white
     `);
         updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}`);
-        if (window.innerWidth < 700) {
+        if (window.innerWidth > 700) {
             loadWikiImage(chunks[0].url, 'lastGuessImage', chunks[0].title);
             updateClassName('lastGuessImage', 'absolute w-full h-full object-cover z-[-1] opacity-[.07]');
         }
@@ -313,6 +299,29 @@ function loadGuess(guessArticleId) {
         if (chunks[0].is_win) {
             yield renderWin(chunks[0].title.toUpperCase().trim(), chunks[0].url);
         }
+    });
+}
+function loadGuess(guessArticleId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (game.isWin)
+            return;
+        if (game.isGuessing)
+            return;
+        game.isGuessing = true;
+        renderIsGuessing();
+        const session_id = yield getSessionID();
+        if (!session_id)
+            return;
+        const guessResponse = yield fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
+        if (!guessResponse.ok) {
+            renderFailedGuess();
+            game.isGuessing = false;
+            return;
+        }
+        const guessData = yield guessResponse.json();
+        const guessCount = guessData.guesses;
+        const chunks = guessData.chunks;
+        yield renderGuess(chunks, guessCount, guessArticleId);
         game.mainSuggestion = null;
         game.isGuessing = false;
     });
@@ -425,6 +434,9 @@ function handleOtherInput(value) {
 function addButtonListeners() {
     document.addEventListener('keydown', (e) => {
         e.preventDefault();
+        console.log(game.isGuessing);
+        if (game.isGuessing)
+            return;
         if (e.key === 'Backspace') {
             handleBackspace();
         }
@@ -445,6 +457,8 @@ function addButtonListeners() {
     for (const key of keys) {
         key.addEventListener('click', () => {
             var _a;
+            if (game.isGuessing)
+                return;
             const value = (_a = key.textContent) !== null && _a !== void 0 ? _a : '';
             if (value === 'Back') {
                 handleBackspace();
@@ -499,28 +513,40 @@ function fetchSessionID() {
         return yield suggestionsResponse.json();
     });
 }
-function resetGame() {
-    return __awaiter(this, void 0, void 0, function* () {
-        game = new Game();
-        renderGuesses();
-        updateInnerHTML('guessCount', "0");
+function addResetButtonListener() {
+    const button = document.getElementById("resetButton");
+    if (!button)
+        return;
+    button.addEventListener('click', () => {
+        resetPage();
     });
+}
+function resetPage() {
+    localStorage.clear();
+    location.reload();
+}
+function existsSession() {
+    const cached_session_id = localStorage.getItem("session_id");
+    const cached_session_start = localStorage.getItem("session_start");
+    return cached_session_id !== null && cached_session_start !== null;
+}
+function existsExpiredSession() {
+    const dayStartEasternMilli = getDayStartEasternMilli();
+    const cached_session_id = localStorage.getItem("session_id");
+    const cached_session_start = localStorage.getItem("session_start");
+    return (cached_session_id !== null &&
+        cached_session_start !== null &&
+        Number(cached_session_start) <= dayStartEasternMilli);
 }
 function getSessionID() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const dayStartEasternMilli = getDayStartEasternMilli();
-            const cached_session_id = localStorage.getItem("session_id");
-            const cached_session_start = localStorage.getItem("session_start");
-            console.log(`session_id: ${cached_session_id}, start: ${cached_session_start}`);
-            if (cached_session_id !== null &&
-                cached_session_start !== null &&
-                Number(cached_session_start) > dayStartEasternMilli) {
-                return cached_session_id;
-            }
-            yield resetGame();
-            const session_id = yield fetchSessionID();
+            if (existsExpiredSession())
+                resetPage();
+            if (existsSession())
+                return localStorage.getItem("session_id");
             localStorage.clear();
+            const session_id = yield fetchSessionID();
             if (!session_id)
                 return null;
             localStorage.setItem("session_id", session_id);
@@ -557,6 +583,35 @@ function renderWin(title, imageURL) {
         game.isWin = true;
     });
 }
+function restoreSession(session_id) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield fetch(`${URI}/restore-session?session_id=${session_id}`);
+        if (!response.ok)
+            throw Error("Could not restore session");
+        const session_update = yield response.json();
+        if (session_update.last_guess_article_id === -1)
+            return;
+        yield renderGuess(session_update.chunks, session_update.guesses, String(session_update.last_guess_article_id));
+    });
+}
+function initGame() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const cached_session_id = localStorage.getItem("session_id");
+            if (!existsExpiredSession() && cached_session_id !== null) {
+                game.isGuessing = true;
+                renderIsGuessing();
+                yield restoreSession(cached_session_id);
+            }
+        }
+        catch (error) {
+            localStorage.clear();
+        }
+        finally {
+            game.isGuessing = false;
+        }
+    });
+}
 class Game {
     constructor() {
         this.isGuessing = false;
@@ -570,7 +625,6 @@ class Game {
         this.guessCount = 0;
     }
 }
-let game = new Game();
 // const URI = 'https://api.paragraphle.com';
 const URI = 'http://localhost:8000';
 const acceptedKeys = new Set();
@@ -596,3 +650,6 @@ addCardListeners();
 addButtonListeners();
 updateDailyNumber();
 addMainSuggestionListener();
+addResetButtonListener();
+let game = new Game();
+initGame();

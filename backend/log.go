@@ -78,14 +78,14 @@ func logSession(db *sql.DB, session_id uuid.UUID) error {
 	return nil
 }
 
-func topNGuesses(db *sql.DB, session_id string) ([]int64, error) {
+func topNGuesses(db *sql.DB, session_id string, n int) ([]int64, error) {
 	rows, err := db.Query(`
 		select distinct guess_article_id
 		from guesses
 		where session_id = ?
 		order by best_chunk_score asc
-		limit 100
-	`, session_id)
+		limit ?
+	`, session_id, n)
 	if err != nil {
 		return nil, err
 	}

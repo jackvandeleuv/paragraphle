@@ -44,8 +44,10 @@
     style="display: none"
   >
     <div
-      class="relative w-full max-w-sm origin-center rounded-xl bg-gradient-to-br from-red-500/60 to-red-600/60 text-neutral-50 shadow-2xl ring-1 ring-white/15
-            animate-[fadeIn_0.25s_ease,scaleIn_0.25s_ease]"
+      class="relative w-full max-w-sm origin-center rounded-xl 
+      bg-gradient-to-br from-red-500/60 to-red-600/60 text-neutral-50 
+      shadow-2xl ring-1 ring-white/15
+      animate-[fadeIn_0.25s_ease,scaleIn_0.25s_ease]"
     >
       <button
         type="button"
@@ -68,8 +70,9 @@
         <img class="w-full max-w-2xl object-cover mb-4" id="winImage" alt="Image of daily article." src="../public/nonplussed-lincoln.jpg"></img>
         <p id="winModalTitle" class="mb-2 text-xl font-bold"></p>
         <p id="winModalDesc" class="text-lg text-sky-50/90">
-          Guesses:
-          <span id="winModalGuessCount" aria-live="polite" class="font-semibold text-white"></span>
+          It took you <span id="winModalGuessCount" aria-live="polite" class="font-bold text-white"></span> guesses.
+        </p>
+        <p id="winModalStatsDesc" class="text-lg text-sky-50/90">
         </p>
       </div>
     </div>
@@ -77,16 +80,28 @@
 
   <header class="shrink-0 px-4 pt-6 pb-2 w-full max-w-4xl mx-auto select-none">
     <div class="flex items-baseline justify-between mb-2">
-      <h1 class="text-xl font-extrabold tracking-tight md:text-2xl">
-        Paragraphle&nbsp;#<span id="dailyNumber"></span>
+      <h1 class="text-md sm:text-xl font-extrabold tracking-tight">
+        <a href="/">Paragraphle&nbsp;#<span id="dailyNumber"></span></a>
       </h1>
-      <span class="whitespace-nowrap font-semibold text-sm md:text-base">
-        Guesses:&nbsp;<span id="guessCount">0</span>
-      </span>
+      <div class="flex align-right items-center gap-3">
+        <span class="whitespace-nowrap font-semibold text-xs md:text-base hidden sm:block">
+          <span id="playerCount">0</span>&nbsp;Player<span id="playerPlural">s</span>
+        </span>
+        <span class="whitespace-nowrap font-semibold text-xs md:text-base">
+          <span id="guessCount">0</span>&nbsp;Guess<span id="guessPlural">es</span>
+        </span>
+        <button id="resetButton" class="
+          inline-flex items-center justify-center px-2 py-1 rounded-xl
+          bg-slate-600 text-white text-xs md:text-base font-semibold tracking-wide
+          transition-colors hover:bg-slate-500"
+        >
+          Reset
+        </button>
+      </div>
     </div>
     <div class="h-1 bg-slate-700 rounded overflow-hidden">
       <div 
-        class="h-full w-0" 
+        class="h-full w-0 absolute" 
         id="progressBar"
       ></div>
     </div>
@@ -174,6 +189,6 @@
 
     </div>
   </footer>
-  <script src="../dist/script.js"></script>
+  <script src="../dist/game.js"></script>
 </body>
 </html>

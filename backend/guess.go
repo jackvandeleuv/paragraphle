@@ -211,6 +211,29 @@ func isDuplicateGuess(db *sql.DB, guess_id int64, session_id string) bool {
 	return err == nil
 }
 
+func getLastGuessArticleID(db *sql.DB, session_id string) (int64, error) {
+	rows, err := db.Query(`
+		select guess_id
+		from guesses
+		where session_id = ?
+		order by created_timestamp desc
+		limit 1
+	`, session_id)
+	if err != nil {
+		return -1, err
+	}
+	defer rows.Close()
+
+	var article_id int64
+	article_id = -1
+	for rows.Next() {
+		if err := rows.Scan(&article_id); err != nil {
+			return -1, err
+		}
+	}
+	return article_id, nil
+}
+
 func countGuesses(db *sql.DB, session_id string) (int64, error) {
 	rows, err := db.Query(`
 		select count(guess_id)

@@ -56,8 +56,9 @@ type Stats struct {
 }
 
 type SessionUpdate struct {
-	Chunks  []Chunk `json:"chunks"`
-	Guesses int64   `json:"guesses"`
+	Chunks             []Chunk `json:"chunks"`
+	Guesses            int64   `json:"guesses"`
+	LastGuessArticleID int64   `json:"last_guess_article_id"`
 }
 
 func getTargets() []Target {
@@ -174,10 +175,9 @@ func startSession(w http.ResponseWriter, db *sql.DB) {
 	json.NewEncoder(w).Encode(id)
 }
 
-func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64, logger *log.Logger) {
-	logger.Println("getting target id")
+func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64) {
 	target_id := getTargetID(targets)
-	logger.Println("got target_id")
+
 	raw_guess_id := r.URL.Query().Get("article_id")
 	clean_guess_id := strings.TrimSpace(strings.ToLower(raw_guess_id))
 	guess_id, err := strconv.Atoi(clean_guess_id)
@@ -191,24 +191,19 @@ func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []
 		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
 		return
 	}
-	logger.Println("checking dup guess")
-	repeat_guess := isDuplicateGuess(db, int64(guess_id), session_id)
-	if repeat_guess {
-		http.Error(w, "Cannot duplicates guesses in a session.", http.StatusBadRequest)
-		return
-	}
-	logger.Println("getting top scored chunks")
+
 	chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
 	if err != nil {
 		http.Error(w, "Internal server error.", http.StatusInternalServerError)
 		return
 	}
-	logger.Println("chunks")
-	logger.Println(chunks)
 
-	best_chunk_id := chunks[0].ChunkID
-	best_chunk_score := chunks[0].Distance
-	logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
+	repeat_guess := isDuplicateGuess(db, int64(guess_id), session_id)
+	if !repeat_guess {
+		best_chunk_id := chunks[0].ChunkID
+		best_chunk_score := chunks[0].Distance
+		logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
+	}
 
 	if target_id == int64(guess_id) {
 		if err := logWin(db, session_id); err != nil {
@@ -222,7 +217,7 @@ func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []
 		http.Error(w, "Could not count guesses.", http.StatusInternalServerError)
 		return
 	}
-	session_update := SessionUpdate{chunks, n_guesses}
+	session_update := SessionUpdate{chunks, n_guesses, int64(guess_id)}
 
 	json.NewEncoder(w).Encode(session_update)
 }
@@ -246,20 +241,25 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 		return
 	}
 
-	top_n_guesses, err := topNGuesses(db, session_id)
+	MAX_ARTICLE_IDS := 25
+	MAX_CHUNKS := 100
+	top_n_guesses, err := topNGuesses(db, session_id, MAX_ARTICLE_IDS)
 	if err != nil {
 		http.Error(w, "Internal server error.", http.StatusInternalServerError)
 		return
 	}
 
 	total_chunks := make([]Chunk, 0)
-	for _, guess_id := range top_n_guesses {
+	for idx, guess_id := range top_n_guesses {
 		chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
 		if err != nil {
 			http.Error(w, "Internal server error.", http.StatusInternalServerError)
 			return
 		}
 		total_chunks = append(total_chunks, chunks...)
+		if idx > MAX_CHUNKS {
+			break
+		}
 	}
 
 	n_guesses, err := countGuesses(db, session_id)
@@ -268,7 +268,13 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 		return
 	}
 
-	session_update := SessionUpdate{total_chunks, n_guesses}
+	last_guess_article_id, err := getLastGuessArticleID(db, session_id)
+	if err != nil {
+		http.Error(w, "Could not find last article_id.", http.StatusInternalServerError)
+		return
+	}
+
+	session_update := SessionUpdate{total_chunks, n_guesses, last_guess_article_id}
 
 	json.NewEncoder(w).Encode(session_update)
 }
@@ -332,15 +338,12 @@ func main() {
 	})
 
 	http.HandleFunc("/guess-article", func(w http.ResponseWriter, r *http.Request) {
-		logger.Println("guessing article")
 		setHeaders(w, CORS_URI)
 		valid := enforceValidSession(w, r, db)
-		logger.Println("valid session")
-		logger.Println(valid)
 		if !valid {
 			return
 		}
-		guessArticle(w, r, db, targets, MAX_CHUNKS, logger)
+		guessArticle(w, r, db, targets, MAX_CHUNKS)
 	})
 
 	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
