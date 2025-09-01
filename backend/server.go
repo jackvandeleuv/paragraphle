@@ -298,8 +298,8 @@ func topChunks(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func main() {
 	var MAX_SUGGESTIONS int64 = 10
 	var MAX_CHUNKS int64 = 10
-	CORS_URI := "http://127.0.0.1:5500"
-	// CORS_URI := "https://paragraphle.com"
+	// CORS_URI := "http://127.0.0.1:5500"
+	CORS_URI := "https://paragraphle.com"
 	logger := log.Default()
 
 	logger.Println("starting server")
