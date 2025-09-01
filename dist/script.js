@@ -93,6 +93,9 @@ function addCardListeners() {
         const shortEl = card.querySelector('.short');
         const fullEl = card.querySelector('.full');
         const wikiBtn = card.querySelector('.wiki-btn');
+        if (!shortEl || !fullEl || !title || !scoreEl || !wikiBtn) {
+            return;
+        }
         card.addEventListener('click', () => {
             const expanded = card.classList.toggle('expanded');
             shortEl.classList.toggle('hidden');
@@ -119,22 +122,28 @@ function renderSuggestionButtonHTML(row) {
     `;
 }
 function addSuggestionButtonListeners() {
-    document.querySelectorAll('.chip').forEach(card => {
-        card.addEventListener('click', (e) => {
-            loadGuess(e.target.id);
+    document.querySelectorAll('.chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+            loadGuess(chip.id);
         });
     });
 }
 function addMainSuggestionListener() {
-    document.getElementById('mainSuggestion').addEventListener('click', () => {
-        if (mainSuggestion === null)
+    const mainSuggestionElem = document.getElementById('mainSuggestion');
+    if (!mainSuggestionElem)
+        return;
+    mainSuggestionElem.addEventListener('click', () => {
+        if (game.mainSuggestion === null)
             return;
-        loadGuess(mainSuggestion.article_id);
+        loadGuess(String(game.mainSuggestion.article_id));
     });
 }
 function loadSuggestionButtons(suggestions) {
     return __awaiter(this, void 0, void 0, function* () {
-        const input = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
+        const mainSuggestionText = document.getElementById('mainSuggestionText');
+        if (!mainSuggestionText)
+            return;
+        const input = mainSuggestionText.innerHTML.toUpperCase();
         if (input === '')
             return;
         let limit = 2;
@@ -145,21 +154,24 @@ function loadSuggestionButtons(suggestions) {
             .slice(0, limit)
             .map((row) => renderSuggestionButtonHTML(row))
             .join('');
-        document.getElementById('suggestionBox').innerHTML = buttons;
+        updateInnerHTML('suggestionBox', buttons);
         addSuggestionButtonListeners();
     });
 }
 function loadEmptySuggestions() {
-    mainSuggestion = null;
-    document.getElementById('suggestionBox').innerHTML = `
+    game.mainSuggestion = null;
+    updateInnerHTML('suggestionBox', `
         <button class="chip" style="border: 1px solid #ffa2a2; color: #ffa2a2;">No matching articles.</button>
-    `;
+    `);
 }
 function loadDefaultSuggestion(message) {
-    document.getElementById('mainSuggestion').classList.add('text-gray-500/60', 'bg-[rgba(30,41,59,0.4)]', 'border', 'border-[#475569]');
-    document.getElementById('suggestionBox').innerHTML = `
+    const mainSuggestionElem = document.getElementById('mainSuggestion');
+    if (!mainSuggestionElem)
+        return;
+    mainSuggestionElem.classList.add('text-gray-500/60', 'bg-[rgba(30,41,59,0.4)]', 'border', 'border-[#475569]');
+    updateInnerHTML('suggestionBox', `
         <button class="chip">${message}</button>
-    `;
+    `);
 }
 function urlToName(title) {
     const titleSplit = title.split('/wiki/');
@@ -169,6 +181,9 @@ function loadWikiImage(url, targetID, title) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
         const defaultImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Wikipedia-logo-v2-square.svg/1024px-Wikipedia-logo-v2-square.svg.png';
+        const targetImage = document.getElementById(targetID);
+        if (!targetImage || !(targetImage instanceof HTMLImageElement))
+            return;
         try {
             const name = urlToName(url);
             const imageURL = `https://en.wikipedia.org/api/rest_v1/page/summary/${name}`;
@@ -177,13 +192,13 @@ function loadWikiImage(url, targetID, title) {
                 return defaultImage;
             const data = yield res.json();
             const image = ((_a = data.originalimage) === null || _a === void 0 ? void 0 : _a.source) || defaultImage;
-            document.getElementById(targetID).src = image;
-            document.getElementById(targetID).alt = title;
+            targetImage.src = image;
+            targetImage.alt = title;
         }
         catch (error) {
             console.error(error);
-            document.getElementById(targetID).src = defaultImage;
-            document.getElementById(targetID).alt = 'Wikipedia logo.';
+            targetImage.src = defaultImage;
+            targetImage.alt = 'Wikipedia logo.';
             return defaultImage;
         }
     });
@@ -223,104 +238,125 @@ function renderCardHTML(row) {
     `;
 }
 function renderGuesses() {
-    const guessCards = guesses
+    const guessCards = game.guesses
         .slice(0, 150)
         .map((row) => renderCardHTML(row))
         .join('');
-    document.getElementById('article-list').innerHTML = guessCards;
+    updateInnerHTML('article-list', guessCards);
 }
 function loadGuess(guessArticleId) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (isWin)
+        if (game.isWin)
             return;
-        if (isGuessing)
+        if (game.isGuessing)
             return;
-        isGuessing = true;
-        document.getElementById('lastGuessText').innerHTML = '&nbsp;';
-        document.getElementById('lastGuessDistance').innerHTML = '&nbsp;';
-        document.getElementById('lastGuessBox').className = `
+        game.isGuessing = true;
+        updateInnerHTML('lastGuessText', '&nbsp;');
+        updateInnerHTML('lastGuessDistance', '&nbsp;');
+        updateClassName('lastGuessBox', `
         mb-4 flex items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-slate-700
         bg-slate-700 text-slate-700 animate-[loadingBox_0.5s_linear_infinite_alternate]
-    `;
-        document.getElementById('mainSuggestionText').innerHTML = '';
-        document.getElementById('mainSuggestionPrompt').innerHTML = '';
-        const guessResponse = yield fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${SESSION_ID}`);
+    `);
+        updateInnerHTML('mainSuggestionText', '');
+        updateInnerHTML('mainSuggestionPrompt', '');
+        const session_id = yield getSessionID();
+        if (!session_id)
+            return;
+        const guessResponse = yield fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
         if (!guessResponse.ok) {
-            document.getElementById('lastGuessText').innerHTML = 'Error! please try again';
-            document.getElementById('lastGuessDistance').innerHTML = '';
-            document.getElementById('lastGuessBox').className = `
+            updateInnerHTML('lastGuessText', 'Error! please try again');
+            updateInnerHTML('lastGuessDistance', '');
+            updateClassName('lastGuessBox', `
             mb-4 flex items-center justify-between text-sm md:text-base font-semibold
             px-3 py-1 rounded border border-white-600 text-white
-        `;
-            isGuessing = false;
+        `);
+            game.isGuessing = false;
             return;
         }
         const guessData = yield guessResponse.json();
-        guessData.sort((a, b) => a.distance - b.distance);
-        document.getElementById('lastGuessText').innerHTML = guessData[0].title;
-        if (!guessIDSet.has(guessArticleId)) {
-            document.getElementById('guessCount').innerHTML = ++guessCount;
+        const guessCount = guessData.guesses;
+        const chunks = guessData.chunks;
+        chunks.sort((a, b) => a.distance - b.distance);
+        updateInnerHTML('lastGuessText', chunks[0].title);
+        if (!game.guessIDSet.has(guessArticleId)) {
+            game.guessCount = guessCount;
+            updateInnerHTML('guessCount', String(game.guessCount));
         }
-        guessIDSet.add(guessArticleId);
-        for (const guess of guessData) {
-            if (guessChunkSet.has(guess.chunk_id))
+        game.guessIDSet.add(guessArticleId);
+        for (const guess of chunks) {
+            if (game.guessChunkSet.has(guess.chunk_id))
                 continue;
-            guessChunkSet.add(guess.chunk_id);
-            guesses.push(guess);
+            game.guessChunkSet.add(guess.chunk_id);
+            game.guesses.push(guess);
         }
-        guesses.sort((a, b) => a.distance - b.distance);
+        game.guesses.sort((a, b) => a.distance - b.distance);
         renderGuesses();
-        const displayDistance = guessData[0].distance.toFixed(2);
-        const guessDataTop = guessData[0].distance;
+        const displayDistance = chunks[0].distance.toFixed(2);
+        const guessDataTop = chunks[0].distance;
         const borderColor = tempToColor(guessDataTop, 'border');
         const backgroundColor = tempToColor(guessDataTop, 'bg');
-        document.getElementById('lastGuessBox').className = `
+        updateClassName('lastGuessBox', `
         mb-4 flex items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border ${borderColor} 
         ${backgroundColor} text-white
-    `;
-        document.getElementById('lastGuessDistance').innerHTML = `Distance: ${displayDistance}`;
+    `);
+        updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}`);
         if (window.innerWidth < 700) {
-            loadWikiImage(guessData[0].url, 'lastGuessImage', guessData[0].title);
-            document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.07]';
+            loadWikiImage(chunks[0].url, 'lastGuessImage', chunks[0].title);
+            updateClassName('lastGuessImage', 'absolute w-full h-full object-cover z-[-1] opacity-[.07]');
         }
         addCardListeners();
-        bestScore = Math.min(bestScore, guessDataTop);
-        const progress = tempToProgress(bestScore);
-        document.getElementById('progressBar').className = `h-full ${progress} ${tempToColor(bestScore, 'bg')}`;
-        if (guessData[0].is_win) {
-            yield renderWin(guessData[0].title.toUpperCase().trim(), guessData[0].url);
+        game.bestScore = Math.min(game.bestScore, guessDataTop);
+        const progress = tempToProgress(game.bestScore);
+        updateClassName('progressBar', `h-full ${progress} ${tempToColor(game.bestScore, 'bg')}`);
+        if (chunks[0].is_win) {
+            yield renderWin(chunks[0].title.toUpperCase().trim(), chunks[0].url);
         }
-        mainSuggestion = null;
-        isGuessing = false;
+        game.mainSuggestion = null;
+        game.isGuessing = false;
     });
 }
 function flagNoSuggestion() {
-    document.getElementById('mainSuggestion').style.border = '1px solid #ffa2a2';
-    document.getElementById('mainSuggestion').style.color = '#ffa2a2';
-    document.getElementById('mainSuggestionPrompt').innerHTML = '';
+    const mainSuggestionElem = document.getElementById('mainSuggestion');
+    if (!mainSuggestionElem)
+        return;
+    mainSuggestionElem.style.border = '1px solid #ffa2a2';
+    mainSuggestionElem.style.color = '#ffa2a2';
+    updateInnerHTML('mainSuggestionPrompt', '');
     loadEmptySuggestions();
 }
 function updateMainSuggestion() {
     return __awaiter(this, void 0, void 0, function* () {
-        const input = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
+        let mainSuggestionText = document.getElementById('mainSuggestionText');
+        if (!mainSuggestionText)
+            return;
+        const input = mainSuggestionText.innerHTML.toUpperCase();
         if (input === '') {
             return loadDefaultSuggestion("Try guessing an article!");
         }
-        const suggestionsResponse = yield fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=4&session_id=${SESSION_ID}`));
+        const session_id = yield getSessionID();
+        if (!session_id)
+            return;
+        const suggestionsResponse = yield fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=4&session_id=${session_id}`));
         const suggestions = yield suggestionsResponse.json();
         if (suggestions.length === 0) {
             return flagNoSuggestion();
         }
-        const updatedInput = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
+        mainSuggestionText = document.getElementById('mainSuggestionText');
+        if (!mainSuggestionText)
+            return;
+        const updatedInput = mainSuggestionText.innerHTML.toUpperCase();
         if (updatedInput !== input) {
             return;
         }
-        document.getElementById('mainSuggestion').style.color = '#fff';
-        document.getElementById('mainSuggestion').style.border = `1px solid #475569`;
-        mainSuggestion = suggestions[0];
-        const topSuggestion = mainSuggestion.title.toUpperCase().trim();
+        const mainSuggestionElem = document.getElementById('mainSuggestion');
+        if (!mainSuggestionElem)
+            return;
+        mainSuggestionElem.style.color = '#fff';
+        mainSuggestionElem.style.border = `1px solid #475569`;
+        game.mainSuggestion = suggestions[0];
+        const topSuggestion = game.mainSuggestion.title.toUpperCase().trim();
         let topSuggestionPostfix = topSuggestion.replace(input.trim(), '');
         if (topSuggestionPostfix.length !== 0 &&
             topSuggestionPostfix[0] === ' ' &&
@@ -328,7 +364,7 @@ function updateMainSuggestion() {
             input[input.length - 1] === ' ') {
             topSuggestionPostfix = topSuggestionPostfix.trim();
         }
-        document.getElementById('mainSuggestionPrompt').innerHTML = trimText(topSuggestionPostfix);
+        updateInnerHTML('mainSuggestionPrompt', trimText(topSuggestionPostfix));
         if (suggestions.length > 1) {
             loadSuggestionButtons(suggestions.slice(1, suggestions.length));
         }
@@ -350,31 +386,40 @@ function getMaxInputChars() {
     }
 }
 function handleBackspace() {
-    document.getElementById('mainSuggestionPrompt').innerHTML = '';
-    const current = document.getElementById('mainSuggestionText').innerText;
-    document.getElementById('mainSuggestionText').innerHTML = current.slice(0, current.length - 1);
+    updateInnerHTML('mainSuggestionPrompt', '');
+    const mainSuggestionText = document.getElementById('mainSuggestionText');
+    if (!mainSuggestionText)
+        return;
+    const current = mainSuggestionText.innerText;
+    mainSuggestionText.innerHTML = current.slice(0, current.length - 1);
     updateMainSuggestion();
 }
 function handleSpace() {
-    const text = document.getElementById('mainSuggestionText').innerHTML;
+    const mainSuggestionText = document.getElementById('mainSuggestionText');
+    if (!mainSuggestionText)
+        return;
+    const text = mainSuggestionText.innerHTML;
     if (text.length > getMaxInputChars() ||
         text.length === 0 ||
         text.trim().length === 0 ||
         text[text.length - 1] === ' ')
         return;
-    document.getElementById('mainSuggestionText').innerHTML = text + ' ';
+    updateInnerHTML('mainSuggestionText', text + ' ');
     updateMainSuggestion();
 }
 function handleEnter() {
-    if (mainSuggestion === null)
+    if (game.mainSuggestion === null)
         return;
-    loadGuess(mainSuggestion.article_id);
+    loadGuess(String(game.mainSuggestion.article_id));
 }
 function handleOtherInput(value) {
-    const text = document.getElementById('mainSuggestionText').innerHTML;
+    const mainSuggestionText = document.getElementById('mainSuggestionText');
+    if (!mainSuggestionText)
+        return;
+    const text = mainSuggestionText.innerHTML;
     if (text.length > getMaxInputChars())
         return;
-    document.getElementById('mainSuggestionText').innerHTML = text + value;
+    mainSuggestionText.innerHTML = text + value;
     updateMainSuggestion();
 }
 function addButtonListeners() {
@@ -398,8 +443,9 @@ function addButtonListeners() {
     });
     const keys = document.querySelectorAll('.key');
     for (const key of keys) {
-        key.addEventListener('click', (e) => {
-            const value = e.currentTarget.innerHTML;
+        key.addEventListener('click', () => {
+            var _a;
+            const value = (_a = key.textContent) !== null && _a !== void 0 ? _a : '';
             if (value === 'Back') {
                 handleBackspace();
             }
@@ -415,48 +461,124 @@ function addButtonListeners() {
         });
     }
 }
-function addDailyNumber() {
-    const offsetTimestamp = Date.now() - (1000 * 3600 * 4);
-    const index = Math.floor(offsetTimestamp / (1000 * 60 * 60 * 24)) - 20287;
-    document.getElementById('dailyNumber').innerHTML = index;
+function updateDailyNumber() {
+    const MILLISECONDS_PER_DAY = 24 * 3600 * 1000;
+    const GAME_EPOCH = 20287;
+    const dayStartEasternMilli = getDayStartEasternMilli();
+    const index = Math.floor(dayStartEasternMilli / MILLISECONDS_PER_DAY) - GAME_EPOCH;
+    updateInnerHTML('dailyNumber', String(index));
+}
+function getDayStartEasternMilli() {
+    const MILLISECONDS_PER_DAY = 24 * 3600 * 1000;
+    const FOUR_HOURS = 4 * 3600 * 1000;
+    const now = Date.now();
+    const daysSinceEpoch = Math.floor(now / MILLISECONDS_PER_DAY);
+    const dayStartUTC = daysSinceEpoch * MILLISECONDS_PER_DAY;
+    const dayStartET = dayStartUTC - FOUR_HOURS;
+    return dayStartET;
+}
+function updateClassName(id, value) {
+    const elem = document.getElementById(id);
+    if (!elem) {
+        return;
+    }
+    elem.className = value;
+}
+function updateInnerHTML(id, value) {
+    const elem = document.getElementById(id);
+    if (!elem) {
+        return;
+    }
+    elem.innerHTML = value;
+}
+function fetchSessionID() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const suggestionsResponse = yield fetch(encodeURI(`${URI}/start-session`));
+        if (!suggestionsResponse.ok)
+            return null;
+        return yield suggestionsResponse.json();
+    });
+}
+function resetGame() {
+    return __awaiter(this, void 0, void 0, function* () {
+        game = new Game();
+        renderGuesses();
+        updateInnerHTML('guessCount', "0");
+    });
+}
+function getSessionID() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const dayStartEasternMilli = getDayStartEasternMilli();
+            const cached_session_id = localStorage.getItem("session_id");
+            const cached_session_start = localStorage.getItem("session_start");
+            console.log(`session_id: ${cached_session_id}, start: ${cached_session_start}`);
+            if (cached_session_id !== null &&
+                cached_session_start !== null &&
+                Number(cached_session_start) > dayStartEasternMilli) {
+                return cached_session_id;
+            }
+            yield resetGame();
+            const session_id = yield fetchSessionID();
+            localStorage.clear();
+            if (!session_id)
+                return null;
+            localStorage.setItem("session_id", session_id);
+            localStorage.setItem("session_start", String(Date.now()));
+            return session_id;
+        }
+        catch (error) {
+            localStorage.clear();
+        }
+        return null;
+    });
 }
 function renderWin(title, imageURL) {
     return __awaiter(this, void 0, void 0, function* () {
-        document.getElementById('progressBar').className = `h-full bg-red-700/60 w-full`;
-        document.getElementById('lastGuessDistance').innerHTML = `Distance: 0`;
-        document.getElementById('lastGuessBox').className = `
+        updateClassName('progressBar', `h-full bg-red-700/60 w-full`);
+        updateInnerHTML('lastGuessDistance', `Distance: 0`);
+        updateClassName('lastGuessBox', `
         mb-4 flex items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-red-700/60
         bg-red-700/60 text-white
-    `;
-        document.getElementById('winModalGuessCount').innerHTML = guessCount;
-        document.getElementById('winModalTitle').innerHTML = title;
+    `);
+        updateInnerHTML('winModalGuessCount', String(game.guessCount));
+        updateInnerHTML('winModalTitle', title);
         yield loadWikiImage(imageURL, 'winImage', title);
-        document.getElementById('winModal').style.display = 'flex';
-        document.getElementById('winModal').addEventListener('click', () => {
-            document.getElementById('winModal').style.display = 'none';
+        const winModal = document.getElementById('winModal');
+        if (!winModal) {
+            console.error("Could not access win modal element.");
+            return;
+        }
+        winModal.style.display = 'flex';
+        winModal.addEventListener('click', () => {
+            winModal.style.display = 'none';
         });
-        isWin = true;
+        game.isWin = true;
     });
 }
+class Game {
+    constructor() {
+        this.isGuessing = false;
+        this.isWin = false;
+        this.text = '';
+        this.mainSuggestion = null;
+        this.bestScore = 2;
+        this.guesses = [];
+        this.guessChunkSet = new Set();
+        this.guessIDSet = new Set();
+        this.guessCount = 0;
+    }
+}
+let game = new Game();
 // const URI = 'https://api.paragraphle.com';
 const URI = 'http://localhost:8000';
-let isGuessing = false;
-let isWin = false;
-let guessCount = 0;
-let text = '';
-let mainSuggestion;
-let bestScore = 2;
-const guesses = [];
-const guessChunkSet = new Set();
-const guessIDSet = new Set();
-const SESSION_ID = Date.now();
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
     const letter = String.fromCharCode(65 + i);
     acceptedKeys.add(letter);
 }
-WHITELIST_KEYS = [
+const WHITELIST_KEYS = [
     'Enter', 'Backspace', '.',
     ',', ':', '-',
     ' ', `'`, `"`,
@@ -472,5 +594,5 @@ for (const key of WHITELIST_KEYS) {
 }
 addCardListeners();
 addButtonListeners();
-addDailyNumber();
+updateDailyNumber();
 addMainSuggestionListener();

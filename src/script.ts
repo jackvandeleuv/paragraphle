@@ -1,9 +1,20 @@
 interface Suggestion {
     article_id: number;
+    title: string;
 }
 
 interface Chunk {
     chunk_id: number;
+    chunk: string;
+    distance: number;
+    title: string;
+    url: string;
+    is_win: boolean;
+}
+
+interface SessionUpdate {
+    chunks: Chunk[];
+    guesses: number;
 }
 
 function tempToColor(value: number, elemType: string) {
@@ -121,7 +132,7 @@ function trimText(text: string) {
     return trimmed;
 }
 
-function renderSuggestionButtonHTML(row) {
+function renderSuggestionButtonHTML(row: Suggestion) {
     return `
         <button id="${row.article_id}" class="chip activeButton">
             ${trimText(row.title)}
@@ -130,24 +141,26 @@ function renderSuggestionButtonHTML(row) {
 }
 
 function addSuggestionButtonListeners() {
-    document.querySelectorAll('.chip').forEach(card => {
-        card.addEventListener('click', (e) => {
-            loadGuess(e.target.id);
-        })
-    });    
+    document.querySelectorAll<HTMLElement>('.chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+            loadGuess(chip.id);
+        });
+    });  
 }
 
 function addMainSuggestionListener() {
     const mainSuggestionElem = document.getElementById('mainSuggestion')
     if (!mainSuggestionElem) return 
     mainSuggestionElem.addEventListener('click', () => {
-        if (mainSuggestion === null) return;
-        loadGuess(mainSuggestion.article_id);
+        if (game.mainSuggestion === null) return;
+        loadGuess(String(game.mainSuggestion.article_id));
     });
 }
 
-async function loadSuggestionButtons(suggestions) {
-    const input = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
+async function loadSuggestionButtons(suggestions: Suggestion[]) {
+    const mainSuggestionText = document.getElementById('mainSuggestionText');
+    if (!mainSuggestionText) return;
+    const input = mainSuggestionText.innerHTML.toUpperCase();
     if (input === '') return;
 
     let limit = 2;
@@ -159,36 +172,40 @@ async function loadSuggestionButtons(suggestions) {
         .slice(0, limit)
         .map((row) => renderSuggestionButtonHTML(row))
         .join('');
-    document.getElementById('suggestionBox').innerHTML = buttons;
+    updateInnerHTML('suggestionBox', buttons);
     addSuggestionButtonListeners();
 }
 
 function loadEmptySuggestions() {
-    mainSuggestion = null;
-    document.getElementById('suggestionBox').innerHTML = `
+    game.mainSuggestion = null;
+    updateInnerHTML('suggestionBox', `
         <button class="chip" style="border: 1px solid #ffa2a2; color: #ffa2a2;">No matching articles.</button>
-    `;
+    `);
 }
 
-function loadDefaultSuggestion(message) {
-    document.getElementById('mainSuggestion').classList.add(
+function loadDefaultSuggestion(message: string) {
+    const mainSuggestionElem = document.getElementById('mainSuggestion');
+    if (!mainSuggestionElem) return;
+    mainSuggestionElem.classList.add(
         'text-gray-500/60',
         'bg-[rgba(30,41,59,0.4)]',
         'border',
         'border-[#475569]'
     );
-    document.getElementById('suggestionBox').innerHTML = `
+    updateInnerHTML('suggestionBox', `
         <button class="chip">${message}</button>
-    `;
+    `);
 }
 
-function urlToName(title) {
+function urlToName(title: string) {
     const titleSplit = title.split('/wiki/');
     return titleSplit[titleSplit.length - 1];
 }
 
-async function loadWikiImage(url, targetID, title) {
+async function loadWikiImage(url: string, targetID: string, title: string) {
     const defaultImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Wikipedia-logo-v2-square.svg/1024px-Wikipedia-logo-v2-square.svg.png';
+    const targetImage = document.getElementById(targetID);
+    if (!targetImage || !(targetImage instanceof HTMLImageElement)) return;
     try {
         const name = urlToName(url);
         const imageURL = `https://en.wikipedia.org/api/rest_v1/page/summary/${name}`;
@@ -196,17 +213,17 @@ async function loadWikiImage(url, targetID, title) {
         if (!res.ok) return defaultImage;
         const data = await res.json();
         const image = data.originalimage?.source || defaultImage;
-        document.getElementById(targetID).src = image;
-        document.getElementById(targetID).alt = title;
+        targetImage.src = image;
+        targetImage.alt = title;
     } catch (error) {
         console.error(error);
-        document.getElementById(targetID).src = defaultImage;
-        document.getElementById(targetID).alt = 'Wikipedia logo.';
+        targetImage.src = defaultImage;
+        targetImage.alt = 'Wikipedia logo.';
         return defaultImage;
     }
 }
 
-function renderCardHTML(row) {
+function renderCardHTML(row: Chunk) {
     const borderColor = tempToColor(row.distance, 'border');
     return `
         <article data-card
@@ -242,121 +259,138 @@ function renderCardHTML(row) {
 }
 
 function renderGuesses() {
-    const guessCards = guesses
+    const guessCards = game.guesses
         .slice(0, 150)
         .map((row) => renderCardHTML(row))
         .join('');
-    document.getElementById('article-list').innerHTML = guessCards;
+    updateInnerHTML('article-list', guessCards);
 }
 
-async function loadGuess(guessArticleId) {
-    if (isWin) return;
-    if (isGuessing) return;
-    isGuessing = true;
+async function loadGuess(guessArticleId: string) {
+    if (game.isWin) return;
+    if (game.isGuessing) return;
+    game.isGuessing = true;
 
-    document.getElementById('lastGuessText').innerHTML = '&nbsp;';
-    document.getElementById('lastGuessDistance').innerHTML = '&nbsp;';
-    document.getElementById('lastGuessBox').className = `
+    updateInnerHTML('lastGuessText', '&nbsp;');
+    updateInnerHTML('lastGuessDistance', '&nbsp;');
+    updateClassName('lastGuessBox', `
         mb-4 flex items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-slate-700
         bg-slate-700 text-slate-700 animate-[loadingBox_0.5s_linear_infinite_alternate]
-    `;
+    `);
 
-    document.getElementById('mainSuggestionText').innerHTML = '';
-    document.getElementById('mainSuggestionPrompt').innerHTML = '';
+    updateInnerHTML('mainSuggestionText', '');
+    updateInnerHTML('mainSuggestionPrompt', '');
 
-    const guessResponse = await fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${SESSION_ID}`);
+    const session_id = await getSessionID();
+    if (!session_id) return;
+
+    const guessResponse = await fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
     if (!guessResponse.ok) {
-        document.getElementById('lastGuessText').innerHTML = 'Error! please try again';
-        document.getElementById('lastGuessDistance').innerHTML = '';
-        document.getElementById('lastGuessBox').className = `
+        updateInnerHTML('lastGuessText', 'Error! please try again');
+        updateInnerHTML('lastGuessDistance', '');
+        updateClassName('lastGuessBox', `
             mb-4 flex items-center justify-between text-sm md:text-base font-semibold
             px-3 py-1 rounded border border-white-600 text-white
-        `;
-        isGuessing = false;
+        `);
+        game.isGuessing = false;
         return;
     }
 
-    const guessData = await guessResponse.json();
+    const guessData = await guessResponse.json() as SessionUpdate;
+    const guessCount = guessData.guesses;
+    const chunks = guessData.chunks;
 
-    guessData.sort((a, b) => a.distance - b.distance);
-    document.getElementById('lastGuessText').innerHTML = guessData[0].title;
+    chunks.sort((a, b) => a.distance - b.distance);
+    updateInnerHTML('lastGuessText', chunks[0].title);
     
-    if (!guessIDSet.has(guessArticleId)) {
-        document.getElementById('guessCount').innerHTML = ++guessCount;
+    if (!game.guessIDSet.has(guessArticleId)) {
+        game.guessCount = guessCount;
+        updateInnerHTML('guessCount', String(game.guessCount));
     }
-    guessIDSet.add(guessArticleId);
+    game.guessIDSet.add(guessArticleId);
 
-    for (const guess of guessData) {
-        if (guessChunkSet.has(guess.chunk_id)) continue;
-        guessChunkSet.add(guess.chunk_id);
-        guesses.push(guess);
+    for (const guess of chunks) {
+        if (game.guessChunkSet.has(guess.chunk_id)) continue;
+        game.guessChunkSet.add(guess.chunk_id);
+        game.guesses.push(guess);
     }
-    guesses.sort((a, b) => a.distance - b.distance);
+    game.guesses.sort((a, b) => a.distance - b.distance);
     renderGuesses();
 
-    const displayDistance = guessData[0].distance.toFixed(2);
-    const guessDataTop = guessData[0].distance;
+    const displayDistance = chunks[0].distance.toFixed(2);
+    const guessDataTop = chunks[0].distance;
     const borderColor = tempToColor(guessDataTop, 'border');
     const backgroundColor = tempToColor(guessDataTop, 'bg');
 
-    document.getElementById('lastGuessBox').className = `
+    updateClassName('lastGuessBox', `
         mb-4 flex items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border ${borderColor} 
         ${backgroundColor} text-white
-    `;
-    document.getElementById('lastGuessDistance').innerHTML = `Distance: ${displayDistance}`;
+    `);
+    updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}`);
 
     if (window.innerWidth < 700) {
-        loadWikiImage(guessData[0].url, 'lastGuessImage', guessData[0].title);
-        document.getElementById('lastGuessImage').className = 'absolute w-full h-full object-cover z-[-1] opacity-[.07]';
+        loadWikiImage(chunks[0].url, 'lastGuessImage', chunks[0].title);
+        updateClassName('lastGuessImage', 'absolute w-full h-full object-cover z-[-1] opacity-[.07]');
     }
 
     addCardListeners();
 
-    bestScore = Math.min(bestScore, guessDataTop);
-    const progress = tempToProgress(bestScore);
+    game.bestScore = Math.min(game.bestScore, guessDataTop);
+    const progress = tempToProgress(game.bestScore);
     
-    document.getElementById('progressBar').className = `h-full ${progress} ${tempToColor(bestScore, 'bg')}`;   
+    updateClassName('progressBar', `h-full ${progress} ${tempToColor(game.bestScore, 'bg')}`);   
 
-    if (guessData[0].is_win) {
-        await renderWin(guessData[0].title.toUpperCase().trim(), guessData[0].url);
+    if (chunks[0].is_win) {
+        await renderWin(chunks[0].title.toUpperCase().trim(), chunks[0].url);
     }
 
-    mainSuggestion = null;
-    isGuessing = false;
+    game.mainSuggestion = null;
+    game.isGuessing = false;
 }
 
 function flagNoSuggestion() {
-    document.getElementById('mainSuggestion').style.border = '1px solid #ffa2a2';
-    document.getElementById('mainSuggestion').style.color = '#ffa2a2';
-    document.getElementById('mainSuggestionPrompt').innerHTML = '';
+    const mainSuggestionElem = document.getElementById('mainSuggestion')
+    if (!mainSuggestionElem) return;
+    mainSuggestionElem.style.border = '1px solid #ffa2a2';
+    mainSuggestionElem.style.color = '#ffa2a2';
+    updateInnerHTML('mainSuggestionPrompt', '');
     loadEmptySuggestions();
 }
 
 async function updateMainSuggestion() {
-    const input = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
+    let mainSuggestionText = document.getElementById('mainSuggestionText');
+    if (!mainSuggestionText) return;
+    const input = mainSuggestionText.innerHTML.toUpperCase();
     if (input === '') {
         return loadDefaultSuggestion("Try guessing an article!");
     }
 
-    const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=4&session_id=${SESSION_ID}`));
-    const suggestions = await suggestionsResponse.json();
+    const session_id = await getSessionID();
+    if (!session_id) return;
+
+    const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=4&session_id=${session_id}`));
+    const suggestions = await suggestionsResponse.json() as Suggestion[];
 
     if (suggestions.length === 0) {
         return flagNoSuggestion();
     }
 
-    const updatedInput = document.getElementById('mainSuggestionText').innerHTML.toUpperCase();
+    mainSuggestionText = document.getElementById('mainSuggestionText');
+    if (!mainSuggestionText) return;
+    const updatedInput = mainSuggestionText.innerHTML.toUpperCase();
     if (updatedInput !== input) {
         return 
     }
 
-    document.getElementById('mainSuggestion').style.color = '#fff';
-    document.getElementById('mainSuggestion').style.border = `1px solid #475569`;
+    const mainSuggestionElem = document.getElementById('mainSuggestion');
+    if (!mainSuggestionElem) return;
+    mainSuggestionElem.style.color = '#fff';
+    mainSuggestionElem.style.border = `1px solid #475569`;
     
-    mainSuggestion = suggestions[0];
-    const topSuggestion = mainSuggestion.title.toUpperCase().trim();
+    game.mainSuggestion = suggestions[0];
+    const topSuggestion = game.mainSuggestion.title.toUpperCase().trim();
     let topSuggestionPostfix = topSuggestion.replace(input.trim(), '');
     if (
         topSuggestionPostfix.length !== 0 && 
@@ -367,7 +401,7 @@ async function updateMainSuggestion() {
         topSuggestionPostfix = topSuggestionPostfix.trim()
 
     }
-    document.getElementById('mainSuggestionPrompt').innerHTML = trimText(topSuggestionPostfix);
+   updateInnerHTML('mainSuggestionPrompt', trimText(topSuggestionPostfix));
 
     if (suggestions.length > 1) {
         loadSuggestionButtons(suggestions.slice(1, suggestions.length));
@@ -388,33 +422,39 @@ function getMaxInputChars() {
 }
 
 function handleBackspace() {
-    document.getElementById('mainSuggestionPrompt').innerHTML = '';
-    const current = document.getElementById('mainSuggestionText').innerText;
-    document.getElementById('mainSuggestionText').innerHTML = current.slice(0, current.length - 1);
+    updateInnerHTML('mainSuggestionPrompt', '');
+    const mainSuggestionText = document.getElementById('mainSuggestionText');
+    if (!mainSuggestionText) return;
+    const current = mainSuggestionText.innerText;
+    mainSuggestionText.innerHTML = current.slice(0, current.length - 1);
     updateMainSuggestion();
 }
 
 function handleSpace() {
-    const text = document.getElementById('mainSuggestionText').innerHTML;
+    const mainSuggestionText = document.getElementById('mainSuggestionText');
+    if (!mainSuggestionText) return;
+    const text = mainSuggestionText.innerHTML;
     if (
         text.length > getMaxInputChars() || 
         text.length === 0 ||
         text.trim().length === 0 ||
         text[text.length - 1] === ' '
     ) return;
-    document.getElementById('mainSuggestionText').innerHTML = text + ' ';
+    updateInnerHTML('mainSuggestionText', text + ' ');
     updateMainSuggestion();
 }
 
 function handleEnter() {
-    if (mainSuggestion === null) return;
-    loadGuess(mainSuggestion.article_id);
+    if (game.mainSuggestion === null) return;
+    loadGuess(String(game.mainSuggestion.article_id));
 }
 
-function handleOtherInput(value) {
-    const text = document.getElementById('mainSuggestionText').innerHTML;
+function handleOtherInput(value: string) {
+    const mainSuggestionText = document.getElementById('mainSuggestionText');
+    if (!mainSuggestionText) return;
+    const text = mainSuggestionText.innerHTML;
     if (text.length > getMaxInputChars()) return;
-    document.getElementById('mainSuggestionText').innerHTML = text + value;
+    mainSuggestionText.innerHTML = text + value;
     updateMainSuggestion();
 }
 
@@ -436,8 +476,8 @@ function addButtonListeners() {
 
     const keys = document.querySelectorAll('.key');
     for (const key of keys) {
-        key.addEventListener('click', (e) => {
-            const value = e.currentTarget.innerHTML;
+        key.addEventListener('click', () => {
+            const value = key.textContent ?? '';
             if (value === 'Back') {
                 handleBackspace()
             } else if (value === 'Enter') {
@@ -451,10 +491,25 @@ function addButtonListeners() {
     }
 }
 
-function addDailyNumber() {
-    const offsetTimestamp = Date.now() - (1000 * 3600 * 4);
-    const index = Math.floor(offsetTimestamp / (1000 * 60 * 60 * 24)) - 20287;
-    document.getElementById('dailyNumber').innerHTML = index;
+function updateDailyNumber() {
+    const MILLISECONDS_PER_DAY = 24 * 3600 * 1000;
+    const GAME_EPOCH = 20287;
+
+    const dayStartEasternMilli = getDayStartEasternMilli();
+    const index = Math.floor(dayStartEasternMilli / MILLISECONDS_PER_DAY) - GAME_EPOCH;
+    updateInnerHTML('dailyNumber', String(index));
+}
+
+function getDayStartEasternMilli(): number {
+    const MILLISECONDS_PER_DAY = 24 * 3600 * 1000;
+    const FOUR_HOURS = 4 * 3600 * 1000;
+
+    const now = Date.now();
+    const daysSinceEpoch = Math.floor(now / MILLISECONDS_PER_DAY);
+    const dayStartUTC = daysSinceEpoch * MILLISECONDS_PER_DAY;
+    const dayStartET = dayStartUTC - FOUR_HOURS;
+
+    return dayStartET
 }
 
 function updateClassName(id: string, value: string) {
@@ -473,6 +528,44 @@ function updateInnerHTML(id: string, value: string) {
     elem.innerHTML = value;
 }
 
+async function fetchSessionID(): Promise<string | null> {
+    const suggestionsResponse = await fetch(encodeURI(`${URI}/start-session`));
+    if (!suggestionsResponse.ok) return null;
+    return await suggestionsResponse.json() as string;
+}
+
+async function resetGame() {
+    game = new Game();
+    renderGuesses();
+    updateInnerHTML('guessCount', "0");
+}
+
+async function getSessionID(): Promise<string | null> {
+    try {
+        const dayStartEasternMilli = getDayStartEasternMilli();
+        const cached_session_id = localStorage.getItem("session_id");
+        const cached_session_start = localStorage.getItem("session_start");
+        console.log(`session_id: ${cached_session_id}, start: ${cached_session_start}`)
+        if (
+            cached_session_id !== null &&
+            cached_session_start !== null &&
+            Number(cached_session_start) > dayStartEasternMilli
+        ) {
+            return cached_session_id
+        }
+        await resetGame();
+        const session_id = await fetchSessionID();
+        localStorage.clear();
+        if (!session_id) return null;
+        localStorage.setItem("session_id", session_id);
+        localStorage.setItem("session_start", String(Date.now()));
+        return session_id
+    } catch (error) {
+        localStorage.clear();
+    }
+    return null
+}
+
 async function renderWin(title: string, imageURL: string) {
     updateClassName('progressBar', `h-full bg-red-700/60 w-full`);   
 
@@ -484,7 +577,7 @@ async function renderWin(title: string, imageURL: string) {
         bg-red-700/60 text-white
     `);
 
-    updateInnerHTML('winModalGuessCount', String(guessCount));
+    updateInnerHTML('winModalGuessCount', String(game.guessCount));
     updateInnerHTML('winModalTitle', title);
     
     await loadWikiImage(imageURL, 'winImage', title);
@@ -500,22 +593,37 @@ async function renderWin(title: string, imageURL: string) {
         winModal.style.display = 'none';
     })
 
-    isWin = true;
+    game.isWin = true;
 }
+
+class Game {
+    isGuessing: boolean;
+    isWin: boolean;
+    text: string;
+    mainSuggestion: Suggestion | null;
+    bestScore: number;
+    guesses: Chunk[];
+    guessChunkSet: Set<number>;
+    guessIDSet: Set<string>;
+    guessCount: number;
+
+    constructor() {
+        this.isGuessing = false;
+        this.isWin = false;
+        this.text = '';
+        this.mainSuggestion = null;
+        this.bestScore = 2;
+        this.guesses = [];
+        this.guessChunkSet = new Set();
+        this.guessIDSet = new Set();
+        this.guessCount = 0;
+    }
+}
+
+let game = new Game();
 
 // const URI = 'https://api.paragraphle.com';
 const URI = 'http://localhost:8000';
-
-let isGuessing = false;
-let isWin = false;
-let guessCount = 0;
-let text = '';
-let mainSuggestion: Suggestion;
-let bestScore = 2;
-const guesses: Chunk[] = [];
-const guessChunkSet = new Set();
-const guessIDSet = new Set();
-const SESSION_ID = Date.now();
 
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
@@ -540,5 +648,5 @@ for (const key of WHITELIST_KEYS) {
 
 addCardListeners();
 addButtonListeners();
-addDailyNumber();
+updateDailyNumber();
 addMainSuggestionListener();

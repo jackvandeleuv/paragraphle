@@ -174,9 +174,10 @@ func startSession(w http.ResponseWriter, db *sql.DB) {
 	json.NewEncoder(w).Encode(id)
 }
 
-func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64) {
+func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64, logger *log.Logger) {
+	logger.Println("getting target id")
 	target_id := getTargetID(targets)
-
+	logger.Println("got target_id")
 	raw_guess_id := r.URL.Query().Get("article_id")
 	clean_guess_id := strings.TrimSpace(strings.ToLower(raw_guess_id))
 	guess_id, err := strconv.Atoi(clean_guess_id)
@@ -190,18 +191,20 @@ func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []
 		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
 		return
 	}
-
+	logger.Println("checking dup guess")
 	repeat_guess := isDuplicateGuess(db, int64(guess_id), session_id)
 	if repeat_guess {
 		http.Error(w, "Cannot duplicates guesses in a session.", http.StatusBadRequest)
 		return
 	}
-
+	logger.Println("getting top scored chunks")
 	chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
 	if err != nil {
 		http.Error(w, "Internal server error.", http.StatusInternalServerError)
 		return
 	}
+	logger.Println("chunks")
+	logger.Println(chunks)
 
 	best_chunk_id := chunks[0].ChunkID
 	best_chunk_score := chunks[0].Distance
@@ -289,7 +292,7 @@ func topChunks(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func main() {
 	var MAX_SUGGESTIONS int64 = 10
 	var MAX_CHUNKS int64 = 10
-	CORS_URI := "http://localhost:5500"
+	CORS_URI := "http://127.0.0.1:5500"
 	// CORS_URI := "https://paragraphle.com"
 	logger := log.Default()
 
@@ -329,12 +332,15 @@ func main() {
 	})
 
 	http.HandleFunc("/guess-article", func(w http.ResponseWriter, r *http.Request) {
+		logger.Println("guessing article")
 		setHeaders(w, CORS_URI)
 		valid := enforceValidSession(w, r, db)
+		logger.Println("valid session")
+		logger.Println(valid)
 		if !valid {
 			return
 		}
-		guessArticle(w, r, db, targets, MAX_CHUNKS)
+		guessArticle(w, r, db, targets, MAX_CHUNKS, logger)
 	})
 
 	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
