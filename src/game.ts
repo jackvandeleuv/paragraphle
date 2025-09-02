@@ -382,6 +382,8 @@ async function loadGuess(guessArticleId: string) {
 
     game.mainSuggestion = null;
     game.isGuessing = false;
+
+    checkPlayerCount();
 }
 
 function flagNoSuggestion() {
@@ -594,6 +596,7 @@ function existsExpiredSession(): boolean {
     const dayStartEasternMilli = getDayStartEasternMilli();
     const cached_session_id = localStorage.getItem("session_id");
     const cached_session_start = localStorage.getItem("session_start");
+    console.log(Number(cached_session_start) - dayStartEasternMilli)
     return (
         cached_session_id !== null &&
         cached_session_start !== null &&
@@ -702,24 +705,28 @@ function suffixIsPlural(value: number): boolean {
     return value !== 1;
 }
 
-async function monitorPlayerCount() {
+async function passivelyMonitorPlayerCount() {
     try {
         while (true) {
-            const session_id = await getSessionID();
-            if (!session_id) return;
-            const stats = await getDailyStats(session_id);
-            if (!stats) return;
-            updateInnerHTML("playerCount", String(stats.current_users));
-            if (suffixIsPlural(stats.current_users)) {
-                updateInnerHTML("playerPlural", "s")
-            } else {
-                updateInnerHTML("playerPlural", "")
-            }
-            await sleep(60 * 1000);
+            checkPlayerCount();
+            await sleep(3 * 60 * 1000);
         } 
     } catch (error) {
         console.error(error);
         return;
+    }
+}
+
+async function checkPlayerCount() {
+    const session_id = await getSessionID();
+    if (!session_id) return;
+    const stats = await getDailyStats(session_id);
+    if (!stats) return;
+    updateInnerHTML("playerCount", String(stats.current_users));
+    if (suffixIsPlural(stats.current_users)) {
+        updateInnerHTML("playerPlural", "s")
+    } else {
+        updateInnerHTML("playerPlural", "")
     }
 }
 
@@ -779,4 +786,4 @@ addResetButtonListener();
 
 let game = new Game();
 initGame();
-monitorPlayerCount();
+passivelyMonitorPlayerCount();

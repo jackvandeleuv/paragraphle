@@ -340,6 +340,7 @@ function loadGuess(guessArticleId) {
         yield renderGuess(chunks, guessCount, guessArticleId, session_id);
         game.mainSuggestion = null;
         game.isGuessing = false;
+        checkPlayerCount();
     });
 }
 function flagNoSuggestion() {
@@ -549,6 +550,7 @@ function existsExpiredSession() {
     const dayStartEasternMilli = getDayStartEasternMilli();
     const cached_session_id = localStorage.getItem("session_id");
     const cached_session_start = localStorage.getItem("session_start");
+    console.log(Number(cached_session_start) - dayStartEasternMilli);
     return (cached_session_id !== null &&
         cached_session_start !== null &&
         Number(cached_session_start) <= dayStartEasternMilli);
@@ -655,29 +657,34 @@ function sleep(ms) {
 function suffixIsPlural(value) {
     return value !== 1;
 }
-function monitorPlayerCount() {
+function passivelyMonitorPlayerCount() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             while (true) {
-                const session_id = yield getSessionID();
-                if (!session_id)
-                    return;
-                const stats = yield getDailyStats(session_id);
-                if (!stats)
-                    return;
-                updateInnerHTML("playerCount", String(stats.current_users));
-                if (suffixIsPlural(stats.current_users)) {
-                    updateInnerHTML("playerPlural", "s");
-                }
-                else {
-                    updateInnerHTML("playerPlural", "");
-                }
-                yield sleep(60 * 1000);
+                checkPlayerCount();
+                yield sleep(3 * 60 * 1000);
             }
         }
         catch (error) {
             console.error(error);
             return;
+        }
+    });
+}
+function checkPlayerCount() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const session_id = yield getSessionID();
+        if (!session_id)
+            return;
+        const stats = yield getDailyStats(session_id);
+        if (!stats)
+            return;
+        updateInnerHTML("playerCount", String(stats.current_users));
+        if (suffixIsPlural(stats.current_users)) {
+            updateInnerHTML("playerPlural", "s");
+        }
+        else {
+            updateInnerHTML("playerPlural", "");
         }
     });
 }
@@ -722,4 +729,4 @@ addMainSuggestionListener();
 addResetButtonListener();
 let game = new Game();
 initGame();
-monitorPlayerCount();
+passivelyMonitorPlayerCount();
