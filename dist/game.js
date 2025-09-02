@@ -279,8 +279,6 @@ function renderGuess(chunks, guessCount, guessArticleId, session_id) {
         updateInnerHTML('lastGuessText', chunks[0].title);
         game.guessCount = guessCount;
         updateInnerHTML('guessCount', String(game.guessCount));
-        console.log(game.guessCount);
-        console.log(suffixIsPlural(game.guessCount));
         if (suffixIsPlural(game.guessCount)) {
             updateInnerHTML("guessPlural", "es");
         }
@@ -452,7 +450,6 @@ function handleOtherInput(value) {
 function addButtonListeners() {
     document.addEventListener('keydown', (e) => {
         e.preventDefault();
-        console.log(game.isGuessing);
         if (game.isGuessing)
             return;
         if (e.key === 'Backspace') {
@@ -598,7 +595,7 @@ function renderWin(title, imageURL, session_id) {
         updateInnerHTML('winModalTitle', title);
         yield loadWikiImage(imageURL, 'winImage', title);
         const stats = yield getDailyStats(session_id);
-        if (!stats) {
+        if (!stats || stats.mean_guesses_per_win === -1) {
             updateInnerHTML("winModalStatsDesc", "You're the first player to solve today's puzzle! 😮");
         }
         else {

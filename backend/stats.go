@@ -6,10 +6,19 @@ import (
 )
 
 func getStats(db *sql.DB) (Stats, error) {
+	MILLISECONDS_PER_DAY := int64(24 * 3600 * 1000)
+	FOUR_HOURS := int64(4 * 3600 * 1000)
 	now := time.Now().UnixMilli()
-	day_start_utc := int64(now/(3600000*24)) * (3600000 * 24)
-	day_start_et := day_start_utc + (3600000 * 4)
-	current_users_start := now - (60000 * 3)
+
+	three_minutes_ago := now - int64(3*60*1000)
+
+	days_since_epoch := int64(now / int64(MILLISECONDS_PER_DAY))
+	day_start_utc := days_since_epoch * int64(MILLISECONDS_PER_DAY)
+	day_start_et := day_start_utc - FOUR_HOURS
+
+	// day_start_utc := int64(now/(3600000*24)) * (3600000 * 24)
+	// day_start_et := day_start_utc + (3600000 * 4)
+	// current_users_start := now - (60000 * 3)
 
 	stats := Stats{-1, -1}
 
@@ -17,7 +26,7 @@ func getStats(db *sql.DB) (Stats, error) {
 		select count(distinct session_id) as current_users
 		from guesses
 		where created_timestamp >= ?
-	`, current_users_start)
+	`, three_minutes_ago)
 	if err != nil {
 		return Stats{-1, -1}, err
 	}
