@@ -114,8 +114,15 @@ func openDB(dbPath string) (*sql.DB, error) {
 	return db, nil
 }
 
-func setHeaders(w http.ResponseWriter, cors_uri string) {
-	w.Header().Set("Access-Control-Allow-Origin", cors_uri)
+func setHeaders(w http.ResponseWriter, r *http.Request, default_cors_uri string) {
+	origin := r.Header.Get("Origin")
+	if origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+
+	} else {
+		w.Header().Set("Access-Control-Allow-Origin", default_cors_uri)
+
+	}
 	w.Header().Set("Content-Type", "application/json")
 }
 
@@ -166,11 +173,13 @@ func suggestion(w http.ResponseWriter, r *http.Request, articles []Article, max_
 	json.NewEncoder(w).Encode(suggestions)
 }
 
-func startSession(w http.ResponseWriter, db *sql.DB) {
+func startSession(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
 	id := uuid.New()
 	err := logSession(db, id)
 	if err != nil {
+		logger.Println(err)
 		http.Error(w, "could not create a session id", http.StatusInternalServerError)
+		return
 	}
 	json.NewEncoder(w).Encode(id)
 }
@@ -241,7 +250,7 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 		return
 	}
 
-	MAX_ARTICLE_IDS := 25
+	MAX_ARTICLE_IDS := 20
 	MAX_CHUNKS := 100
 	top_n_guesses, err := topNGuesses(db, session_id, MAX_ARTICLE_IDS)
 	if err != nil {
@@ -298,8 +307,8 @@ func topChunks(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func main() {
 	var MAX_SUGGESTIONS int64 = 10
 	var MAX_CHUNKS int64 = 10
-	// CORS_URI := "http://127.0.0.1:5500"
-	CORS_URI := "https://paragraphle.com"
+	// DEFAULT_CORS_URI := "http://127.0.0.1:5500"
+	DEFAULT_CORS_URI := "https://paragraphle.com"
 	logger := log.Default()
 
 	logger.Println("starting server")
@@ -323,22 +332,22 @@ func main() {
 	logger.Println("creating handlers")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", CORS_URI)
+		setHeaders(w, r, DEFAULT_CORS_URI)
 		http.Error(w, "This is not a valid endpoint.", http.StatusBadRequest)
 	})
 
 	http.HandleFunc("/start-session", func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(w, CORS_URI)
-		startSession(w, db)
+		setHeaders(w, r, DEFAULT_CORS_URI)
+		startSession(w, db, logger)
 	})
 
 	http.HandleFunc("/suggestion", func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(w, CORS_URI)
+		setHeaders(w, r, DEFAULT_CORS_URI)
 		suggestion(w, r, articles, MAX_SUGGESTIONS)
 	})
 
 	http.HandleFunc("/guess-article", func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(w, CORS_URI)
+		setHeaders(w, r, DEFAULT_CORS_URI)
 		valid := enforceValidSession(w, r, db)
 		if !valid {
 			return
@@ -347,7 +356,7 @@ func main() {
 	})
 
 	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(w, CORS_URI)
+		setHeaders(w, r, DEFAULT_CORS_URI)
 		valid := enforceValidSession(w, r, db)
 		if !valid {
 			return
@@ -356,7 +365,7 @@ func main() {
 	})
 
 	http.HandleFunc("/restore-session", func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(w, CORS_URI)
+		setHeaders(w, r, DEFAULT_CORS_URI)
 		valid := enforceValidSession(w, r, db)
 		if !valid {
 			return
@@ -365,7 +374,7 @@ func main() {
 	})
 
 	http.HandleFunc("/top-chunks", func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(w, CORS_URI)
+		setHeaders(w, r, DEFAULT_CORS_URI)
 		valid := enforceValidSession(w, r, db)
 		if !valid {
 			return
