@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"sort"
 )
@@ -10,7 +9,7 @@ import (
 func loadSuggestions(db *sql.DB) []Article {
 	rows, err := db.Query("select article_id, title, clean_title, count from articles")
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 	defer rows.Close()
 
