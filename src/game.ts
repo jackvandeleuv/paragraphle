@@ -544,7 +544,7 @@ function getDayStartEasternMilli(): number {
     const now = Date.now();
     const daysSinceEpoch = Math.floor(now / MILLISECONDS_PER_DAY);
     const dayStartUTC = daysSinceEpoch * MILLISECONDS_PER_DAY;
-    const dayStartET = dayStartUTC - FOUR_HOURS;
+    const dayStartET = dayStartUTC + FOUR_HOURS;
 
     return dayStartET
 }

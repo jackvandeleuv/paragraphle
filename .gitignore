@@ -26,3 +26,6 @@ backend/test_embed.ipynb
 preprocessing/blacklist.txt
 backend/data.db-shm
 backend/data.db-wal
+preprocessing/guesses.txt
+preprocessing/t.ipynb
+preprocessing/wins.txt

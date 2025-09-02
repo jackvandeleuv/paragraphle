@@ -14,11 +14,7 @@ func getStats(db *sql.DB) (Stats, error) {
 
 	days_since_epoch := int64(now / int64(MILLISECONDS_PER_DAY))
 	day_start_utc := days_since_epoch * int64(MILLISECONDS_PER_DAY)
-	day_start_et := day_start_utc - FOUR_HOURS
-
-	// day_start_utc := int64(now/(3600000*24)) * (3600000 * 24)
-	// day_start_et := day_start_utc + (3600000 * 4)
-	// current_users_start := now - (60000 * 3)
+	day_start_et := day_start_utc + FOUR_HOURS
 
 	stats := Stats{-1, -1}
 
