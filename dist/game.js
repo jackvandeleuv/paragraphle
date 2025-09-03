@@ -509,7 +509,8 @@ function getDayStartEasternMilli() {
     const dateString = formatter.format(now);
     const [year, month, day] = dateString.split("-").map(Number);
     const midnightET = new Date(Date.UTC(year, month - 1, day));
-    return midnightET.getTime();
+    const offsetMinutes = -midnightET.toLocaleString("en-US", { timeZone: "America/New_York", timeZoneName: "short" }).includes("EST") ? 300 : 240;
+    return midnightET.getTime() + offsetMinutes * 60 * 1000;
 }
 function updateClassName(id, value) {
     const elem = document.getElementById(id);
@@ -554,7 +555,6 @@ function existsExpiredSession() {
     const dayStartEasternMilli = getDayStartEasternMilli();
     const cached_session_id = localStorage.getItem("session_id");
     const cached_session_start = localStorage.getItem("session_start");
-    console.log(Number(cached_session_start) - dayStartEasternMilli);
     return (cached_session_id !== null &&
         cached_session_start !== null &&
         Number(cached_session_start) <= dayStartEasternMilli);
@@ -601,13 +601,16 @@ function renderWin(title, imageURL, session_id) {
         updateInnerHTML('winModalTitle', title);
         yield loadWikiImage(imageURL, 'winImage', title);
         const stats = yield getDailyStats(session_id);
-        if (!stats || stats.mean_guesses_per_win === -1) {
+        if (!stats || stats.win_count <= 0) {
             updateInnerHTML("winModalStatsDesc", "You're the first player to solve today's puzzle! 😮");
+        }
+        else if (stats.win_count === 1) {
+            updateInnerHTML("winModalStatsDesc", "You're the second player to solve today's puzzle!");
         }
         else {
             const mean_guesses = Math.floor(stats.mean_guesses_per_win) + 1;
             updateInnerHTML("winModalStatsDesc", `
-            People solved today's puzzle in <span class="font-bold text-white">${mean_guesses}</span> guesses on average.
+            The ${stats.win_count} people who solved today's puzzle won in <span class="font-bold text-white">${mean_guesses}</span> guesses on average.
         `);
         }
         const winModal = document.getElementById('winModal');

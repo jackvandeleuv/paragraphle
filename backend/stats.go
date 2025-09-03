@@ -11,7 +11,7 @@ func getStats(db *sql.DB) (Stats, error) {
 
 	day_start, err := time.LoadLocation("America/New_York")
 	if err != nil {
-		return Stats{-1, -1}, err
+		return Stats{-1, -1, -1}, err
 	}
 	now_et := time.Now().In(day_start)
 	startOfDayNY := time.Date(
@@ -20,7 +20,7 @@ func getStats(db *sql.DB) (Stats, error) {
 	)
 	day_start_et := startOfDayNY.UnixMilli()
 
-	stats := Stats{-1, -1}
+	stats := Stats{-1, -1, -1}
 
 	rows, err := db.Query(`
 		select count(distinct session_id) as current_users
@@ -28,33 +28,35 @@ func getStats(db *sql.DB) (Stats, error) {
 		where created_timestamp >= ?
 	`, three_minutes_ago)
 	if err != nil {
-		return Stats{-1, -1}, err
+		return Stats{-1, -1, -1}, err
 	}
 
 	for rows.Next() {
 		var current_users int64
 		if err := rows.Scan(&current_users); err != nil {
-			return Stats{-1, -1}, err
+			return Stats{-1, -1, -1}, err
 		}
 		stats.CurrentUsers = current_users
 	}
 
 	rows, err = db.Query(`
-		select coalesce(avg(guesses), -1) as mean_guesses_per_win
+		select coalesce(avg(guesses), -1) as mean_guesses_per_win, count(*) as win_count
 		from wins
 		where created_timestamp >= ?
 	`, day_start_et)
 
 	if err != nil {
-		return Stats{-1, -1}, err
+		return Stats{-1, -1, -1}, err
 	}
 
 	for rows.Next() {
 		var mean_guesses_per_win float64
-		if err := rows.Scan(&mean_guesses_per_win); err != nil {
-			return Stats{-1, -1}, err
+		var win_count int64
+		if err := rows.Scan(&mean_guesses_per_win, &win_count); err != nil {
+			return Stats{-1, -1, -1}, err
 		}
 		stats.MeanGuessesPerWin = mean_guesses_per_win
+		stats.WinCount = win_count
 	}
 
 	return stats, nil
