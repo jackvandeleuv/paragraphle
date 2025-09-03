@@ -364,6 +364,7 @@ async function loadGuess(guessArticleId: string) {
 
     renderIsGuessing();
 
+    const session_id = await getSessionID();
     if (!session_id) return;
 
     const guessResponse = await fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
@@ -402,6 +403,7 @@ async function updateMainSuggestion() {
         return loadDefaultSuggestion("Try guessing an article!");
     }
 
+    const session_id = await getSessionID();
     if (!session_id) return;
 
     const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=4&session_id=${session_id}`));
@@ -578,6 +580,57 @@ async function fetchSessionID(): Promise<string | null> {
     return await suggestionsResponse.json() as string;
 }
 
+function addResetButtonListener() {
+    const button = document.getElementById("resetButton");
+    if (!button) return;
+    button.addEventListener('click', () => {
+        resetPage();
+    });
+}
+
+function resetPage() {
+    localStorage.clear();
+    location.reload();
+}
+
+function existsSession(): boolean {
+    const cached_session_id = localStorage.getItem("session_id");
+    const cached_session_start = localStorage.getItem("session_start");
+    return cached_session_id !== null && cached_session_start !== null
+}
+
+function existsExpiredSession(): boolean {
+    const dayStartEasternMilli = getDayStartEasternMilli();
+    const cached_session_id = localStorage.getItem("session_id");
+    const cached_session_start = localStorage.getItem("session_start");
+    console.log(Number(cached_session_start) - dayStartEasternMilli)
+    return (
+        cached_session_id !== null &&
+        cached_session_start !== null &&
+        Number(cached_session_start) <= dayStartEasternMilli
+    )
+}
+
+async function getSessionID(): Promise<string | null> {
+    try {
+        if (existsExpiredSession()) resetPage();
+        if (existsSession()) return localStorage.getItem("session_id");
+
+        localStorage.clear();
+
+        const session_id = await fetchSessionID();
+        if (!session_id) return null;
+        
+        localStorage.setItem("session_id", session_id);
+        localStorage.setItem("session_start", String(Date.now()));
+
+        return session_id
+    } catch (error) {
+        localStorage.clear();
+    }
+    return null
+}
+
 async function getDailyStats(session_id: string): Promise<Stats | null> {
     const response = await fetch(`${URI}/stats?session_id=${session_id}`);
     if (!response.ok) return null;
@@ -624,6 +677,33 @@ async function renderWin(title: string, imageURL: string, session_id: string) {
     game.isWin = true;
 }
 
+async function restoreSession(session_id: string) {
+    const response = await fetch(`${URI}/restore-session?session_id=${session_id}`);
+    if (!response.ok) throw Error("Could not restore session");
+    const session_update = await response.json() as SessionUpdate;
+    if (session_update.last_guess_article_id === -1) {
+        renderEmptyState();
+        return;
+    };
+    await renderGuess(session_update.chunks, session_update.guesses, String(session_update.last_guess_article_id), session_id);
+}
+
+async function initGame() {
+    try {
+        const cached_session_id = localStorage.getItem("session_id");
+        if (!existsExpiredSession() && cached_session_id !== null) {
+            game.isGuessing = true;
+            renderIsGuessing();
+            await restoreSession(cached_session_id);
+        }
+    } catch (error) {
+        console.error(error);
+        localStorage.clear();
+    } finally {
+        game.isGuessing = false;
+    }
+}
+
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -645,6 +725,7 @@ async function passivelyMonitorPlayerCount() {
 }
 
 async function checkPlayerCount() {
+    const session_id = await getSessionID();
     if (!session_id) return;
     const stats = await getDailyStats(session_id);
     if (!stats) return;
@@ -654,10 +735,6 @@ async function checkPlayerCount() {
     } else {
         updateInnerHTML("playerPlural", "")
     }
-}
-
-async function initGame() {
-    session_id = await fetchSessionID()!;
 }
 
 class Game {
@@ -708,12 +785,11 @@ for (const key of WHITELIST_KEYS) {
     acceptedKeys.add(key)
 }
 
-let session_id: string | null = null;
-
 addCardListeners();
 addButtonListeners();
 updateDailyNumber();
 addMainSuggestionListener();
+addResetButtonListener();
 
 let game = new Game();
 initGame();

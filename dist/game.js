@@ -325,6 +325,7 @@ function loadGuess(guessArticleId) {
             return;
         game.isGuessing = true;
         renderIsGuessing();
+        const session_id = yield getSessionID();
         if (!session_id)
             return;
         const guessResponse = yield fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
@@ -360,6 +361,7 @@ function updateMainSuggestion() {
         if (input === '') {
             return loadDefaultSuggestion("Try guessing an article!");
         }
+        const session_id = yield getSessionID();
         if (!session_id)
             return;
         const suggestionsResponse = yield fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=4&session_id=${session_id}`));
@@ -531,6 +533,53 @@ function fetchSessionID() {
         return yield suggestionsResponse.json();
     });
 }
+function addResetButtonListener() {
+    const button = document.getElementById("resetButton");
+    if (!button)
+        return;
+    button.addEventListener('click', () => {
+        resetPage();
+    });
+}
+function resetPage() {
+    localStorage.clear();
+    location.reload();
+}
+function existsSession() {
+    const cached_session_id = localStorage.getItem("session_id");
+    const cached_session_start = localStorage.getItem("session_start");
+    return cached_session_id !== null && cached_session_start !== null;
+}
+function existsExpiredSession() {
+    const dayStartEasternMilli = getDayStartEasternMilli();
+    const cached_session_id = localStorage.getItem("session_id");
+    const cached_session_start = localStorage.getItem("session_start");
+    console.log(Number(cached_session_start) - dayStartEasternMilli);
+    return (cached_session_id !== null &&
+        cached_session_start !== null &&
+        Number(cached_session_start) <= dayStartEasternMilli);
+}
+function getSessionID() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            if (existsExpiredSession())
+                resetPage();
+            if (existsSession())
+                return localStorage.getItem("session_id");
+            localStorage.clear();
+            const session_id = yield fetchSessionID();
+            if (!session_id)
+                return null;
+            localStorage.setItem("session_id", session_id);
+            localStorage.setItem("session_start", String(Date.now()));
+            return session_id;
+        }
+        catch (error) {
+            localStorage.clear();
+        }
+        return null;
+    });
+}
 function getDailyStats(session_id) {
     return __awaiter(this, void 0, void 0, function* () {
         const response = yield fetch(`${URI}/stats?session_id=${session_id}`);
@@ -573,6 +622,39 @@ function renderWin(title, imageURL, session_id) {
         game.isWin = true;
     });
 }
+function restoreSession(session_id) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield fetch(`${URI}/restore-session?session_id=${session_id}`);
+        if (!response.ok)
+            throw Error("Could not restore session");
+        const session_update = yield response.json();
+        if (session_update.last_guess_article_id === -1) {
+            renderEmptyState();
+            return;
+        }
+        ;
+        yield renderGuess(session_update.chunks, session_update.guesses, String(session_update.last_guess_article_id), session_id);
+    });
+}
+function initGame() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const cached_session_id = localStorage.getItem("session_id");
+            if (!existsExpiredSession() && cached_session_id !== null) {
+                game.isGuessing = true;
+                renderIsGuessing();
+                yield restoreSession(cached_session_id);
+            }
+        }
+        catch (error) {
+            console.error(error);
+            localStorage.clear();
+        }
+        finally {
+            game.isGuessing = false;
+        }
+    });
+}
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -595,6 +677,7 @@ function passivelyMonitorPlayerCount() {
 }
 function checkPlayerCount() {
     return __awaiter(this, void 0, void 0, function* () {
+        const session_id = yield getSessionID();
         if (!session_id)
             return;
         const stats = yield getDailyStats(session_id);
@@ -607,11 +690,6 @@ function checkPlayerCount() {
         else {
             updateInnerHTML("playerPlural", "");
         }
-    });
-}
-function initGame() {
-    return __awaiter(this, void 0, void 0, function* () {
-        session_id = yield fetchSessionID();
     });
 }
 class Game {
@@ -648,11 +726,11 @@ const WHITELIST_KEYS = [
 for (const key of WHITELIST_KEYS) {
     acceptedKeys.add(key);
 }
-let session_id = null;
 addCardListeners();
 addButtonListeners();
 updateDailyNumber();
 addMainSuggestionListener();
+addResetButtonListener();
 let game = new Game();
 initGame();
 passivelyMonitorPlayerCount();
