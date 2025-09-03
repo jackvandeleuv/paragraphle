@@ -538,15 +538,22 @@ function updateDailyNumber() {
 }
 
 function getDayStartEasternMilli(): number {
-    const MILLISECONDS_PER_DAY = 24 * 3600 * 1000;
-    const FOUR_HOURS = 4 * 3600 * 1000;
+    const now = new Date();
 
-    const now = Date.now();
-    const daysSinceEpoch = Math.floor(now / MILLISECONDS_PER_DAY);
-    const dayStartUTC = daysSinceEpoch * MILLISECONDS_PER_DAY;
-    const dayStartET = dayStartUTC + FOUR_HOURS;
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/New_York",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
 
-    return dayStartET
+    const dateString = formatter.format(now); 
+
+    const [year, month, day] = dateString.split("-").map(Number);
+
+    const midnightET = new Date(Date.UTC(year, month - 1, day));
+
+    return midnightET.getTime();
 }
 
 function updateClassName(id: string, value: string) {

@@ -6,15 +6,19 @@ import (
 )
 
 func getStats(db *sql.DB) (Stats, error) {
-	MILLISECONDS_PER_DAY := int64(24 * 3600 * 1000)
-	FOUR_HOURS := int64(4 * 3600 * 1000)
 	now := time.Now().UnixMilli()
-
 	three_minutes_ago := now - int64(3*60*1000)
 
-	days_since_epoch := int64(now / int64(MILLISECONDS_PER_DAY))
-	day_start_utc := days_since_epoch * int64(MILLISECONDS_PER_DAY)
-	day_start_et := day_start_utc + FOUR_HOURS
+	day_start, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		return Stats{-1, -1}, err
+	}
+	now_et := time.Now().In(day_start)
+	startOfDayNY := time.Date(
+		now_et.Year(), now_et.Month(), now_et.Day(),
+		0, 0, 0, 0, day_start,
+	)
+	day_start_et := startOfDayNY.UnixMilli()
 
 	stats := Stats{-1, -1}
 

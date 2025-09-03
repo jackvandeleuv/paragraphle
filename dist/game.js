@@ -497,13 +497,17 @@ function updateDailyNumber() {
     updateInnerHTML('dailyNumber', String(index));
 }
 function getDayStartEasternMilli() {
-    const MILLISECONDS_PER_DAY = 24 * 3600 * 1000;
-    const FOUR_HOURS = 4 * 3600 * 1000;
-    const now = Date.now();
-    const daysSinceEpoch = Math.floor(now / MILLISECONDS_PER_DAY);
-    const dayStartUTC = daysSinceEpoch * MILLISECONDS_PER_DAY;
-    const dayStartET = dayStartUTC + FOUR_HOURS;
-    return dayStartET;
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/New_York",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
+    const dateString = formatter.format(now);
+    const [year, month, day] = dateString.split("-").map(Number);
+    const midnightET = new Date(Date.UTC(year, month - 1, day));
+    return midnightET.getTime();
 }
 function updateClassName(id, value) {
     const elem = document.getElementById(id);
