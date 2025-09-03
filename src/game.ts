@@ -656,10 +656,10 @@ async function renderWin(title: string, imageURL: string, session_id: string) {
     await loadWikiImage(imageURL, 'winImage', title);
 
     const stats = await getDailyStats(session_id);
-    if (!stats || stats.win_count <= 0) {
+    if (!stats || stats.win_count <= 1) {
         updateInnerHTML("winModalStatsDesc", "You're the first player to solve today's puzzle! 😮")
-    } else if (stats.win_count === 1) {
-        updateInnerHTML("winModalStatsDesc", "You're the second player to solve today's puzzle!")
+    } else if (stats.win_count === 2) {
+        updateInnerHTML("winModalStatsDesc", "You're the second player to solve today's puzzle! 👏")
     } else {
         const mean_guesses = Math.floor(stats.mean_guesses_per_win) + 1;
         updateInnerHTML("winModalStatsDesc", `
