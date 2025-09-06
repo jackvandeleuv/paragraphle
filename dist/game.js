@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,6 +7,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+class Game {
+    constructor() {
+        this.isGuessing = false;
+        this.isWin = false;
+        this.text = '';
+        this.mainSuggestion = null;
+        this.bestScore = 2;
+        this.guesses = [];
+        this.guessChunkSet = new Set();
+        this.guessIDSet = new Set();
+        this.guessCount = 0;
+    }
+}
 function tempToColor(value, elemType) {
     const clamped = Math.max(0, Math.min(2, value));
     let palette = [];
@@ -231,7 +243,7 @@ function renderCardHTML(row) {
             <a href="${row.url}" target="_blank">
                 <button
                     class="wiki-btn hidden mt-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold text-xs px-3 py-1 rounded">
-                    See on Wikipedia
+                    See on Wikipedia™
                 </button>
             </a>
         </article>
@@ -313,7 +325,7 @@ function renderGuess(chunks, guessCount, guessArticleId, session_id) {
         const progress = tempToProgress(game.bestScore);
         updateClassName('progressBar', `h-full ${progress} ${tempToColor(game.bestScore, 'bg')}`);
         if (chunks[0].is_win) {
-            yield renderWin(chunks[0].title.toUpperCase().trim(), chunks[0].url, session_id);
+            yield renderWin(chunks[0].title.toUpperCase().trim(), chunks[0].url);
         }
     });
 }
@@ -341,6 +353,14 @@ function loadGuess(guessArticleId) {
         game.mainSuggestion = null;
         game.isGuessing = false;
         checkPlayerCount();
+    });
+}
+export function checkPlayerCount() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const stats = yield getDailyStats();
+        if (!stats)
+            return;
+        updateInnerHTML('playerCount', String(stats.current_users));
     });
 }
 function flagNoSuggestion() {
@@ -519,7 +539,7 @@ function updateClassName(id, value) {
     }
     elem.className = value;
 }
-function updateInnerHTML(id, value) {
+export function updateInnerHTML(id, value) {
     const elem = document.getElementById(id);
     if (!elem) {
         return;
@@ -580,15 +600,15 @@ function getSessionID() {
         return null;
     });
 }
-function getDailyStats(session_id) {
+export function getDailyStats() {
     return __awaiter(this, void 0, void 0, function* () {
-        const response = yield fetch(`${URI}/stats?session_id=${session_id}`);
+        const response = yield fetch(`${URI}/stats`);
         if (!response.ok)
             return null;
         return yield response.json();
     });
 }
-function renderWin(title, imageURL, session_id) {
+function renderWin(title, imageURL) {
     return __awaiter(this, void 0, void 0, function* () {
         updateClassName('progressBar', `h-full bg-red-700/60 w-full`);
         updateInnerHTML('lastGuessDistance', `Distance: 0`);
@@ -600,7 +620,7 @@ function renderWin(title, imageURL, session_id) {
         updateInnerHTML('winModalGuessCount', String(game.guessCount));
         updateInnerHTML('winModalTitle', title);
         yield loadWikiImage(imageURL, 'winImage', title);
-        const stats = yield getDailyStats(session_id);
+        const stats = yield getDailyStats();
         if (!stats || stats.win_count <= 1) {
             updateInnerHTML("winModalStatsDesc", "You're the first player to solve today's puzzle! 😮");
         }
@@ -651,14 +671,13 @@ function initGame() {
         }
         catch (error) {
             console.error(error);
-            localStorage.clear();
         }
         finally {
             game.isGuessing = false;
         }
     });
 }
-function sleep(ms) {
+export function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 function suffixIsPlural(value) {
@@ -677,36 +696,6 @@ function passivelyMonitorPlayerCount() {
             return;
         }
     });
-}
-function checkPlayerCount() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const session_id = yield getSessionID();
-        if (!session_id)
-            return;
-        const stats = yield getDailyStats(session_id);
-        if (!stats)
-            return;
-        updateInnerHTML("playerCount", String(stats.current_users));
-        if (suffixIsPlural(stats.current_users)) {
-            updateInnerHTML("playerPlural", "s");
-        }
-        else {
-            updateInnerHTML("playerPlural", "");
-        }
-    });
-}
-class Game {
-    constructor() {
-        this.isGuessing = false;
-        this.isWin = false;
-        this.text = '';
-        this.mainSuggestion = null;
-        this.bestScore = 2;
-        this.guesses = [];
-        this.guessChunkSet = new Set();
-        this.guessIDSet = new Set();
-        this.guessCount = 0;
-    }
 }
 const URI = 'https://api.paragraphle.com';
 // const URI = 'http://localhost:8000';
