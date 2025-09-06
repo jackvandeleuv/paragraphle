@@ -352,7 +352,6 @@ function loadGuess(guessArticleId) {
         yield renderGuess(chunks, guessCount, guessArticleId, session_id);
         game.mainSuggestion = null;
         game.isGuessing = false;
-        checkPlayerCount();
     });
 }
 export function checkPlayerCount() {
@@ -683,20 +682,6 @@ export function sleep(ms) {
 function suffixIsPlural(value) {
     return value !== 1;
 }
-function passivelyMonitorPlayerCount() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            while (true) {
-                checkPlayerCount();
-                yield sleep(3 * 60 * 1000);
-            }
-        }
-        catch (error) {
-            console.error(error);
-            return;
-        }
-    });
-}
 const URI = 'https://api.paragraphle.com';
 // const URI = 'http://localhost:8000';
 const acceptedKeys = new Set();
@@ -725,4 +710,3 @@ addMainSuggestionListener();
 addResetButtonListener();
 let game = new Game();
 initGame();
-passivelyMonitorPlayerCount();
