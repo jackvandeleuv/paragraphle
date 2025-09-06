@@ -41,55 +41,60 @@
 <body class="relative min-h-screen bg-slate-900 text-white flex flex-col">   
   <header class="fixed inset-x-0 top-0 z-1 bg-slate-900/95 backdrop-blur">
     <div class="px-4 w-full max-w-4xl mx-auto h-16 flex items-center justify-between">
-      <h1 class="text-xl font-extrabold tracking-tight md:text-2xl">
-        Paragraphle
+      <h1 class="text-md sm:text-xl font-extrabold tracking-tight select-none">
+        <a href="/">Paragraphle</a>
       </h1>
-      <svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 24 24" fill="none">
+      <svg class="hover:bg-slate-600 hover:rounded-lg" xmlns="http://www.w3.org/2000/svg" id="menuIconClosed" width="30px" height="30px" viewBox="0 0 24 24" fill="none">
         <path d="M4 18L20 18" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
         <path d="M4 12L20 12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
         <path d="M4 6L20 6" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
       </svg>
     </div>
   </header>
-
-  <div class="absolute w-full h-full flex flex-row justify-end bg-slate-300/60">
-    <div class="flex flex-col w-64 h-full gap-3 p-8 pt-24 bg-slate-300 text-center">
-        <p class="text-slate-600 font-extrabold">
-            Current Players: <span>23</span>
+  
+  <div id="sidebar" class="fixed inset-0 z-50 flex flex-row justify-end bg-slate-200/60 select-none hidden">
+    <div id="innerSidebar" class="flex flex-col w-64 h-full gap-3 p-4 bg-slate-200 text-center overflow-y-auto">
+        <div class="flex flex-row justify-end">
+          <button id="exitButton" class="bg-slate-600 text-lg px-5 py-1 rounded-md hover:bg-rose-500">X</button>
+        </div>
+        <div class="border-slate-600 border-2 bg-slate-300 rounded-md p-3 flex flex-col gap-3">
+          <a
+              href="../"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              Home
+          </a>
+          <a
+              href="../about"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              About
+          </a>
+          <a
+              href="../play"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              Play
+          </a>
+        </div>
+        <p class="border-slate-600 border-2 bg-slate-300 rounded-md px-3 py-1 text-slate-600 font-extrabold">
+            Current Players: <span id="playerCount"></span>
         </p>
-        <a
-            href="../"
-            class="inline-flex items-center justify-center px-3 py-1 rounded-xl
-                bg-slate-600 text-white font-semibold tracking-wide
-                border-b-4 border-slate-600 text-sm
-                transition-colors hover:bg-slate-500"
-        >
-            Home
-        </a>
-        <a
-            href="../"
-            class="inline-flex items-center justify-center px-3 py-1 rounded-xl
-                bg-slate-600 text-white font-semibold tracking-wide
-                border-b-4 border-slate-600 text-sm
-                transition-colors hover:bg-slate-500"
-        >
-            About
-        </a>
-        <a
-            href="../play"
-            class="inline-flex items-center justify-center px-3 py-1 rounded-xl
-                bg-slate-600 text-white font-semibold tracking-wide
-                border-b-4 border-slate-600 text-sm
-                transition-colors hover:bg-slate-500"
-        >
-            Play
-        </a>
     </div>
   </div>
 
-  <main class="flex-1 px-4 w-full max-w-4xl mx-auto pt-16 pb-4 flex flex-col min-h-0 select-none space-y-0 snap-y snap-mandatory">
+  <main class="flex-1 px-4 w-full max-w-4xl mx-auto pt-16 pb-4 flex flex-col min-h-0 space-y-0 snap-y snap-mandatory">
     <section class="flex flex-col items-left mt-6 pb-16 gap-6">
-        <img src="../public/robot-speaker.png" alt="Wood block print of a robot" class="max-h-[50%] object-cover">
+        <img src="../public/robot-speaker.png" alt="Wood block print of a robot" class="max-h-64 object-cover">
         <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
             About
         </h1>
@@ -110,5 +115,6 @@
     </section>
 
   </main>
+  <script src="../dist/sidebar.js"></script>
 </body>
 </html>
