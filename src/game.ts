@@ -24,6 +24,30 @@ interface Stats {
     win_count: number;
 }
 
+class Game {
+    isGuessing: boolean;
+    isWin: boolean;
+    text: string;
+    mainSuggestion: Suggestion | null;
+    bestScore: number;
+    guesses: Chunk[];
+    guessChunkSet: Set<number>;
+    guessIDSet: Set<string>;
+    guessCount: number;
+
+    constructor() {
+        this.isGuessing = false;
+        this.isWin = false;
+        this.text = '';
+        this.mainSuggestion = null;
+        this.bestScore = 2;
+        this.guesses = [];
+        this.guessChunkSet = new Set();
+        this.guessIDSet = new Set();
+        this.guessCount = 0;
+    }
+}
+
 function tempToColor(value: number, elemType: string) {
     const clamped = Math.max(0, Math.min(2, value));
 
@@ -258,7 +282,7 @@ function renderCardHTML(row: Chunk) {
             <a href="${row.url}" target="_blank">
                 <button
                     class="wiki-btn hidden mt-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold text-xs px-3 py-1 rounded">
-                    See on Wikipedia
+                    See on Wikipedia™
                 </button>
             </a>
         </article>
@@ -353,7 +377,7 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
     updateClassName('progressBar', `h-full ${progress} ${tempToColor(game.bestScore, 'bg')}`);   
 
     if (chunks[0].is_win) {
-        await renderWin(chunks[0].title.toUpperCase().trim(), chunks[0].url, session_id);
+        await renderWin(chunks[0].title.toUpperCase().trim(), chunks[0].url);
     }
 }
 
@@ -385,6 +409,12 @@ async function loadGuess(guessArticleId: string) {
     game.isGuessing = false;
 
     checkPlayerCount();
+}
+
+export async function checkPlayerCount() {
+    const stats = await getDailyStats();
+    if (!stats) return;
+    updateInnerHTML('playerCount', String(stats.current_users));
 }
 
 function flagNoSuggestion() {
@@ -569,7 +599,7 @@ function updateClassName(id: string, value: string) {
     elem.className = value;
 }
 
-function updateInnerHTML(id: string, value: string) {
+export function updateInnerHTML(id: string, value: string) {
     const elem = document.getElementById(id);
     if (!elem) {
         return 
@@ -633,13 +663,13 @@ async function getSessionID(): Promise<string | null> {
     return null
 }
 
-async function getDailyStats(session_id: string): Promise<Stats | null> {
-    const response = await fetch(`${URI}/stats?session_id=${session_id}`);
+export async function getDailyStats(): Promise<Stats | null> {
+    const response = await fetch(`${URI}/stats`);
     if (!response.ok) return null;
     return await response.json() as Stats;
 }
 
-async function renderWin(title: string, imageURL: string, session_id: string) {
+async function renderWin(title: string, imageURL: string) {
     updateClassName('progressBar', `h-full bg-red-700/60 w-full`);   
 
     updateInnerHTML('lastGuessDistance', `Distance: 0`);
@@ -655,7 +685,7 @@ async function renderWin(title: string, imageURL: string, session_id: string) {
     
     await loadWikiImage(imageURL, 'winImage', title);
 
-    const stats = await getDailyStats(session_id);
+    const stats = await getDailyStats();
     if (!stats || stats.win_count <= 1) {
         updateInnerHTML("winModalStatsDesc", "You're the first player to solve today's puzzle! 😮")
     } else if (stats.win_count === 2) {
@@ -702,14 +732,13 @@ async function initGame() {
         }
     } catch (error) {
         console.error(error);
-        localStorage.clear();
     } finally {
         game.isGuessing = false;
     }
 }
 
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+export function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function suffixIsPlural(value: number): boolean {
@@ -725,43 +754,6 @@ async function passivelyMonitorPlayerCount() {
     } catch (error) {
         console.error(error);
         return;
-    }
-}
-
-async function checkPlayerCount() {
-    const session_id = await getSessionID();
-    if (!session_id) return;
-    const stats = await getDailyStats(session_id);
-    if (!stats) return;
-    updateInnerHTML("playerCount", String(stats.current_users));
-    if (suffixIsPlural(stats.current_users)) {
-        updateInnerHTML("playerPlural", "s")
-    } else {
-        updateInnerHTML("playerPlural", "")
-    }
-}
-
-class Game {
-    isGuessing: boolean;
-    isWin: boolean;
-    text: string;
-    mainSuggestion: Suggestion | null;
-    bestScore: number;
-    guesses: Chunk[];
-    guessChunkSet: Set<number>;
-    guessIDSet: Set<string>;
-    guessCount: number;
-
-    constructor() {
-        this.isGuessing = false;
-        this.isWin = false;
-        this.text = '';
-        this.mainSuggestion = null;
-        this.bestScore = 2;
-        this.guesses = [];
-        this.guessChunkSet = new Set();
-        this.guessIDSet = new Set();
-        this.guessCount = 0;
     }
 }
 

@@ -251,7 +251,7 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 		return
 	}
 
-	MAX_ARTICLE_IDS := 20
+	MAX_ARTICLE_IDS := 10
 	MAX_CHUNKS := 100
 	top_n_guesses, err := topNGuesses(db, session_id, MAX_ARTICLE_IDS)
 	if err != nil {
@@ -308,7 +308,6 @@ func topChunks(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func main() {
 	var MAX_SUGGESTIONS int64 = 10
 	var MAX_CHUNKS int64 = 10
-	// DEFAULT_CORS_URI := "http://127.0.0.1:5500"
 	DEFAULT_CORS_URI := "https://paragraphle.com"
 	logger := log.Default()
 
@@ -358,10 +357,6 @@ func main() {
 
 	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
 		setHeaders(w, r, DEFAULT_CORS_URI)
-		valid := enforceValidSession(w, r, db)
-		if !valid {
-			return
-		}
 		stats(w, db, logger)
 	})
 
