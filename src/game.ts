@@ -407,8 +407,6 @@ async function loadGuess(guessArticleId: string) {
 
     game.mainSuggestion = null;
     game.isGuessing = false;
-
-    checkPlayerCount();
 }
 
 export async function checkPlayerCount() {
@@ -745,18 +743,6 @@ function suffixIsPlural(value: number): boolean {
     return value !== 1;
 }
 
-async function passivelyMonitorPlayerCount() {
-    try {
-        while (true) {
-            checkPlayerCount();
-            await sleep(3 * 60 * 1000);
-        } 
-    } catch (error) {
-        console.error(error);
-        return;
-    }
-}
-
 const URI = 'https://api.paragraphle.com';
 // const URI = 'http://localhost:8000';
 
@@ -789,4 +775,3 @@ addResetButtonListener();
 
 let game = new Game();
 initGame();
-passivelyMonitorPlayerCount();
