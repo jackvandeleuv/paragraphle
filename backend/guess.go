@@ -70,7 +70,7 @@ func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id int64, is
 			return nil, fmt.Errorf("could not decode vector from blob storage")
 		}
 		chunks = append(chunks, Chunk{chunk_id, chunk, url, title, embeddings[i].Distance, is_win, -1, -1})
-
+		i++
 	}
 	return chunks, nil
 }

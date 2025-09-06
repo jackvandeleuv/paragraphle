@@ -231,7 +231,7 @@ function renderCardHTML(row) {
             <a href="${row.url}" target="_blank">
                 <button
                     class="wiki-btn hidden mt-3 bg-slate-600 hover:bg-slate-700 text-white font-semibold text-xs px-3 py-1 rounded">
-                    See on Wikipedia
+                    See on Wikipedia™
                 </button>
             </a>
         </article>
