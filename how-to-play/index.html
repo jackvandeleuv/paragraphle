@@ -103,24 +103,19 @@
 
   <main class="flex-1 px-4 w-full max-w-4xl mx-auto pt-16 pb-4 flex flex-col min-h-0 space-y-0 snap-y snap-mandatory">
     <section class="flex flex-col items-left mt-6 pb-16 gap-6">
-        <img src="../public/robot-speaker.png" alt="Wood block print of a robot" class="max-h-64 object-cover">
+        <img src="../public/nonplussed-lincoln-clipped.png" alt="A picture of Abraham Lincoln" class="object-cover">
         <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
-            About
+          How to Play
         </h1>
-        <p>
-            Paragraphle is a daily puzzle game based on Wikipedia™. Over 100,000 articles are available as part of the game, a subset that 
-            was chosen by picking the most linked-to articles within Wikipedia™ itself. Each article is broken into paragraphs and processed 
-            by an embedding model, which enables the game to compare the semantic similarity between any two chunks of text. This gives you a 
-            score that lets you know how close your guesses are to the article of the day.
-        </p>
-        <p>
-            The code behind this game, including the underlying data pipeline, is available on <a class="text-decoration: underline" href="https://www.github.com/jackvandeleuv/paragraphle">GitHub</a>. 
-            If you encounter any issues or have feature suggestions you can submit them there!
-        </p>
-        <p>
-            Wikipedia is a trademark of the Wikimedia Foundation and is used with the permission of the Wikimedia Foundation. This site is 
-            not endorsed by or affiliated with the Wikimedia Foundation.        
-        </p>
+        <h2 id="howto-desc">
+          Find the article of the day!
+        </h2>
+        <ul class="list-disc space-y-3 pl-5 marker:text-neutral-200 mb-6">
+          <li>Each guess must be an existing Wikipedia™ article.</li>
+          <li>The game tells you how close you are to the article of the day.</li>
+          <li>Paragraphs from your guesses are ranked by how similar they are to the target.</li>
+          <li>The closer you get to zero, the better!</li>
+        </ul>
     </section>
 
   </main>
