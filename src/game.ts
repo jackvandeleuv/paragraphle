@@ -643,7 +643,10 @@ function existsExpiredSession(): boolean {
 
 async function getSessionID(): Promise<string | null> {
     try {
-        if (existsExpiredSession()) resetPage();
+        if (existsExpiredSession()) {
+            resetPage();
+            return null;
+        }
         if (existsSession()) return localStorage.getItem("session_id");
 
         localStorage.clear();
@@ -723,10 +726,12 @@ async function restoreSession(session_id: string) {
 async function initGame() {
     try {
         const cached_session_id = localStorage.getItem("session_id");
+        game.isGuessing = true;
+        renderIsGuessing();
         if (!existsExpiredSession() && cached_session_id !== null) {
-            game.isGuessing = true;
-            renderIsGuessing();
             await restoreSession(cached_session_id);
+        } else {
+            await getSessionID();
         }
     } catch (error) {
         console.error(error);

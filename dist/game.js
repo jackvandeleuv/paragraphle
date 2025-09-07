@@ -581,8 +581,10 @@ function existsExpiredSession() {
 function getSessionID() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            if (existsExpiredSession())
+            if (existsExpiredSession()) {
                 resetPage();
+                return null;
+            }
             if (existsSession())
                 return localStorage.getItem("session_id");
             localStorage.clear();
@@ -662,10 +664,13 @@ function initGame() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const cached_session_id = localStorage.getItem("session_id");
+            game.isGuessing = true;
+            renderIsGuessing();
             if (!existsExpiredSession() && cached_session_id !== null) {
-                game.isGuessing = true;
-                renderIsGuessing();
                 yield restoreSession(cached_session_id);
+            }
+            else {
+                yield getSessionID();
             }
         }
         catch (error) {
