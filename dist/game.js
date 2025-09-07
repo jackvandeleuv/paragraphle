@@ -671,6 +671,7 @@ function initGame() {
             }
             else {
                 yield getSessionID();
+                renderEmptyState();
             }
         }
         catch (error) {

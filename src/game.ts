@@ -732,6 +732,7 @@ async function initGame() {
             await restoreSession(cached_session_id);
         } else {
             await getSessionID();
+            renderEmptyState();
         }
     } catch (error) {
         console.error(error);
