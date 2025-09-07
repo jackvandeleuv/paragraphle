@@ -727,8 +727,8 @@ async function initGame() {
     try {
         const cached_session_id = localStorage.getItem("session_id");
         game.isGuessing = true;
-        renderIsGuessing();
         if (!existsExpiredSession() && cached_session_id !== null) {
+            renderIsGuessing();
             await restoreSession(cached_session_id);
         } else {
             await getSessionID();
