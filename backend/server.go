@@ -3,20 +3,17 @@ package main
 import (
 	"bufio"
 	"database/sql"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
 	"net/http"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	f16 "github.com/x448/float16"
 	_ "modernc.org/sqlite"
 )
 
@@ -37,13 +34,32 @@ type Article struct {
 }
 
 type Chunk struct {
-	ChunkID  int64     `json:"chunk_id"`
-	Chunk    string    `json:"chunk"`
-	URL      string    `json:"url"`
-	Title    string    `json:"title"`
-	Distance float64   `json:"distance"`
-	Vector   []float64 `json:"vector,omitempty"`
-	IsWin    bool      `json:"is_win"`
+	ChunkID   int64   `json:"chunk_id"`
+	Chunk     string  `json:"chunk"`
+	URL       string  `json:"url"`
+	Title     string  `json:"title"`
+	Distance  float64 `json:"distance"`
+	IsWin     bool    `json:"is_win"`
+	ArticleID int64   `json:"article_id"`
+	Count     int64   `json:"count"`
+}
+
+type Embedding struct {
+	ChunkID  int64
+	Vector   []float64
+	Distance float64
+}
+
+type Stats struct {
+	CurrentUsers      int64   `json:"current_users"`
+	MeanGuessesPerWin float64 `json:"mean_guesses_per_win"`
+	WinCount          int64   `json:"win_count"`
+}
+
+type SessionUpdate struct {
+	Chunks             []Chunk `json:"chunks"`
+	Guesses            int64   `json:"guesses"`
+	LastGuessArticleID int64   `json:"last_guess_article_id"`
 }
 
 func getTargets() []Target {
@@ -76,277 +92,6 @@ func getTargets() []Target {
 	return targets
 }
 
-func blobToFloat(b []byte) ([]float64, error) {
-	if len(b)%2 != 0 {
-		return nil, fmt.Errorf("could not decode vector from blob storage")
-	}
-	n := len(b) / 2
-	out := make([]float64, n)
-	for i := 0; i < n; i++ {
-		u := binary.LittleEndian.Uint16(b[2*i:])
-		out[i] = float64(f16.Frombits(u).Float32())
-	}
-	return out, nil
-}
-
-func getChunks(db *sql.DB, article_id int64, is_win bool) ([]Chunk, error) {
-	rows, err := db.Query(`
-        select c.chunk_id, chunk, url, title, vector
-        from (
-            select chunk_id, chunk, article_id
-            from chunks
-            where article_id == ?
-        ) as c
-        join (
-            select article_id, url, title
-            from articles
-            where article_id == ?    
-        ) as a
-            on c.article_id == a.article_id
-		join (
-			select vector, chunk_id
-			from embeddings
-		) as e
-			on c.chunk_id == e.chunk_id
-	`, article_id, article_id)
-	if err != nil {
-		return nil, fmt.Errorf("could not decode vector from blob storage")
-	}
-	defer rows.Close()
-
-	chunks := make([]Chunk, 0)
-	for rows.Next() {
-		var chunk_id int64
-		var chunk string
-		var url string
-		var title string
-		var blob []byte
-
-		if err := rows.Scan(&chunk_id, &chunk, &url, &title, &blob); err != nil {
-			return nil, fmt.Errorf("could not decode vector from blob storage")
-		}
-
-		vector, err := blobToFloat(blob)
-		if err != nil {
-			return nil, fmt.Errorf("could not decode vector from blob storage")
-		}
-
-		chunks = append(chunks, Chunk{chunk_id, chunk, url, title, -1.0, vector, is_win})
-	}
-
-	return chunks, nil
-}
-
-func loadSuggestions(db *sql.DB) []Article {
-	rows, err := db.Query("select article_id, title, clean_title, count from articles")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer rows.Close()
-
-	articles := make([]Article, 0)
-	for rows.Next() {
-		var article_id int64
-		var title string
-		var clean_title string
-		var count int64
-
-		if err := rows.Scan(&article_id, &title, &clean_title, &count); err != nil {
-			log.Fatal(err)
-		}
-		articles = append(articles, Article{article_id, title, clean_title, count})
-	}
-
-	sort.Slice(articles, func(i, j int) bool {
-		return articles[i].CleanTitle < articles[j].CleanTitle
-	})
-
-	return articles
-}
-
-func getSuggestions(articles []Article, prefix string, limit int64) []Article {
-	left := 0
-	right := len(articles)
-	mid := ((right - left) / 2) + left
-	size := len(prefix)
-
-	found := false
-	for left < right {
-		mid_slice := len(articles[mid].CleanTitle)
-		if mid_slice > size {
-			mid_slice = size
-		}
-		if prefix == articles[mid].CleanTitle[:mid_slice] {
-			found = true
-			break
-		} else if prefix < articles[mid].CleanTitle[:mid_slice] {
-			right = mid
-			mid = ((right - left) / 2) + left
-		} else {
-			left = mid + 1
-			mid = ((right - left) / 2) + left
-		}
-	}
-
-	if !found {
-		return make([]Article, 0)
-	}
-
-	left = mid
-	for 0 <= left {
-		left_slice := len(articles[left].CleanTitle)
-		if size < left_slice {
-			left_slice = size
-		}
-		if prefix != articles[left].CleanTitle[:left_slice] {
-			break
-		}
-		left -= 1
-	}
-	left += 1
-
-	// Don't add one to comparisons with right if using slices because it is exclusive
-	right = mid
-	for right < len(articles) {
-		right_slice := len(articles[right].CleanTitle)
-		if size < right_slice {
-			right_slice = size
-		}
-		if prefix != articles[right].CleanTitle[:right_slice] {
-			break
-		}
-		right += 1
-	}
-
-	if left > right || left > len(articles) {
-		return make([]Article, 0)
-	}
-
-	articles_slice := articles[left:right]
-	i := 0
-	full_matches := make([]Article, 0)
-	partial_matches := make([]Article, 0)
-	for i < len(articles_slice) {
-		article := articles_slice[i]
-		if article.CleanTitle == prefix {
-			full_matches = append(full_matches, article)
-		} else {
-			partial_matches = append(partial_matches, article)
-		}
-		i += 1
-	}
-
-	sort.Slice(partial_matches, func(i, j int) bool {
-		return partial_matches[j].Count < partial_matches[i].Count
-	})
-
-	sort.Slice(full_matches, func(i, j int) bool {
-		return full_matches[j].Count < full_matches[i].Count
-	})
-
-	matches := make([]Article, 0)
-	matches = append(matches, full_matches...)
-	matches = append(matches, partial_matches...)
-
-	if len(matches) < int(limit) {
-		return matches
-	}
-	return matches[:limit]
-}
-
-func suggestionsToCache() []string {
-	// Cache all combinations of three letters.
-	suggestions := make([]string, 0, 26+26*26+26*26*26)
-
-	for i := byte('a'); i <= 'z'; i++ {
-		suggestions = append(suggestions, string(i))
-
-		for j := byte('a'); j <= 'z'; j++ {
-			suggestions = append(suggestions, string([]byte{i, j}))
-
-			for k := byte('a'); k <= 'z'; k++ {
-				suggestions = append(suggestions, string([]byte{i, j, k}))
-			}
-		}
-	}
-	return suggestions
-}
-
-func makeSuggestionCache(toCache []string, articles []Article, limit int64) map[string][]Article {
-	cache := make(map[string][]Article, len(toCache))
-
-	for _, key := range toCache {
-		cache[key] = getSuggestions(articles, key, limit)
-	}
-	return cache
-}
-
-func targetChunksToVec(targetChunks []Chunk) []float64 {
-	targetVectorSums := make([]float64, 0)
-	for _, chunk := range targetChunks {
-		for i, val := range chunk.Vector {
-			if len(targetVectorSums) <= i {
-				targetVectorSums = append(targetVectorSums, val)
-			} else {
-				targetVectorSums[i] += val
-			}
-		}
-	}
-
-	targetVector := make([]float64, 0)
-	for _, sum := range targetVectorSums {
-		targetVector = append(targetVector, sum/float64(len(targetChunks)))
-	}
-
-	return targetVector
-}
-
-func l2Norm(x []float64) float64 {
-	sum := 0.0
-	for _, val := range x {
-		sum += math.Pow(val, 2)
-	}
-	return math.Sqrt(sum)
-}
-
-func cosineSimilarity(x []float64, y []float64) float64 {
-	var innerProduct float64 = 0
-	for i := 0; i < len(x); i++ {
-		innerProduct += x[i] * y[i]
-	}
-	x_norm := l2Norm(x)
-	y_norm := l2Norm(y)
-	return innerProduct / (x_norm * y_norm)
-}
-
-func scoreArticleID(db *sql.DB, guess_id int64, target_id int64) ([]Chunk, error) {
-	guessChunks, err := getChunks(db, guess_id, guess_id == target_id)
-	if err != nil {
-		return nil, fmt.Errorf("could not get guess chunks")
-	}
-
-	targetChunks, err := getChunks(db, target_id, false)
-	if err != nil {
-		return nil, fmt.Errorf("could not get target chunks")
-	}
-
-	targetVec := targetChunksToVec(targetChunks)
-
-	for i := range guessChunks {
-		guessChunks[i].Distance = 1 - cosineSimilarity(guessChunks[i].Vector, targetVec)
-	}
-
-	sort.Slice(guessChunks, func(i, j int) bool {
-		return guessChunks[i].Distance < guessChunks[j].Distance
-	})
-
-	for i := range guessChunks {
-		guessChunks[i].Vector = nil
-	}
-
-	return guessChunks, nil
-}
-
 func getTargetID(targets []Target) int64 {
 	now := time.Now().Unix()
 	now_et := now - (3600 * 4)
@@ -354,11 +99,219 @@ func getTargetID(targets []Target) int64 {
 	return targets[idx].ArticleID
 }
 
+func openDB(dbPath string) (*sql.DB, error) {
+	dsn := fmt.Sprintf(
+		"file:%s?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=immediate",
+		dbPath,
+	)
+
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	return db, nil
+}
+
+func setHeaders(w http.ResponseWriter, r *http.Request, default_cors_uri string) {
+	origin := r.Header.Get("Origin")
+	if origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+
+	} else {
+		w.Header().Set("Access-Control-Allow-Origin", default_cors_uri)
+
+	}
+	w.Header().Set("Content-Type", "application/json")
+}
+
+func isValidSession(db *sql.DB, session_id string) bool {
+	var duplicated int
+	err := db.QueryRow(`
+		select 1
+		from sessions
+		where session_id = ?
+	`, session_id).Scan(&duplicated)
+	return err == nil
+}
+
+func enforceValidSession(w http.ResponseWriter, r *http.Request, db *sql.DB) bool {
+	session_id := r.URL.Query().Get("session_id")
+	if session_id == "" {
+		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
+		return false
+	}
+	if !isValidSession(db, session_id) {
+		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
+		return false
+	}
+	return true
+}
+
+func suggestion(w http.ResponseWriter, r *http.Request, articles []Article, max_suggestions int64) {
+	q := r.URL.Query().Get("q")
+	clean_q := strings.TrimSpace(strings.ToLower(q))
+	if clean_q == "" {
+		http.Error(w, "Empty query.", http.StatusBadRequest)
+		return
+	}
+
+	limit := r.URL.Query().Get("limit")
+	num_limit, err := strconv.Atoi(limit)
+	if err != nil || num_limit <= 0 {
+		http.Error(w, "Invalid limit.", http.StatusBadRequest)
+		return
+	}
+	if int64(num_limit) > max_suggestions {
+		http.Error(w, "Exceeded max limit.", http.StatusBadRequest)
+		return
+	}
+
+	suggestions := getSuggestions(articles, clean_q, int64(num_limit))
+
+	json.NewEncoder(w).Encode(suggestions)
+}
+
+func startSession(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
+	id := uuid.New()
+	err := logSession(db, id)
+	if err != nil {
+		logger.Println(err)
+		http.Error(w, "could not create a session id", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(id)
+}
+
+func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64) {
+	target_id := getTargetID(targets)
+
+	raw_guess_id := r.URL.Query().Get("article_id")
+	clean_guess_id := strings.TrimSpace(strings.ToLower(raw_guess_id))
+	guess_id, err := strconv.Atoi(clean_guess_id)
+	if err != nil || guess_id <= 0 {
+		http.Error(w, "Invalid article_id.", http.StatusBadRequest)
+		return
+	}
+
+	session_id := r.URL.Query().Get("session_id")
+	if session_id == "" {
+		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
+		return
+	}
+
+	chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
+	if err != nil {
+		http.Error(w, "Internal server error.", http.StatusInternalServerError)
+		return
+	}
+
+	repeat_guess := isDuplicateGuess(db, int64(guess_id), session_id)
+	if !repeat_guess {
+		best_chunk_id := chunks[0].ChunkID
+		best_chunk_score := chunks[0].Distance
+		logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
+	}
+
+	if target_id == int64(guess_id) {
+		if err := logWin(db, session_id); err != nil {
+			http.Error(w, "Could not log win.", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	n_guesses, err := countGuesses(db, session_id)
+	if err != nil {
+		http.Error(w, "Could not count guesses.", http.StatusInternalServerError)
+		return
+	}
+	session_update := SessionUpdate{chunks, n_guesses, int64(guess_id)}
+
+	json.NewEncoder(w).Encode(session_update)
+}
+
+func stats(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
+	stats, err := getStats(db)
+	if err != nil {
+		logger.Println(err)
+		http.Error(w, "could not get stats", http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode(stats)
+}
+
+func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64) {
+	target_id := getTargetID(targets)
+
+	session_id := r.URL.Query().Get("session_id")
+	if session_id == "" {
+		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
+		return
+	}
+
+	MAX_ARTICLE_IDS := 10
+	MAX_CHUNKS := 100
+	top_n_guesses, err := topNGuesses(db, session_id, MAX_ARTICLE_IDS)
+	if err != nil {
+		http.Error(w, "Internal server error.", http.StatusInternalServerError)
+		return
+	}
+
+	total_chunks := make([]Chunk, 0)
+	for idx, guess_id := range top_n_guesses {
+		chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
+		if err != nil {
+			http.Error(w, "Internal server error.", http.StatusInternalServerError)
+			return
+		}
+		total_chunks = append(total_chunks, chunks...)
+		if idx > MAX_CHUNKS {
+			break
+		}
+	}
+
+	n_guesses, err := countGuesses(db, session_id)
+	if err != nil {
+		http.Error(w, "Could not count guesses.", http.StatusInternalServerError)
+		return
+	}
+
+	last_guess_article_id, err := getLastGuessArticleID(db, session_id)
+	if err != nil {
+		http.Error(w, "Could not find last article_id.", http.StatusInternalServerError)
+		return
+	}
+
+	session_update := SessionUpdate{total_chunks, n_guesses, last_guess_article_id}
+
+	json.NewEncoder(w).Encode(session_update)
+}
+
+func topChunks(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	session_id := r.URL.Query().Get("session_id")
+	if session_id == "" {
+		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
+		return
+	}
+
+	top_chunks, err := queryTopChunks(db, session_id)
+	if err != nil {
+		http.Error(w, "could not get top chunks", http.StatusBadRequest)
+		return
+	}
+
+	json.NewEncoder(w).Encode(top_chunks)
+}
+
 func main() {
+	var MAX_SUGGESTIONS int64 = 10
+	var MAX_CHUNKS int64 = 10
+	DEFAULT_CORS_URI := "https://paragraphle.com"
 	logger := log.Default()
 
-	var MAX_SUGGESTIONS int64 = 30
-	var MAX_CHUNKS int64 = 10
+	logger.Println("starting server")
 
 	err := godotenv.Load()
 	if err != nil {
@@ -366,75 +319,65 @@ func main() {
 	}
 
 	db_path := os.Getenv("DB_PATH")
-	db, err := sql.Open("sqlite", db_path)
+	db, err := openDB(db_path)
+
 	if err != nil {
 		log.Fatal("could not connect to database")
 		return
 	}
-	logger.Println("connected to database")
 
 	targets := getTargets()
-	logger.Println("got targets from disk")
 
 	articles := loadSuggestions(db)
-	logger.Println("loaded suggestion array")
+	logger.Println("creating handlers")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		setHeaders(w, r, DEFAULT_CORS_URI)
 		http.Error(w, "This is not a valid endpoint.", http.StatusBadRequest)
 	})
 
+	http.HandleFunc("/start-session", func(w http.ResponseWriter, r *http.Request) {
+		setHeaders(w, r, DEFAULT_CORS_URI)
+		startSession(w, db, logger)
+	})
+
 	http.HandleFunc("/suggestion", func(w http.ResponseWriter, r *http.Request) {
-		// w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
-		w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
-
-		q := r.URL.Query().Get("q")
-		clean_q := strings.TrimSpace(strings.ToLower(q))
-
-		limit := r.URL.Query().Get("limit")
-		num_limit, err := strconv.Atoi(limit)
-		if err != nil || num_limit <= 0 {
-			http.Error(w, "Invalid limit.", http.StatusBadRequest)
-			return
-		}
-		if int64(num_limit) > MAX_SUGGESTIONS {
-			http.Error(w, "Exceeded max limit.", http.StatusBadRequest)
-			return
-		}
-
-		suggestions := getSuggestions(articles, clean_q, int64(num_limit))
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(suggestions)
+		setHeaders(w, r, DEFAULT_CORS_URI)
+		suggestion(w, r, articles, MAX_SUGGESTIONS)
 	})
 
 	http.HandleFunc("/guess-article", func(w http.ResponseWriter, r *http.Request) {
-		// w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
-		w.Header().Set("Access-Control-Allow-Origin", "https://paragraphle.com")
-
-		target_id := getTargetID(targets)
-
-		raw_guess_id := r.URL.Query().Get("article_id")
-		clean_guess_id := strings.TrimSpace(strings.ToLower(raw_guess_id))
-		guess_id, err := strconv.Atoi(clean_guess_id)
-		if err != nil || guess_id <= 0 {
-			http.Error(w, "Invalid article_id.", http.StatusBadRequest)
+		setHeaders(w, r, DEFAULT_CORS_URI)
+		valid := enforceValidSession(w, r, db)
+		if !valid {
 			return
 		}
-
-		chunks, err := scoreArticleID(db, int64(guess_id), target_id)
-		if err != nil {
-			http.Error(w, "Invalid article_id.", http.StatusBadRequest)
-			return
-		}
-
-		if len(chunks) > int(MAX_CHUNKS) {
-			chunks = chunks[:MAX_CHUNKS]
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-
-		json.NewEncoder(w).Encode(chunks)
+		guessArticle(w, r, db, targets, MAX_CHUNKS)
 	})
 
+	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+		setHeaders(w, r, DEFAULT_CORS_URI)
+		stats(w, db, logger)
+	})
+
+	http.HandleFunc("/restore-session", func(w http.ResponseWriter, r *http.Request) {
+		setHeaders(w, r, DEFAULT_CORS_URI)
+		valid := enforceValidSession(w, r, db)
+		if !valid {
+			return
+		}
+		restoreSession(w, r, db, targets, MAX_CHUNKS)
+	})
+
+	http.HandleFunc("/top-chunks", func(w http.ResponseWriter, r *http.Request) {
+		setHeaders(w, r, DEFAULT_CORS_URI)
+		valid := enforceValidSession(w, r, db)
+		if !valid {
+			return
+		}
+		topChunks(w, r, db)
+	})
+
+	logger.Println("listening on 8000")
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }

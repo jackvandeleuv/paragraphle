@@ -6,28 +6,36 @@
   <title>Paragraphle &mdash; Daily Game</title>
 
   <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8LNTR512CH"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-L77RQSSE79"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
   
-    gtag('config', 'G-8LNTR512CH');
+    gtag('config', 'G-L77RQSSE79');
   </script>
 
   <meta name="description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target.">
-  <link rel="canonical" href="https://paragraphle.com/">
+  <link rel="canonical" href="https://paragraphle.com/play/">
+
   <meta property="og:type" content="game" />
-  <meta property="og:title" content="Paragraphle &mdash; Daily Game"/>
-  <meta property="og:description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target."/>
+  <meta property="og:site_name" content="Paragraphle" />
+  <meta property="og:title" content="Daily Game" />
+  <meta property="og:description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target.">
+  <meta property="og:url" content="https://paragraphle.com/play/">
   <meta property="og:image" content="https://paragraphle.com/public/nonplussed-lincoln.jpg">
   <meta property="og:image:width" content="2200">
   <meta property="og:image:height" content="1190">
-  <meta name="robots" content="max-image-preview:large">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://paragraphle.com/public/nonplussed-lincoln.jpg">
 
-  <link rel="stylesheet" href="../tailwind.css">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Daily Game">
+  <meta name="twitter:description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target.">
+  <meta name="twitter:image" content="https://paragraphle.com/public/nonplussed-lincoln.jpg">
+  <meta name="twitter:image:alt" content="Abraham Lincoln looking not amused.">
+
+  <meta name="robots" content="max-image-preview:large">
+
+  <link rel="stylesheet" href="../src/tailwind.css">
 </head>
 
 <img class="hidden absolute" id="lastGuessImage" alt="Background image." src="../public/nonplussed-lincoln.jpg"></img>
@@ -44,8 +52,10 @@
     style="display: none"
   >
     <div
-      class="relative w-full max-w-sm origin-center rounded-xl bg-gradient-to-br from-red-500/60 to-red-600/60 text-neutral-50 shadow-2xl ring-1 ring-white/15
-            animate-[fadeIn_0.25s_ease,scaleIn_0.25s_ease]"
+      class="relative w-full max-w-sm origin-center rounded-xl 
+      bg-gradient-to-br from-red-500/60 to-red-600/60 text-neutral-50 
+      shadow-2xl ring-1 ring-white/15
+      animate-[fadeIn_0.25s_ease,scaleIn_0.25s_ease]"
     >
       <button
         type="button"
@@ -68,31 +78,89 @@
         <img class="w-full max-w-2xl object-cover mb-4" id="winImage" alt="Image of daily article." src="../public/nonplussed-lincoln.jpg"></img>
         <p id="winModalTitle" class="mb-2 text-xl font-bold"></p>
         <p id="winModalDesc" class="text-lg text-sky-50/90">
-          Guesses:
-          <span id="winModalGuessCount" aria-live="polite" class="font-semibold text-white"></span>
+          It took you <span id="winModalGuessCount" aria-live="polite" class="font-bold text-white"></span> guesses.
+        </p>
+        <p id="winModalStatsDesc" class="text-lg text-sky-50/90">
         </p>
       </div>
     </div>
   </div>
 
-  <header class="shrink-0 px-4 pt-6 pb-2 w-full max-w-4xl mx-auto select-none">
-    <div class="flex items-baseline justify-between mb-2">
-      <h1 class="text-xl font-extrabold tracking-tight md:text-2xl">
-        Paragraphle&nbsp;#<span id="dailyNumber"></span>
+  <header class="fixed inset-x-0 top-0 z-1 bg-slate-900/95 backdrop-blur">
+    <div class="px-4 w-full max-w-4xl mx-auto h-16 flex items-center justify-between">
+      <h1 class="text-md sm:text-xl font-extrabold tracking-tight select-none">
+        <a href="/">Paragraphle&nbsp;#<span id="dailyNumber"></span></a>
       </h1>
-      <span class="whitespace-nowrap font-semibold text-sm md:text-base">
-        Guesses:&nbsp;<span id="guessCount">0</span>
-      </span>
-    </div>
-    <div class="h-1 bg-slate-700 rounded overflow-hidden">
-      <div 
-        class="h-full w-0" 
-        id="progressBar"
-      ></div>
+      <div class="flex flex-row gap-3 items-center">
+        <span class="whitespace-nowrap font-semibold text-xs md:text-base border-2 py-1 px-2 rounded-md border-slate-600">
+          <span id="guessCount"></span>&nbsp;Guess<span id="guessPlural">es</span>
+        </span>
+        <button id="resetButton" class="
+            inline-flex items-center justify-center px-2 py-1 rounded-md
+            bg-slate-600 text-white text-xs md:text-base font-semibold tracking-wide
+            transition-colors hover:bg-slate-500 hover:border-slate-500 border-2 rounded-md border-slate-600
+        ">
+          Reset
+        </button>
+        <svg class="hover:bg-slate-600 hover:rounded-lg" xmlns="http://www.w3.org/2000/svg" id="menuIconClosed" width="30px" height="30px" viewBox="0 0 24 24" fill="none">
+          <path d="M4 18L20 18" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M4 12L20 12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M4 6L20 6" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
     </div>
   </header>
 
-  <main class="flex-1 px-4 w-full max-w-4xl mx-auto pt-4 pb-4 flex flex-col min-h-0 select-none">
+  <div id="sidebar" class="fixed inset-0 z-50 flex flex-row justify-end bg-slate-200/60 select-none hidden">
+    <div id="innerSidebar" class="flex flex-col w-64 h-full gap-3 p-4 bg-slate-200 text-center overflow-y-auto">
+        <div class="flex flex-row justify-end">
+          <button id="exitButton" class="bg-slate-600 text-lg px-5 py-1 rounded-md hover:bg-rose-500">X</button>
+        </div>
+        <div class="border-slate-600 border-2 bg-slate-300 rounded-md p-3 flex flex-col gap-3">
+          <a
+              href="../"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              Home
+          </a>
+          <a
+              href="../about"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              About
+          </a>
+          <a
+              href="../how-to-play"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              How to Play
+          </a>
+          <a
+              href="../play"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              Play
+          </a>
+        </div>
+        <p class="border-slate-600 border-2 bg-slate-300 rounded-md px-3 py-1 text-slate-600 font-extrabold">
+            Current Players: <span id="playerCount"></span>
+        </p>
+    </div>
+  </div>
+
+  <main class="mt-14 flex-1 px-4 w-full max-w-4xl mx-auto pt-4 pb-4 flex flex-col min-h-0 select-none">
     <div
         class="mb-4 flex items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-white-600 text-white"
@@ -174,6 +242,7 @@
 
     </div>
   </footer>
-  <script src="../script.js"></script>
+  <script type="module" src="../dist/game.js"></script>
+  <script type="module" src="../dist/sidebar.js"></script>
 </body>
 </html>

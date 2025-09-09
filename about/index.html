@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paragraphle &mdash; About</title>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8LNTR512CH"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+  
+    gtag('config', 'G-8LNTR512CH');
+  </script>
+
+  <meta name="description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target.">
+  <link rel="canonical" href="https://paragraphle.com/about/">
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Paragraphle" />
+  <meta property="og:title" content="About" />
+  <meta property="og:description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target.">
+  <meta property="og:url" content="https://paragraphle.com/about/">
+  <meta property="og:image" content="https://paragraphle.com/public/nonplussed-lincoln.jpg">
+  <meta property="og:image:width" content="2200">
+  <meta property="og:image:height" content="1190">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="About">
+  <meta name="twitter:description" content="Play Paragraphle, a daily game where you use semantic search to find the Wikipedia article of the day. Each guess reveals subtle clues about your target.">
+  <meta name="twitter:image" content="https://paragraphle.com/public/nonplussed-lincoln.jpg">
+  <meta name="twitter:image:alt" content="Abraham Lincoln looking not amused.">
+
+  <meta name="robots" content="max-image-preview:large">
+
+  <link rel="stylesheet" href="../src/tailwind.css">
+</head>
+
+<body class="relative min-h-screen bg-slate-900 text-white flex flex-col">   
+  <header class="fixed inset-x-0 top-0 z-1 bg-slate-900/95 backdrop-blur">
+    <div class="px-4 w-full max-w-4xl mx-auto h-16 flex items-center justify-between">
+      <h1 class="text-md sm:text-xl font-extrabold tracking-tight select-none">
+        <a href="/">Paragraphle</a>
+      </h1>
+      <div class="flex flex-row gap-3 items-center">
+        <a
+          href="/play"
+          class="inline-flex items-center justify-center px-2 py-1 rounded-md
+            bg-slate-600 text-white text-xs md:text-base font-semibold tracking-wide
+            transition-colors hover:bg-slate-500 hover:border-slate-500 border-2 rounded-md border-slate-600"
+          >
+            Play
+        </a>
+        <svg class="hover:bg-slate-600 hover:rounded-lg" xmlns="http://www.w3.org/2000/svg" id="menuIconClosed" width="30px" height="30px" viewBox="0 0 24 24" fill="none">
+          <path d="M4 18L20 18" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M4 12L20 12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M4 6L20 6" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </header>
+  
+  <div id="sidebar" class="fixed inset-0 z-50 flex flex-row justify-end bg-slate-200/60 select-none hidden">
+    <div id="innerSidebar" class="flex flex-col w-64 h-full gap-3 p-4 bg-slate-200 text-center overflow-y-auto">
+        <div class="flex flex-row justify-end">
+          <button id="exitButton" class="bg-slate-600 text-lg px-5 py-1 rounded-md hover:bg-rose-500">X</button>
+        </div>
+        <div class="border-slate-600 border-2 bg-slate-300 rounded-md p-3 flex flex-col gap-3">
+          <a
+              href="../"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              Home
+          </a>
+          <a
+              href="../about"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              About
+          </a>
+          <a
+              href="../how-to-play"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              How to Play
+          </a>
+          <a
+              href="../play"
+              class="inline-flex items-center justify-center px-3 py-1 rounded-xl
+                  bg-slate-600 text-white font-semibold tracking-wide
+                  border-b-4 border-slate-600 text-sm
+                  transition-colors hover:bg-slate-500"
+          >
+              Play
+          </a>
+        </div>
+        <p class="border-slate-600 border-2 bg-slate-300 rounded-md px-3 py-1 text-slate-600 font-extrabold">
+            Current Players: <span id="playerCount"></span>
+        </p>
+    </div>
+  </div>
+
+  <main class="flex-1 px-4 w-full max-w-4xl mx-auto pt-16 pb-4 flex flex-col min-h-0 space-y-0 snap-y snap-mandatory">
+    <section class="flex flex-col items-left mt-6 pb-16 gap-6">
+        <img src="../public/robot-speaker.png" alt="Wood block print of a robot" class="max-h-64 object-cover">
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
+            About
+        </h1>
+        <p>
+            Paragraphle is a daily puzzle game based on Wikipedia™. Over 100,000 articles are available as part of the game, a subset that 
+            was chosen by picking the most linked-to articles within Wikipedia™ itself. Each article is broken into paragraphs and processed 
+            by an embedding model, which enables the game to compare the semantic similarity between any two chunks of text. This gives you a 
+            score that lets you know how close your guesses are to the article of the day.
+        </p>
+        <p>
+            The code behind this game, including the underlying data pipeline, is available on <a class="text-decoration: underline" href="https://www.github.com/jackvandeleuv/paragraphle">GitHub</a>. 
+            If you encounter any issues or have feature suggestions you can submit them there!
+        </p>
+        <p>
+            Wikipedia is a trademark of the Wikimedia Foundation and is used with the permission of the Wikimedia Foundation. This site is 
+            not endorsed by or affiliated with the Wikimedia Foundation.        
+        </p>
+    </section>
+
+  </main>
+  <script src="../dist/sidebar.js"></script>
+</body>
+</html>
