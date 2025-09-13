@@ -63,9 +63,22 @@ async function updatePlayerCount() {
     if (!response.ok) return null;
     const stats =  await response.json() as StatsUpdate;
     if (!stats) return;
+
     const playerCount = document.getElementById('playerCount');
     if (!playerCount) return;
     playerCount.innerHTML = String(stats.current_users);
+
+    const solveCount = document.getElementById('solveCount');
+    if (!solveCount) return;
+    solveCount.innerHTML = String(stats.win_count);
+
+    const averageScore = document.getElementById('averageScore');
+    if (!averageScore) return;
+    if (stats.mean_guesses_per_win === -1) {
+        averageScore.innerHTML = '...';
+    } else {
+        averageScore.innerHTML = String(stats.mean_guesses_per_win.toFixed(0));
+    }
 }
 
 async function playerCountMonitor() {
