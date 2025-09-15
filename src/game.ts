@@ -689,10 +689,8 @@ async function renderWin(title: string, imageURL: string) {
     const stats = await getDailyStats();
     if (!stats || stats.win_count <= 1) {
         updateInnerHTML("winModalStatsDesc", "You're the first player to solve today's puzzle! 😮")
-    } else if (stats.win_count === 2) {
-        updateInnerHTML("winModalStatsDesc", "You're the second player to solve today's puzzle! 👏")
     } else {
-        const mean_guesses = Math.floor(stats.mean_guesses_per_win) + 1;
+        const mean_guesses = String(stats.mean_guesses_per_win.toFixed(0));
         updateInnerHTML("winModalStatsDesc", `
             The ${stats.win_count} people who solved today's puzzle won in <span class="font-bold text-white">${mean_guesses}</span> guesses on average.
         `)
