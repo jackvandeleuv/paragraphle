@@ -38,8 +38,6 @@
   <link rel="stylesheet" href="../src/tailwind.css">
 </head>
 
-<img class="hidden absolute" id="lastGuessImage" alt="Background image." src="../public/nonplussed-lincoln.jpg"></img>
-
 <body class="h-dvh bg-slate-900 text-white flex flex-col">   
   <!-- Win Modal -->
   <div
@@ -169,22 +167,72 @@
     </div>
   </div>
 
-  <main class="mt-14 flex-1 px-4 w-full max-w-4xl mx-auto pt-4 pb-4 flex flex-col min-h-0 select-none">
-    <div
-        class="mb-4 flex items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border border-white-600 text-white"
-        id="lastGuessBox"
+  <main class="flex flex-row gap-4 mt-14 flex-1 px-4 w-full max-w-4xl mx-auto pt-4 pb-4 min-h-0 select-none">   
+    <div id="leftColumn" class="flex flex-col gap-3 justify-center sm:w-1/2 hidden">
+      <img 
+        id="lastGuessImage" 
+        class="h-1/2 max-h-1/2 min-h-1/2 object-cover rounded-md"
       >
-        <span id="lastGuessText" class="uppercase tracking-wide">&nbsp;</span>
-        <span id="lastGuessDistance">&nbsp;</span>
+      <div 
+        id="imageSkeleton" 
+        class="h-1/2 max-h-1/2 min-h-1/2 bg-slate-700 rounded-md
+              animate-[loadingBox_0.5s_linear_infinite_alternate] hidden"
+      ></div>
+      <div class="sm:h-1/2 flex flex-col gap-4">
+        <div
+            class="flex flex-row items-center justify-between text-sm md:text-base font-semibold
+            px-3 py-1 rounded border border-white-600 text-white"
+            id="lastGuessBox"
+          >
+            <p id="lastGuessText" class="uppercase tracking-wide">&nbsp;</p>
+        </div>
+
+        <article data-card
+            id="lastGuessCard"
+            class="
+                relative bg-slate-800 border
+                rounded p-4 pt-5 text-sm leading-snug select-none
+                break-all
+            ">
+            <span class="card-title absolute -top-2 left-2 bg-slate-900 px-1 text-xs font-bold uppercase">
+                Closest Paragraph
+            </span>
+            <span 
+              id="lastGuessTopScore" 
+              class="card-score absolute -top-2 right-2 bg-slate-900 px-1 text-xs font-bold">
+            </span>
+
+            <p>
+                <span id="lastGuessTopChunk" class="short">
+                    
+                </span>
+
+                <span class="full hidden">
+                  
+                </span>
+            </p>
+        </article>
+  
+      </div>
     </div>
 
-    <p class="text-xs text-slate-400 mb-2">
-      Closest Paragraphs
-    </p>
+    <div class="flex flex-col w-full sm:w-1/2">
+      <div
+          class="flex flex-row items-center justify-between text-sm md:text-base font-semibold
+          px-3 py-1 rounded border border-white-600 text-white sm:hidden"
+          id="lastGuessBoxMobile"
+        >
+          <span id="lastGuessTextMobile" class="uppercase tracking-wide">&nbsp;</span>
+          <span id="lastGuessDistanceMobile">&nbsp;</span>
+      </div>
 
-    <div id="article-list"
-        class="scrollbar-dark flex-1 overflow-y-auto min-h-0 space-y-4 pr-1 pt-2">
+      <p class="text-xs text-slate-400 mb-2 mt-3 sm:mt-0">
+        Closest Overall
+      </p>
+
+      <div id="article-list"
+          class="scrollbar-dark flex-1 overflow-y-auto min-h-0 space-y-4 pr-1 pt-2">
+      </div>
     </div>
   </main>
 

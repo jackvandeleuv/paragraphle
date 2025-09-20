@@ -192,6 +192,8 @@ function urlToName(title) {
 function loadWikiImage(url, targetID, title) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
+        addClasses(targetID, ['hidden']);
+        removeClasses('imageSkeleton', ['hidden']);
         const defaultImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Wikipedia-logo-v2-square.svg/1024px-Wikipedia-logo-v2-square.svg.png';
         const targetImage = document.getElementById(targetID);
         if (!targetImage || !(targetImage instanceof HTMLImageElement))
@@ -213,6 +215,10 @@ function loadWikiImage(url, targetID, title) {
             targetImage.alt = 'Wikipedia logo.';
             return defaultImage;
         }
+        finally {
+            removeClasses(targetID, ['hidden']);
+            addClasses('imageSkeleton', ['hidden']);
+        }
     });
 }
 function renderCardHTML(row) {
@@ -222,6 +228,7 @@ function renderCardHTML(row) {
             class="
                 relative bg-slate-800 border ${borderColor}
                 rounded p-4 pt-5 text-sm leading-snug select-none
+                break-all
             ">
             <span class="card-title absolute -top-2 left-2 bg-slate-900 px-1 text-xs font-bold uppercase">
                 ${trimText(row.title)}
@@ -258,37 +265,57 @@ function renderChunks() {
 }
 function renderIsGuessing() {
     updateInnerHTML('lastGuessText', '&nbsp;');
+    updateInnerHTML('lastGuessTextMobile', '&nbsp;');
     updateInnerHTML('lastGuessDistance', '&nbsp;');
-    updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border border-slate-700
-        bg-slate-700 text-slate-700 animate-[loadingBox_0.5s_linear_infinite_alternate]
-    `);
+    updateInnerHTML('lastGuessDistanceMobile', '&nbsp;');
+    addClasses('lastGuessImage', ['hidden']);
+    removeClasses('imageSkeleton', ['hidden']);
+    addClasses('lastGuessBox', [LOADING_CLASS]);
+    addClasses('lastGuessBoxMobile', [LOADING_CLASS]);
     updateInnerHTML('mainSuggestionText', '');
     updateInnerHTML('mainSuggestionPrompt', '');
 }
 function renderEmptyState() {
     updateInnerHTML('lastGuessText', '&nbsp;');
     updateInnerHTML('lastGuessDistance', '&nbsp;');
+    updateInnerHTML('lastGuessTextMobile', '&nbsp;');
+    updateInnerHTML('lastGuessDistanceMobile', '&nbsp;');
     updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        flex flex-col items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-white-600 text-white
     `);
     updateInnerHTML('mainSuggestionText', '');
     updateInnerHTML('mainSuggestionPrompt', '');
+    removeClasses('lastGuessImage', ['hidden']);
+    addClasses('imageSkeleton', ['hidden']);
 }
 function renderFailedGuess() {
     updateInnerHTML('lastGuessText', 'Error! please try again');
     updateInnerHTML('lastGuessDistance', '');
+    updateInnerHTML('lastGuessTextMobile', 'Error! please try again');
+    updateInnerHTML('lastGuessDistanceMobile', '');
     updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        flex flex-col items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-white-600 text-white
     `);
 }
-function renderGuess(chunks, guessCount, guessArticleId, session_id) {
+function renderGuess(chunks, guessCount, guessArticleId) {
     return __awaiter(this, void 0, void 0, function* () {
+        addClasses('leftColumn', ['sm:flex']);
         chunks.sort((a, b) => a.distance - b.distance);
         updateInnerHTML('lastGuessText', chunks[0].title);
+        updateInnerHTML('lastGuessTextMobile', chunks[0].title);
+        updateInnerHTML('lastGuessTopChunk', chunks[0].chunk.slice(0, 300));
+        updateInnerHTML('lastGuessTopScore', String(chunks[0].distance.toFixed(2)));
+        const lastGuessCard = document.getElementById('lastGuessCard');
+        if (!lastGuessCard)
+            return;
+        for (const className of lastGuessCard.classList) {
+            if (className.includes('border-'))
+                lastGuessCard.classList.remove(className);
+        }
+        ;
+        lastGuessCard.classList.add(tempToColor(chunks[0].distance, 'border'));
         game.guessCount = guessCount;
         updateInnerHTML('guessCount', String(game.guessCount));
         if (suffixIsPlural(game.guessCount)) {
@@ -310,15 +337,24 @@ function renderGuess(chunks, guessCount, guessArticleId, session_id) {
         const guessDataTop = chunks[0].distance;
         const borderColor = tempToColor(guessDataTop, 'border');
         const backgroundColor = tempToColor(guessDataTop, 'bg');
-        updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border ${borderColor} 
-        ${backgroundColor} text-white
-    `);
+        for (const boxID of ['lastGuessBox', 'lastGuessBoxMobile']) {
+            const lastGuessBox = document.getElementById(boxID);
+            if (!lastGuessBox)
+                return;
+            const toRemove = [];
+            for (const className of lastGuessBox.classList) {
+                if (className.includes('bg-') || className.includes('border-')) {
+                    toRemove.push(className);
+                }
+            }
+            removeClasses(boxID, toRemove);
+            addClasses(boxID, [borderColor, backgroundColor]);
+            removeClasses(boxID, [LOADING_CLASS]);
+        }
         updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}`);
+        updateInnerHTML('lastGuessDistanceMobile', `Distance: ${displayDistance}`);
         if (window.innerWidth > 700) {
             loadWikiImage(chunks[0].url, 'lastGuessImage', chunks[0].title);
-            updateClassName('lastGuessImage', 'absolute w-full h-full object-cover z-[-1] opacity-[.07]');
         }
         addCardListeners();
         game.bestScore = Math.min(game.bestScore, guessDataTop);
@@ -340,6 +376,7 @@ function loadGuess(guessArticleId) {
         const session_id = yield getSessionID();
         if (!session_id)
             return;
+        yield sleep(1000);
         const guessResponse = yield fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
         if (!guessResponse.ok) {
             renderFailedGuess();
@@ -349,7 +386,7 @@ function loadGuess(guessArticleId) {
         const guessData = yield guessResponse.json();
         const guessCount = guessData.guesses;
         const chunks = guessData.chunks;
-        yield renderGuess(chunks, guessCount, guessArticleId, session_id);
+        yield renderGuess(chunks, guessCount, guessArticleId);
         game.mainSuggestion = null;
         game.isGuessing = false;
     });
@@ -540,10 +577,25 @@ function updateClassName(id, value) {
 }
 export function updateInnerHTML(id, value) {
     const elem = document.getElementById(id);
-    if (!elem) {
+    if (!elem)
         return;
-    }
     elem.innerHTML = value;
+}
+function removeClasses(id, classes) {
+    const elem = document.getElementById(id);
+    if (!elem)
+        return;
+    for (const className of classes) {
+        elem.classList.remove(className);
+    }
+}
+function addClasses(id, classes) {
+    const elem = document.getElementById(id);
+    if (!elem)
+        return;
+    for (const className of classes) {
+        elem.classList.add(className);
+    }
 }
 function fetchSessionID() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -614,7 +666,7 @@ function renderWin(title, imageURL) {
         updateClassName('progressBar', `h-full bg-red-700/60 w-full`);
         updateInnerHTML('lastGuessDistance', `Distance: 0`);
         updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        flex flex-col items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-red-700/60
         bg-red-700/60 text-white
     `);
@@ -645,6 +697,8 @@ function renderWin(title, imageURL) {
 }
 function restoreSession(session_id) {
     return __awaiter(this, void 0, void 0, function* () {
+        addClasses('lastGuessImage', ['hidden']);
+        removeClasses('imageSkeleton', ['hidden']);
         const response = yield fetch(`${URI}/restore-session?session_id=${session_id}`);
         if (!response.ok)
             throw Error("Could not restore session");
@@ -654,7 +708,9 @@ function restoreSession(session_id) {
             return;
         }
         ;
-        yield renderGuess(session_update.chunks, session_update.guesses, String(session_update.last_guess_article_id), session_id);
+        yield renderGuess(session_update.chunks, session_update.guesses, String(session_update.last_guess_article_id));
+        removeClasses('lastGuessImage', ['hidden']);
+        addClasses('imageSkeleton', ['hidden']);
     });
 }
 function initGame() {
@@ -706,6 +762,7 @@ const WHITELIST_KEYS = [
 for (const key of WHITELIST_KEYS) {
     acceptedKeys.add(key);
 }
+const LOADING_CLASS = 'animate-[loadingBox_0.5s_linear_infinite_alternate]';
 addCardListeners();
 addButtonListeners();
 updateDailyNumber();

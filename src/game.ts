@@ -234,6 +234,9 @@ function urlToName(title: string) {
 }
 
 async function loadWikiImage(url: string, targetID: string, title: string) {
+    addClasses(targetID, ['hidden']);
+    removeClasses('imageSkeleton', ['hidden']);
+
     const defaultImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Wikipedia-logo-v2-square.svg/1024px-Wikipedia-logo-v2-square.svg.png';
     const targetImage = document.getElementById(targetID);
     if (!targetImage || !(targetImage instanceof HTMLImageElement)) return;
@@ -251,6 +254,9 @@ async function loadWikiImage(url: string, targetID: string, title: string) {
         targetImage.src = defaultImage;
         targetImage.alt = 'Wikipedia logo.';
         return defaultImage;
+    } finally {
+        removeClasses(targetID, ['hidden']);
+        addClasses('imageSkeleton', ['hidden']);
     }
 }
 
@@ -261,6 +267,7 @@ function renderCardHTML(row: Chunk) {
             class="
                 relative bg-slate-800 border ${borderColor}
                 rounded p-4 pt-5 text-sm leading-snug select-none
+                break-all
             ">
             <span class="card-title absolute -top-2 left-2 bg-slate-900 px-1 text-xs font-bold uppercase">
                 ${trimText(row.title)}
@@ -299,12 +306,17 @@ function renderChunks() {
 
 function renderIsGuessing() {
     updateInnerHTML('lastGuessText', '&nbsp;');
+    updateInnerHTML('lastGuessTextMobile', '&nbsp;');
+
     updateInnerHTML('lastGuessDistance', '&nbsp;');
-    updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border border-slate-700
-        bg-slate-700 text-slate-700 animate-[loadingBox_0.5s_linear_infinite_alternate]
-    `);
+    updateInnerHTML('lastGuessDistanceMobile', '&nbsp;');
+
+    addClasses('lastGuessImage', ['hidden']);
+    removeClasses('imageSkeleton', ['hidden']);
+
+    addClasses('lastGuessBox', [LOADING_CLASS]);
+    addClasses('lastGuessBoxMobile', [LOADING_CLASS]);
+
     updateInnerHTML('mainSuggestionText', '');
     updateInnerHTML('mainSuggestionPrompt', '');
 }
@@ -312,26 +324,48 @@ function renderIsGuessing() {
 function renderEmptyState() {
     updateInnerHTML('lastGuessText', '&nbsp;');
     updateInnerHTML('lastGuessDistance', '&nbsp;');
+
+    updateInnerHTML('lastGuessTextMobile', '&nbsp;');
+    updateInnerHTML('lastGuessDistanceMobile', '&nbsp;');
+
     updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        flex flex-col items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-white-600 text-white
     `);
     updateInnerHTML('mainSuggestionText', '');
     updateInnerHTML('mainSuggestionPrompt', '');
+    removeClasses('lastGuessImage', ['hidden']);
+    addClasses('imageSkeleton', ['hidden']);
 }
 
 function renderFailedGuess() {
     updateInnerHTML('lastGuessText', 'Error! please try again');
     updateInnerHTML('lastGuessDistance', '');
+
+    updateInnerHTML('lastGuessTextMobile', 'Error! please try again');
+    updateInnerHTML('lastGuessDistanceMobile', '');
+
     updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        flex flex-col items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-white-600 text-white
     `);
 }
 
-async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: string, session_id: string) {
+async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: string) {
+    addClasses('leftColumn', ['sm:flex']);
+
     chunks.sort((a, b) => a.distance - b.distance);
     updateInnerHTML('lastGuessText', chunks[0].title);
+    updateInnerHTML('lastGuessTextMobile', chunks[0].title);
+
+    updateInnerHTML('lastGuessTopChunk', chunks[0].chunk.slice(0, 300)); 
+    updateInnerHTML('lastGuessTopScore', String(chunks[0].distance.toFixed(2)));
+    const lastGuessCard = document.getElementById('lastGuessCard');
+    if (!lastGuessCard) return;
+    for (const className of lastGuessCard.classList) {
+        if (className.includes('border-')) lastGuessCard.classList.remove(className);
+    };
+    lastGuessCard.classList.add(tempToColor(chunks[0].distance, 'border'))
     
     game.guessCount = guessCount;
     updateInnerHTML('guessCount', String(game.guessCount));
@@ -357,16 +391,25 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
     const borderColor = tempToColor(guessDataTop, 'border');
     const backgroundColor = tempToColor(guessDataTop, 'bg');
 
-    updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border ${borderColor} 
-        ${backgroundColor} text-white
-    `);
+    for (const boxID of ['lastGuessBox', 'lastGuessBoxMobile']) {
+        const lastGuessBox = document.getElementById(boxID);
+        if (!lastGuessBox) return;
+        const toRemove = [];
+        for (const className of lastGuessBox.classList) {
+            if (className.includes('bg-') || className.includes('border-')) {
+                toRemove.push(className);
+            }
+        }
+        removeClasses(boxID, toRemove);
+        addClasses(boxID, [borderColor, backgroundColor]);
+        removeClasses(boxID, [LOADING_CLASS]);
+    }
+
     updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}`);
+    updateInnerHTML('lastGuessDistanceMobile', `Distance: ${displayDistance}`);
 
     if (window.innerWidth > 700) {
         loadWikiImage(chunks[0].url, 'lastGuessImage', chunks[0].title);
-        updateClassName('lastGuessImage', 'absolute w-full h-full object-cover z-[-1] opacity-[.07]');
     }
 
     addCardListeners();
@@ -391,7 +434,7 @@ async function loadGuess(guessArticleId: string) {
 
     const session_id = await getSessionID();
     if (!session_id) return;
-
+    await sleep(1000)
     const guessResponse = await fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
     if (!guessResponse.ok) {
         renderFailedGuess();
@@ -403,7 +446,7 @@ async function loadGuess(guessArticleId: string) {
     const guessCount = guessData.guesses;
     const chunks = guessData.chunks;
 
-    await renderGuess(chunks, guessCount, guessArticleId, session_id);
+    await renderGuess(chunks, guessCount, guessArticleId);
 
     game.mainSuggestion = null;
     game.isGuessing = false;
@@ -599,10 +642,24 @@ function updateClassName(id: string, value: string) {
 
 export function updateInnerHTML(id: string, value: string) {
     const elem = document.getElementById(id);
-    if (!elem) {
-        return 
-    }
+    if (!elem) return; 
     elem.innerHTML = value;
+}
+
+function removeClasses(id: string, classes: string[]) {
+    const elem = document.getElementById(id);
+    if (!elem) return; 
+    for (const className of classes) {
+        elem.classList.remove(className);
+    }
+}
+
+function addClasses(id: string, classes: string[]) {
+    const elem = document.getElementById(id);
+    if (!elem) return;
+    for (const className of classes) {
+        elem.classList.add(className);
+    }
 }
 
 async function fetchSessionID(): Promise<string | null> {
@@ -676,7 +733,7 @@ async function renderWin(title: string, imageURL: string) {
     updateInnerHTML('lastGuessDistance', `Distance: 0`);
 
     updateClassName('lastGuessBox', `
-        mb-4 flex items-center justify-between text-sm md:text-base font-semibold
+        flex flex-col items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-red-700/60
         bg-red-700/60 text-white
     `);
@@ -711,6 +768,9 @@ async function renderWin(title: string, imageURL: string) {
 }
 
 async function restoreSession(session_id: string) {
+    addClasses('lastGuessImage', ['hidden']);
+    removeClasses('imageSkeleton', ['hidden']);
+
     const response = await fetch(`${URI}/restore-session?session_id=${session_id}`);
     if (!response.ok) throw Error("Could not restore session");
     const session_update = await response.json() as SessionUpdate;
@@ -718,7 +778,14 @@ async function restoreSession(session_id: string) {
         renderEmptyState();
         return;
     };
-    await renderGuess(session_update.chunks, session_update.guesses, String(session_update.last_guess_article_id), session_id);
+    await renderGuess(
+        session_update.chunks, 
+        session_update.guesses, 
+        String(session_update.last_guess_article_id)
+    );
+
+    removeClasses('lastGuessImage', ['hidden']);
+    addClasses('imageSkeleton', ['hidden']);
 }
 
 async function initGame() {
@@ -770,6 +837,8 @@ const WHITELIST_KEYS = [
 for (const key of WHITELIST_KEYS) {
     acceptedKeys.add(key)
 }
+
+const LOADING_CLASS = 'animate-[loadingBox_0.5s_linear_infinite_alternate]';
 
 addCardListeners();
 addButtonListeners();
