@@ -353,7 +353,7 @@ function renderGuess(chunks, guessCount, guessArticleId) {
         }
         updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}`);
         updateInnerHTML('lastGuessDistanceMobile', `Distance: ${displayDistance}`);
-        if (window.innerWidth > 700) {
+        if (window.innerWidth > 640) { // Tailwind sm
             loadWikiImage(chunks[0].url, 'lastGuessImage', chunks[0].title);
         }
         addCardListeners();
