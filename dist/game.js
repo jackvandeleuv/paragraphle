@@ -703,15 +703,12 @@ function restoreSession(session_id) {
     return __awaiter(this, void 0, void 0, function* () {
         addClasses('lastGuessImage', ['hidden']);
         removeClasses('imageSkeleton', ['hidden']);
-        console.log('restoring session');
         const response = yield fetch(`${URI}/restore-session?session_id=${session_id}`);
         if (!response.ok)
             throw Error("Could not restore session");
         const session_update = yield response.json();
-        console.log(session_update);
         if (session_update.last_guess_article_id === -1) {
             renderEmptyState();
-            console.log('rendering empty state');
             return;
         }
         ;
@@ -722,10 +719,8 @@ function restoreSession(session_id) {
 }
 function initGame() {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log('init game');
         try {
             const cached_session_id = localStorage.getItem("session_id");
-            console.log(cached_session_id);
             game.isGuessing = true;
             if (!existsExpiredSession() && cached_session_id !== null) {
                 renderIsGuessing();
