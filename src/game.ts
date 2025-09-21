@@ -316,6 +316,7 @@ function renderIsGuessing() {
 
     addClasses('lastGuessBox', [LOADING_CLASS]);
     addClasses('lastGuessBoxMobile', [LOADING_CLASS]);
+    updateInnerHTML('lastGuessTopChunk', ''); 
 
     updateInnerHTML('mainSuggestionText', '');
     updateInnerHTML('mainSuggestionPrompt', '');
@@ -332,6 +333,11 @@ function renderEmptyState() {
         flex flex-col items-center justify-between text-sm md:text-base font-semibold
         px-3 py-1 rounded border border-white-600 text-white
     `);
+    updateClassName('lastGuessBoxMobile', `
+        flex flex-row items-center justify-between text-sm md:text-base font-semibold
+        px-3 py-1 rounded border border-white-600 text-white sm:hidden
+    `);
+
     updateInnerHTML('mainSuggestionText', '');
     updateInnerHTML('mainSuggestionPrompt', '');
     removeClasses('lastGuessImage', ['hidden']);
@@ -352,8 +358,6 @@ function renderFailedGuess() {
 }
 
 async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: string) {
-    addClasses('leftColumn', ['sm:flex']);
-
     chunks.sort((a, b) => a.distance - b.distance);
     updateInnerHTML('lastGuessText', chunks[0].title);
     updateInnerHTML('lastGuessTextMobile', chunks[0].title);
@@ -771,11 +775,14 @@ async function restoreSession(session_id: string) {
     addClasses('lastGuessImage', ['hidden']);
     removeClasses('imageSkeleton', ['hidden']);
 
+    console.log('restoring session')
     const response = await fetch(`${URI}/restore-session?session_id=${session_id}`);
     if (!response.ok) throw Error("Could not restore session");
     const session_update = await response.json() as SessionUpdate;
+    console.log(session_update)
     if (session_update.last_guess_article_id === -1) {
         renderEmptyState();
+        console.log('rendering empty state')
         return;
     };
     await renderGuess(
@@ -789,8 +796,10 @@ async function restoreSession(session_id: string) {
 }
 
 async function initGame() {
+    console.log('init game')
     try {
         const cached_session_id = localStorage.getItem("session_id");
+        console.log(cached_session_id)
         game.isGuessing = true;
         if (!existsExpiredSession() && cached_session_id !== null) {
             renderIsGuessing();
