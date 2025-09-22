@@ -1,4 +1,5 @@
 import sqlite3
+import csv
 
 DB_PATH = '/mnt/volume_nyc1_01/data.db'
 
@@ -7,18 +8,18 @@ cur = conn.cursor()
 
 try:
     for table in ['wins', 'sessions', 'guesses']:
-        print(table)
-        cur.execute(f"select * from {table}")
+        print(f"Exporting {table}...")
+        cur.execute(f"SELECT * FROM {table}")
         rows = cur.fetchall()
-        with open(f'./{table}.txt', 'w', encoding='utf-8') as file:
-            for tup in rows:
-                row_string = ''
-                for val in tup:
-                    row_string = row_string + str(val) + ', '
-                file.write(row_string + '\n')
+
+        column_names = [desc[0] for desc in cur.description]
+
+        with open(f'./{table}.csv', 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(column_names)
+            writer.writerows(rows)
 
 except Exception as e:
-    print(e)
+    print("Error:", e)
 finally:
     conn.close()
-
