@@ -65,8 +65,8 @@ type SessionUpdate struct {
 func getTargets() []Target {
 	targets := make([]Target, 0)
 
-	f, err := os.Open("targets.jsonl")
-	// f, err := os.Open("test-targets.jsonl")
+	// f, err := os.Open("targets.jsonl")
+	f, err := os.Open("test-targets.jsonl")
 	if err != nil {
 		fmt.Println(err)
 		log.Fatal("Could not read targets.")

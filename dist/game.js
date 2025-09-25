@@ -745,8 +745,8 @@ export function sleep(ms) {
 function suffixIsPlural(value) {
     return value !== 1;
 }
-const URI = 'https://api.paragraphle.com';
-// const URI = 'http://localhost:8000';
+// const URI = 'https://api.paragraphle.com';
+const URI = 'http://localhost:8000';
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
     const letter = String.fromCharCode(65 + i);
