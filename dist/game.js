@@ -380,7 +380,6 @@ function loadGuess(guessArticleId) {
         const session_id = yield getSessionID();
         if (!session_id)
             return;
-        yield sleep(1000);
         const guessResponse = yield fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
         if (!guessResponse.ok) {
             renderFailedGuess();

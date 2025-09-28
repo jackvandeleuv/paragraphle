@@ -438,7 +438,7 @@ async function loadGuess(guessArticleId: string) {
 
     const session_id = await getSessionID();
     if (!session_id) return;
-    await sleep(1000)
+
     const guessResponse = await fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
     if (!guessResponse.ok) {
         renderFailedGuess();
