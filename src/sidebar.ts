@@ -2,6 +2,8 @@ interface StatsUpdate {
     current_users: number;
 	mean_guesses_per_win: number;
     win_count: number;
+    guess_count: number;
+    play_count: number;
 }
 
 function sidebar() {
@@ -58,27 +60,27 @@ function sidebarListener() {
     })
 }
 
+function updateStat(id: string, val: number) {
+    if (val === -1) return;
+    const elem = document.getElementById(id);
+    if (!elem) return;
+    console.log(id, val)
+    console.log(elem)
+    elem.innerHTML = String(val.toFixed(0));
+}
+
+
 async function updatePlayerCount() {
     const response = await fetch(`${URI}/stats`);
     if (!response.ok) return null;
     const stats =  await response.json() as StatsUpdate;
     if (!stats) return;
 
-    const playerCount = document.getElementById('playerCount');
-    if (!playerCount) return;
-    playerCount.innerHTML = String(stats.current_users);
-
-    const solveCount = document.getElementById('solveCount');
-    if (!solveCount) return;
-    solveCount.innerHTML = String(stats.win_count);
-
-    const averageScore = document.getElementById('averageScore');
-    if (!averageScore) return;
-    if (stats.mean_guesses_per_win === -1) {
-        averageScore.innerHTML = '...';
-    } else {
-        averageScore.innerHTML = String(stats.mean_guesses_per_win.toFixed(0));
-    }
+    updateStat('currentUsers', stats.current_users);
+    updateStat('meanGuessesPerWin', stats.mean_guesses_per_win);
+    updateStat('winCount', stats.win_count);
+    updateStat('dailyGuessCount', stats.guess_count);
+    updateStat('playCount', stats.play_count);
 }
 
 async function playerCountMonitor() {
@@ -92,6 +94,8 @@ function sleepCallback(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const URI = 'https://api.paragraphle.com';
+// const URI = 'https://api.paragraphle.com';
+const URI = 'http://localhost:8000';
+
 let monitoringPlayerCount = false;
 sidebar();

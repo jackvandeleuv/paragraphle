@@ -1,93 +1,114 @@
-{"article_id": 18717883, "day": 1}
-{"article_id": 178690, "day": 2}
-{"article_id": 36536119, "day": 3}
-{"article_id": 991, "day": 4}
-{"article_id": 39626432, "day": 5}
-{"article_id": 463734, "day": 6}
-{"article_id": 42898, "day": 7}
-{"article_id": 4068, "day": 8}
-{"article_id": 191280, "day": 9}
-{"article_id": 163115, "day": 10}
-{"article_id": 44940, "day": 11}
-{"article_id": 87219, "day": 12}
-{"article_id": 3254510, "day": 13}
-{"article_id": 62092, "day": 14}
-{"article_id": 371248, "day": 15}
-{"article_id": 1776, "day": 16}
-{"article_id": 210560, "day": 17}
-{"article_id": 265554, "day": 18}
-{"article_id": 23545010, "day": 19}
-{"article_id": 52135, "day": 20}
-{"article_id": 48146, "day": 21}
-{"article_id": 158548, "day": 22}
-{"article_id": 2541904, "day": 23}
-{"article_id": 161657, "day": 24}
-{"article_id": 61534,  "day": 25}
-{"article_id": 456031, "day": 26}
-{"article_id": 228148, "day": 27}
-{"article_id": 48145,  "day": 28}
-{"article_id": 6395779,"day": 29}
-{"article_id": 320172, "day": 30}
-{"article_id": 55000,  "day": 31}
-{"article_id": 631995, "day": 32}
-{"article_id": 42764,  "day": 33}
-{"article_id": 200734, "day": 34}
-{"article_id": 311905, "day": 35}
-{"article_id": 618699, "day": 36}
-{"article_id": 56153,  "day": 37}
-{"article_id": 340391, "day": 38}
-{"article_id": 433607, "day": 39}
-{"article_id": 154910, "day": 40}
-{"article_id": 570172, "day": 41}
-{"article_id": 427175, "day": 42}
-{"article_id": 127611, "day": 43}
-{"article_id": 70502, "day": 44}
-{"article_id": 75188992, "day": 45}
-{"article_id": 22555763, "day": 46}
-{"article_id": 75191630, "day": 47}
-{"article_id": 44065971, "day": 48}
-{"article_id": 147804, "day": 49}
-{"article_id": 75191045, "day": 50}
-{"article_id": 142586, "day": 51}
-{"article_id": 75192393, "day": 52}
-{"article_id": 32544339, "day": 53}
-{"article_id": 70364, "day": 54}
-{"article_id": 316348, "day": 55}
-{"article_id": 394633, "day": 56}
-{"article_id": 75192952, "day": 57}
-{"article_id": 163045, "day": 58}
-{"article_id": 75191639, "day": 59}
-{"article_id": 75192555, "day": 60}
-{"article_id": 420020, "day": 61}
-{"article_id": 45756, "day": 62}
-{"article_id": 75194979, "day": 63}
-{"article_id": 59351, "day": 64}
-{"article_id": 194150, "day": 65}
-{"article_id": 21490998, "day": 66}
-{"article_id": 75189092, "day": 67}
-{"article_id": 5416, "day": 68}
-{"article_id": 19653842, "day": 69}
-{"article_id": 13743889, "day": -1}
-{"article_id": 75191088, "day": -1}
-{"article_id": 341658, "day": -1}
-{"article_id": 5134, "day": -1}
-{"article_id": 75190052, "day": -1}
-{"article_id": 488824, "day": -1}
-{"article_id": 189345, "day": -1}
-{"article_id": 75189471, "day": -1}
-{"article_id": 19851291, "day": -1}
-{"article_id": 5416, "day": -1}
-{"article_id": 51572, "day": -1}
-{"article_id": 19653842, "day": -1}
-{"article_id": 75191435, "day": -1}
-{"article_id": 75191774, "day": -1}
-{"article_id": 75192128, "day": -1}
-{"article_id": 44474, "day": -1}
-{"article_id": 75189189, "day": -1}
-{"article_id": 4298, "day": -1}
-{"article_id": 58991, "day": -1}
-{"article_id": 5615, "day": -1}
-{"article_id": 11749910, "day": -1}
-{"article_id": 1695, "day": -1}
-{"article_id": 305286, "day": -1}
-{"article_id": 5921, "day": -1}
+{"article_id": 18717883}
+{"article_id": 178690}
+{"article_id": 36536119}
+{"article_id": 991}
+{"article_id": 39626432}
+{"article_id": 463734}
+{"article_id": 42898}
+{"article_id": 4068}
+{"article_id": 191280}
+{"article_id": 163115}
+{"article_id": 44940}
+{"article_id": 87219}
+{"article_id": 3254510}
+{"article_id": 62092}
+{"article_id": 371248}
+{"article_id": 1776}
+{"article_id": 210560}
+{"article_id": 265554}
+{"article_id": 23545010}
+{"article_id": 52135}
+{"article_id": 48146}
+{"article_id": 158548}
+{"article_id": 2541904}
+{"article_id": 161657}
+{"article_id": 61534}
+{"article_id": 456031}
+{"article_id": 228148}
+{"article_id": 48145}
+{"article_id": 6395779}
+{"article_id": 320172}
+{"article_id": 55000}
+{"article_id": 631995}
+{"article_id": 42764}
+{"article_id": 200734}
+{"article_id": 311905}
+{"article_id": 618699}
+{"article_id": 56153}
+{"article_id": 340391}
+{"article_id": 433607}
+{"article_id": 154910}
+{"article_id": 570172}
+{"article_id": 427175}
+{"article_id": 127611}
+{"article_id": 70502}
+{"article_id": 75188992}
+{"article_id": 22555763}
+{"article_id": 75191630}
+{"article_id": 44065971}
+{"article_id": 147804}
+{"article_id": 75191045}
+{"article_id": 142586}
+{"article_id": 75192393}
+{"article_id": 32544339}
+{"article_id": 70364}
+{"article_id": 316348}
+{"article_id": 394633}
+{"article_id": 75192952}
+{"article_id": 163045}
+{"article_id": 75191639}
+{"article_id": 75192555}
+{"article_id": 420020}
+{"article_id": 45756}
+{"article_id": 75194979}
+{"article_id": 59351}
+{"article_id": 194150}
+{"article_id": 21490998}
+{"article_id": 75189092}
+{"article_id": 5416}
+{"article_id": 19653842}
+{"article_id": 13743889}
+{"article_id": 75191088}
+{"article_id": 341658}
+{"article_id": 5134}
+{"article_id": 75190052}
+{"article_id": 488824}
+{"article_id": 189345}
+{"article_id": 75189471}
+{"article_id": 19851291}
+{"article_id": 5416}
+{"article_id": 51572}
+{"article_id": 19653842}
+{"article_id": 75191435}
+{"article_id": 75191774}
+{"article_id": 75192128}
+{"article_id": 44474}
+{"article_id": 75189189}
+{"article_id": 4298}
+{"article_id": 58991}
+{"article_id": 5615}
+{"article_id": 11749910}
+{"article_id": 1695}
+{"article_id": 305286}
+{"article_id": 5921}
+{"article_id": 75190785}
+{"article_id": 13392949}
+{"article_id": 75190538}
+{"article_id": 75190685}
+{"article_id": 200475}
+{"article_id": 42526}
+{"article_id": 75191165}
+{"article_id": 75191636}
+{"article_id": 1837}
+{"article_id": 143881}
+{"article_id": 75189988}
+{"article_id": 62784}
+{"article_id": 56887}
+{"article_id": 75190270}
+{"article_id": 75191085}
+{"article_id": 75190652}
+{"article_id": 75190491}
+{"article_id": 75192154}
+{"article_id": 20899959}
+{"article_id": 75191941}
+{"article_id": 198154}

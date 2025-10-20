@@ -54,6 +54,8 @@ type Stats struct {
 	CurrentUsers      int64   `json:"current_users"`
 	MeanGuessesPerWin float64 `json:"mean_guesses_per_win"`
 	WinCount          int64   `json:"win_count"`
+	GuessCount        int64   `json:"guess_count"`
+	PlayCount         int64   `json:"play_count"`
 }
 
 type SessionUpdate struct {

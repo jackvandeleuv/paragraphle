@@ -190,8 +190,8 @@ function urlToName(title) {
     return titleSplit[titleSplit.length - 1];
 }
 function loadWikiImage(url, targetID, title) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        var _a;
         addClasses(targetID, ['hidden']);
         removeClasses('imageSkeleton', ['hidden']);
         const defaultImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Wikipedia-logo-v2-square.svg/1024px-Wikipedia-logo-v2-square.svg.png';
@@ -392,14 +392,6 @@ function loadGuess(guessArticleId) {
         yield renderGuess(chunks, guessCount, guessArticleId);
         game.mainSuggestion = null;
         game.isGuessing = false;
-    });
-}
-export function checkPlayerCount() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const stats = yield getDailyStats();
-        if (!stats)
-            return;
-        updateInnerHTML('playerCount', String(stats.current_users));
     });
 }
 function flagNoSuggestion() {
@@ -744,8 +736,8 @@ export function sleep(ms) {
 function suffixIsPlural(value) {
     return value !== 1;
 }
-const URI = 'https://api.paragraphle.com';
-// const URI = 'http://localhost:8000';
+// const URI = 'https://api.paragraphle.com';
+const URI = 'http://localhost:8000';
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
     const letter = String.fromCharCode(65 + i);

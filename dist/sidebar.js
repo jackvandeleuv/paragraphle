@@ -66,6 +66,16 @@ function sidebarListener() {
         }
     });
 }
+function updateStat(id, val) {
+    if (val === -1)
+        return;
+    const elem = document.getElementById(id);
+    if (!elem)
+        return;
+    console.log(id, val);
+    console.log(elem);
+    elem.innerHTML = String(val.toFixed(0));
+}
 function updatePlayerCount() {
     return __awaiter(this, void 0, void 0, function* () {
         const response = yield fetch(`${URI}/stats`);
@@ -74,23 +84,11 @@ function updatePlayerCount() {
         const stats = yield response.json();
         if (!stats)
             return;
-        const playerCount = document.getElementById('playerCount');
-        if (!playerCount)
-            return;
-        playerCount.innerHTML = String(stats.current_users);
-        const solveCount = document.getElementById('solveCount');
-        if (!solveCount)
-            return;
-        solveCount.innerHTML = String(stats.win_count);
-        const averageScore = document.getElementById('averageScore');
-        if (!averageScore)
-            return;
-        if (stats.mean_guesses_per_win === -1) {
-            averageScore.innerHTML = '...';
-        }
-        else {
-            averageScore.innerHTML = String(stats.mean_guesses_per_win.toFixed(0));
-        }
+        updateStat('currentUsers', stats.current_users);
+        updateStat('meanGuessesPerWin', stats.mean_guesses_per_win);
+        updateStat('winCount', stats.win_count);
+        updateStat('dailyGuessCount', stats.guess_count);
+        updateStat('playCount', stats.play_count);
     });
 }
 function playerCountMonitor() {
@@ -105,6 +103,7 @@ function playerCountMonitor() {
 function sleepCallback(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-const URI = 'https://api.paragraphle.com';
+// const URI = 'https://api.paragraphle.com';
+const URI = 'http://localhost:8000';
 let monitoringPlayerCount = false;
 sidebar();

@@ -22,6 +22,8 @@ interface Stats {
     current_users: number;
 	mean_guesses_per_win: number;
     win_count: number;
+    guess_count: number;
+    play_count: number;
 }
 
 class Game {
@@ -456,12 +458,6 @@ async function loadGuess(guessArticleId: string) {
     game.isGuessing = false;
 }
 
-export async function checkPlayerCount() {
-    const stats = await getDailyStats();
-    if (!stats) return;
-    updateInnerHTML('playerCount', String(stats.current_users));
-}
-
 function flagNoSuggestion() {
     const mainSuggestionElem = document.getElementById('mainSuggestion')
     if (!mainSuggestionElem) return;
@@ -819,8 +815,8 @@ function suffixIsPlural(value: number): boolean {
     return value !== 1;
 }
 
-const URI = 'https://api.paragraphle.com';
-// const URI = 'http://localhost:8000';
+// const URI = 'https://api.paragraphle.com';
+const URI = 'http://localhost:8000';
 
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
