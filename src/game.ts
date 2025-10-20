@@ -815,8 +815,8 @@ function suffixIsPlural(value: number): boolean {
     return value !== 1;
 }
 
-// const URI = 'https://api.paragraphle.com';
-const URI = 'http://localhost:8000';
+const URI = 'https://api.paragraphle.com';
+// const URI = 'http://localhost:8000';
 
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
