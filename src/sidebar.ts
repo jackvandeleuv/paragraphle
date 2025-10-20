@@ -94,8 +94,8 @@ function sleepCallback(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// const URI = 'https://api.paragraphle.com';
-const URI = 'http://localhost:8000';
+const URI = 'https://api.paragraphle.com';
+// const URI = 'http://localhost:8000';
 
 let monitoringPlayerCount = false;
 sidebar();
