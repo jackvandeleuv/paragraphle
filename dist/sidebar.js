@@ -39,7 +39,7 @@ function exitButtonListener() {
     const exitButton = document.getElementById('exitButton');
     if (!exitButton)
         return;
-    exitButton.addEventListener('click', (e) => { console.log(e); toggleSidebar(); });
+    exitButton.addEventListener('click', (e) => toggleSidebar());
 }
 function closedMenuIconListener() {
     const menuIconClosed = document.getElementById('menuIconClosed');
@@ -72,8 +72,6 @@ function updateStat(id, val) {
     const elem = document.getElementById(id);
     if (!elem)
         return;
-    console.log(id, val);
-    console.log(elem);
     elem.innerHTML = String(val.toFixed(0));
 }
 function updatePlayerCount() {
@@ -84,7 +82,6 @@ function updatePlayerCount() {
         const stats = yield response.json();
         if (!stats)
             return;
-        updateStat('currentUsers', stats.current_users);
         updateStat('meanGuessesPerWin', stats.mean_guesses_per_win);
         updateStat('winCount', stats.win_count);
         updateStat('dailyGuessCount', stats.guess_count);

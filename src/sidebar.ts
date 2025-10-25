@@ -35,7 +35,7 @@ function openMenuIconListener() {
 function exitButtonListener() {
     const exitButton = document.getElementById('exitButton');
     if (!exitButton) return;
-    exitButton.addEventListener('click', (e) => {console.log(e); toggleSidebar()})
+    exitButton.addEventListener('click', (e) => toggleSidebar());
 }
 
 function closedMenuIconListener() {
@@ -64,8 +64,6 @@ function updateStat(id: string, val: number) {
     if (val === -1) return;
     const elem = document.getElementById(id);
     if (!elem) return;
-    console.log(id, val)
-    console.log(elem)
     elem.innerHTML = String(val.toFixed(0));
 }
 
@@ -76,7 +74,6 @@ async function updatePlayerCount() {
     const stats =  await response.json() as StatsUpdate;
     if (!stats) return;
 
-    updateStat('currentUsers', stats.current_users);
     updateStat('meanGuessesPerWin', stats.mean_guesses_per_win);
     updateStat('winCount', stats.win_count);
     updateStat('dailyGuessCount', stats.guess_count);
