@@ -409,7 +409,7 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
     game.guesses.sort((a, b) => a.distance - b.distance);
     renderChunks();
 
-    const displayDistance = topChunk.distance.toFixed(2);
+    const displayDistance = distanceToPercentage(topChunk.distance);
     const guessDataTop = topChunk.distance;
     const borderColor = tempToColor(guessDataTop, 'border');
     const backgroundColor = tempToColor(guessDataTop, 'bg');
@@ -428,8 +428,8 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
         removeClasses(boxID, [LOADING_CLASS]);
     }
 
-    updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}`);
-    updateInnerHTML('lastGuessDistanceMobile', `Distance: ${displayDistance}`);
+    updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}%`);
+    updateInnerHTML('lastGuessDistanceMobile', `Distance: ${displayDistance}%`);
 
     if (window.innerWidth > 640) {  // Tailwind sm
         loadWikiImage(topChunk.url, 'lastGuessImage', topChunk.title);
