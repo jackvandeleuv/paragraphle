@@ -368,8 +368,8 @@ function renderGuess(chunks, guessCount, guessArticleId) {
             addClasses(boxID, [borderColor, backgroundColor]);
             removeClasses(boxID, [LOADING_CLASS]);
         }
-        updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}%`);
-        updateInnerHTML('lastGuessDistanceMobile', `Distance: ${displayDistance}%`);
+        updateInnerHTML('lastGuessDistance', `Score: ${displayDistance}%`);
+        updateInnerHTML('lastGuessDistanceMobile', `Score: ${displayDistance}%`);
         if (window.innerWidth > 640) { // Tailwind sm
             loadWikiImage(topChunk.url, 'lastGuessImage', topChunk.title);
         }
@@ -671,12 +671,12 @@ export function getDailyStats() {
 }
 function renderWin(title, imageURL) {
     return __awaiter(this, void 0, void 0, function* () {
-        updateClassName('progressBar', `h-full bg-red-700/60 w-full`);
-        updateInnerHTML('lastGuessDistance', `Distance: 0`);
+        updateClassName('progressBar', `h-full bg-orange-800/60 w-full`);
+        updateInnerHTML('lastGuessDistance', `Score: 100%`);
         updateClassName('lastGuessBox', `
         flex flex-col items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border border-red-700/60
-        bg-red-700/60 text-white
+        px-3 py-1 rounded border border-orange-800/60
+        bg-orange-800/60 text-white
     `);
         updateInnerHTML('winModalGuessCount', String(game.guessCount));
         updateInnerHTML('winModalTitle', title);
