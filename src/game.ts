@@ -262,8 +262,13 @@ async function loadWikiImage(url: string, targetID: string, title: string) {
     }
 }
 
+function distanceToPercentage(distance: number) {
+    const clampedDistance = distance > 1 ? 1 : distance;
+    return (100 * (1 - clampedDistance)).toFixed(0);
+}
+
 function renderCardHTML(row: Chunk) {
-    const borderColor = tempToColor(row.distance, 'border');
+    const borderColor = tempToColor(row.distance, 'border'); 
     return `
         <article data-card
             class="
@@ -275,7 +280,7 @@ function renderCardHTML(row: Chunk) {
                 ${trimText(row.title)}
             </span>
             <span class="card-score absolute -top-2 right-2 bg-slate-900 px-1 text-xs font-bold">
-                ${row.distance.toFixed(2)}
+                ${distanceToPercentage(row.distance)}%
             </span>
 
             <p>
@@ -359,19 +364,30 @@ function renderFailedGuess() {
     `);
 }
 
+function cleanChunk(guess: Chunk) {
+    const guessCopy = {...guess};
+    if (guessCopy.is_win) {
+        guessCopy.distance = 0;
+    }
+    return guessCopy;
+}
+
 async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: string) {
     chunks.sort((a, b) => a.distance - b.distance);
-    updateInnerHTML('lastGuessText', chunks[0].title);
-    updateInnerHTML('lastGuessTextMobile', chunks[0].title);
 
-    updateInnerHTML('lastGuessTopChunk', chunks[0].chunk.slice(0, 300)); 
-    updateInnerHTML('lastGuessTopScore', String(chunks[0].distance.toFixed(2)));
+    const topChunk = chunks[0];
+
+    updateInnerHTML('lastGuessText', topChunk.title);
+    updateInnerHTML('lastGuessTextMobile', topChunk.title);
+
+    updateInnerHTML('lastGuessTopChunk', topChunk.chunk.slice(0, 300)); 
+    updateInnerHTML('lastGuessTopScore', `${distanceToPercentage(topChunk.distance)}%`);
     const lastGuessCard = document.getElementById('lastGuessCard');
     if (!lastGuessCard) return;
     for (const className of lastGuessCard.classList) {
         if (className.includes('border-')) lastGuessCard.classList.remove(className);
     };
-    lastGuessCard.classList.add(tempToColor(chunks[0].distance, 'border'))
+    lastGuessCard.classList.add(tempToColor(topChunk.distance, 'border'))
     
     game.guessCount = guessCount;
     updateInnerHTML('guessCount', String(game.guessCount));
@@ -387,13 +403,14 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
     for (const guess of chunks) {
         if (game.guessChunkSet.has(guess.chunk_id)) continue;
         game.guessChunkSet.add(guess.chunk_id);
-        game.guesses.push(guess);
+        const cleanedGuess = cleanChunk(guess);
+        game.guesses.push(cleanedGuess);
     }
     game.guesses.sort((a, b) => a.distance - b.distance);
     renderChunks();
 
-    const displayDistance = chunks[0].distance.toFixed(2);
-    const guessDataTop = chunks[0].distance;
+    const displayDistance = topChunk.distance.toFixed(2);
+    const guessDataTop = topChunk.distance;
     const borderColor = tempToColor(guessDataTop, 'border');
     const backgroundColor = tempToColor(guessDataTop, 'bg');
 
@@ -415,7 +432,7 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
     updateInnerHTML('lastGuessDistanceMobile', `Distance: ${displayDistance}`);
 
     if (window.innerWidth > 640) {  // Tailwind sm
-        loadWikiImage(chunks[0].url, 'lastGuessImage', chunks[0].title);
+        loadWikiImage(topChunk.url, 'lastGuessImage', topChunk.title);
     }
 
     addCardListeners();
@@ -423,10 +440,10 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
     game.bestScore = Math.min(game.bestScore, guessDataTop);
     const progress = tempToProgress(game.bestScore);
     
-    updateClassName('progressBar', `h-full ${progress} ${tempToColor(game.bestScore, 'bg')}`);   
+    updateClassName('progressBar', `${progress} ${tempToColor(game.bestScore, 'bg')}`);   
 
-    if (chunks[0].is_win) {
-        await renderWin(chunks[0].title.toUpperCase().trim(), chunks[0].url);
+    if (topChunk.is_win) {
+        await renderWin(topChunk.title.toUpperCase().trim(), topChunk.url);
     }
 }
 
@@ -450,7 +467,7 @@ async function loadGuess(guessArticleId: string) {
 
     const guessData = await guessResponse.json() as SessionUpdate;
     const guessCount = guessData.guesses;
-    const chunks = guessData.chunks;
+    const chunks = guessData.chunks.map((chunk) => cleanChunk(chunk));
 
     await renderGuess(chunks, guessCount, guessArticleId);
 
@@ -780,7 +797,7 @@ async function restoreSession(session_id: string) {
         return;
     };
     await renderGuess(
-        session_update.chunks, 
+        session_update.chunks.map((chunk) => cleanChunk(chunk)), 
         session_update.guesses, 
         String(session_update.last_guess_article_id)
     );

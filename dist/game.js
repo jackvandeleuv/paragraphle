@@ -221,6 +221,10 @@ function loadWikiImage(url, targetID, title) {
         }
     });
 }
+function distanceToPercentage(distance) {
+    const clampedDistance = distance > 1 ? 1 : distance;
+    return (100 * (1 - clampedDistance)).toFixed(0);
+}
 function renderCardHTML(row) {
     const borderColor = tempToColor(row.distance, 'border');
     return `
@@ -234,7 +238,7 @@ function renderCardHTML(row) {
                 ${trimText(row.title)}
             </span>
             <span class="card-score absolute -top-2 right-2 bg-slate-900 px-1 text-xs font-bold">
-                ${row.distance.toFixed(2)}
+                ${distanceToPercentage(row.distance)}%
             </span>
 
             <p>
@@ -304,13 +308,21 @@ function renderFailedGuess() {
         px-3 py-1 rounded border border-white-600 text-white
     `);
 }
+function cleanChunk(guess) {
+    const guessCopy = Object.assign({}, guess);
+    if (guessCopy.is_win) {
+        guessCopy.distance = 0;
+    }
+    return guessCopy;
+}
 function renderGuess(chunks, guessCount, guessArticleId) {
     return __awaiter(this, void 0, void 0, function* () {
         chunks.sort((a, b) => a.distance - b.distance);
-        updateInnerHTML('lastGuessText', chunks[0].title);
-        updateInnerHTML('lastGuessTextMobile', chunks[0].title);
-        updateInnerHTML('lastGuessTopChunk', chunks[0].chunk.slice(0, 300));
-        updateInnerHTML('lastGuessTopScore', String(chunks[0].distance.toFixed(2)));
+        const topChunk = chunks[0];
+        updateInnerHTML('lastGuessText', topChunk.title);
+        updateInnerHTML('lastGuessTextMobile', topChunk.title);
+        updateInnerHTML('lastGuessTopChunk', topChunk.chunk.slice(0, 300));
+        updateInnerHTML('lastGuessTopScore', `${distanceToPercentage(topChunk.distance)}%`);
         const lastGuessCard = document.getElementById('lastGuessCard');
         if (!lastGuessCard)
             return;
@@ -319,7 +331,7 @@ function renderGuess(chunks, guessCount, guessArticleId) {
                 lastGuessCard.classList.remove(className);
         }
         ;
-        lastGuessCard.classList.add(tempToColor(chunks[0].distance, 'border'));
+        lastGuessCard.classList.add(tempToColor(topChunk.distance, 'border'));
         game.guessCount = guessCount;
         updateInnerHTML('guessCount', String(game.guessCount));
         if (suffixIsPlural(game.guessCount)) {
@@ -333,12 +345,13 @@ function renderGuess(chunks, guessCount, guessArticleId) {
             if (game.guessChunkSet.has(guess.chunk_id))
                 continue;
             game.guessChunkSet.add(guess.chunk_id);
-            game.guesses.push(guess);
+            const cleanedGuess = cleanChunk(guess);
+            game.guesses.push(cleanedGuess);
         }
         game.guesses.sort((a, b) => a.distance - b.distance);
         renderChunks();
-        const displayDistance = chunks[0].distance.toFixed(2);
-        const guessDataTop = chunks[0].distance;
+        const displayDistance = topChunk.distance.toFixed(2);
+        const guessDataTop = topChunk.distance;
         const borderColor = tempToColor(guessDataTop, 'border');
         const backgroundColor = tempToColor(guessDataTop, 'bg');
         for (const boxID of ['lastGuessBox', 'lastGuessBoxMobile']) {
@@ -358,14 +371,14 @@ function renderGuess(chunks, guessCount, guessArticleId) {
         updateInnerHTML('lastGuessDistance', `Distance: ${displayDistance}`);
         updateInnerHTML('lastGuessDistanceMobile', `Distance: ${displayDistance}`);
         if (window.innerWidth > 640) { // Tailwind sm
-            loadWikiImage(chunks[0].url, 'lastGuessImage', chunks[0].title);
+            loadWikiImage(topChunk.url, 'lastGuessImage', topChunk.title);
         }
         addCardListeners();
         game.bestScore = Math.min(game.bestScore, guessDataTop);
         const progress = tempToProgress(game.bestScore);
-        updateClassName('progressBar', `h-full ${progress} ${tempToColor(game.bestScore, 'bg')}`);
-        if (chunks[0].is_win) {
-            yield renderWin(chunks[0].title.toUpperCase().trim(), chunks[0].url);
+        updateClassName('progressBar', `${progress} ${tempToColor(game.bestScore, 'bg')}`);
+        if (topChunk.is_win) {
+            yield renderWin(topChunk.title.toUpperCase().trim(), topChunk.url);
         }
     });
 }
@@ -388,7 +401,7 @@ function loadGuess(guessArticleId) {
         }
         const guessData = yield guessResponse.json();
         const guessCount = guessData.guesses;
-        const chunks = guessData.chunks;
+        const chunks = guessData.chunks.map((chunk) => cleanChunk(chunk));
         yield renderGuess(chunks, guessCount, guessArticleId);
         game.mainSuggestion = null;
         game.isGuessing = false;
@@ -703,7 +716,7 @@ function restoreSession(session_id) {
             return;
         }
         ;
-        yield renderGuess(session_update.chunks, session_update.guesses, String(session_update.last_guess_article_id));
+        yield renderGuess(session_update.chunks.map((chunk) => cleanChunk(chunk)), session_update.guesses, String(session_update.last_guess_article_id));
         removeClasses('lastGuessImage', ['hidden']);
         addClasses('imageSkeleton', ['hidden']);
     });
