@@ -368,6 +368,8 @@ function cleanChunk(guess: Chunk) {
     const guessCopy = {...guess};
     if (guessCopy.is_win) {
         guessCopy.distance = 0;
+    } else if (guessCopy.distance > 1) {
+        guessCopy.distance = 1;
     }
     return guessCopy;
 }
