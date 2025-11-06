@@ -105,30 +105,31 @@ function tempToColor(value: number, elemType: string) {
 }
 
 function tempToProgress(score: number) {
-    const progress = Math.max(0, 1 - Math.pow(score, 1.5));
     const widths = [
-        'w-[5%]',
-        'w-[10%]',
-        'w-[15%]',
-        'w-[20%]',
-        'w-[25%]',
-        'w-[30%]',
-        'w-[35%]',
-        'w-[40%]',
-        'w-[45%]',
-        'w-[50%]',
-        'w-[55%]',
-        'w-[60%]',
-        'w-[65%]',
-        'w-[70%]',
-        'w-[75%]',
-        'w-[80%]',
-        'w-[85%]',
+        'w-[100%]',
+        'w-[95%]',
         'w-[90%]',
-        'w-[100%]' 
+        'w-[85%]',
+        'w-[80%]',
+        'w-[75%]',
+        'w-[70%]',
+        'w-[65%]',
+        'w-[60%]',
+        'w-[55%]',
+        'w-[50%]',
+        'w-[45%]',
+        'w-[40%]',
+        'w-[35%]',
+        'w-[30%]',
+        'w-[25%]',
+        'w-[20%]',
+        'w-[15%]',
+        'w-[10%]',
+        'w-[5%]'
     ];
 
-    const idx = Math.round(progress * (widths.length - 1)); 
+    const idx = Math.round(score * (widths.length - 1)); 
+
     return widths[idx];
 }
 
