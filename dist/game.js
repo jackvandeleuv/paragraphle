@@ -21,81 +21,65 @@ class Game {
     }
 }
 function tempToColor(value, elemType) {
-    const clamped = Math.max(0, Math.min(2, value));
-    let palette = [];
-    if (elemType === 'border') {
-        palette = [
-            'border-orange-800/60',
-            'border-orange-700/60',
-            'border-orange-600/60',
-            'border-orange-500/60',
-            'border-orange-400/60',
-            'border-orange-300/60',
-            'border-sky-600/60',
-            'border-sky-600/60',
-            'border-sky-600/60',
-            'border-sky-600/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60'
-        ];
-    }
-    else {
-        palette = [
-            'bg-orange-800/60',
-            'bg-orange-700/60',
-            'bg-orange-600/60',
-            'bg-orange-500/60',
-            'bg-orange-400/60',
-            'bg-orange-300/60',
-            'bg-sky-600/60',
-            'bg-sky-600/60',
-            'bg-sky-600/60',
-            'bg-sky-600/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60'
-        ];
-    }
-    const idx = Math.round((clamped / 2) * (palette.length - 1));
+    const border_colors = [
+        'border-orange-800/60',
+        'border-orange-700/60',
+        'border-orange-600/60',
+        'border-orange-500/60',
+        'border-orange-400/60',
+        'border-orange-300/60',
+        'border-sky-600/60',
+        'border-sky-600/60',
+        'border-sky-600/60',
+        'border-sky-600/60',
+        'border-sky-700/60',
+        'border-sky-700/60',
+        'border-sky-700/60'
+    ];
+    const background_colors = [
+        'bg-orange-800/60',
+        'bg-orange-700/60',
+        'bg-orange-600/60',
+        'bg-orange-500/60',
+        'bg-orange-400/60',
+        'bg-orange-300/60',
+        'bg-sky-600/60',
+        'bg-sky-600/60',
+        'bg-sky-600/60',
+        'bg-sky-600/60',
+        'bg-sky-700/60',
+        'bg-sky-700/60',
+        'bg-sky-700/60'
+    ];
+    const palette = elemType === 'border' ? border_colors : background_colors;
+    const idx = Math.round(value * (palette.length - 1));
     return palette[idx];
 }
 function tempToProgress(score) {
-    const progress = Math.max(0, 1 - Math.pow(score, 1.5));
     const widths = [
-        'w-[5%]',
-        'w-[10%]',
-        'w-[15%]',
-        'w-[20%]',
-        'w-[25%]',
-        'w-[30%]',
-        'w-[35%]',
-        'w-[40%]',
-        'w-[45%]',
-        'w-[50%]',
-        'w-[55%]',
-        'w-[60%]',
-        'w-[65%]',
-        'w-[70%]',
-        'w-[75%]',
-        'w-[80%]',
-        'w-[85%]',
+        'w-[100%]',
+        'w-[95%]',
         'w-[90%]',
-        'w-[100%]'
+        'w-[85%]',
+        'w-[80%]',
+        'w-[75%]',
+        'w-[70%]',
+        'w-[65%]',
+        'w-[60%]',
+        'w-[55%]',
+        'w-[50%]',
+        'w-[45%]',
+        'w-[40%]',
+        'w-[35%]',
+        'w-[30%]',
+        'w-[25%]',
+        'w-[20%]',
+        'w-[15%]',
+        'w-[10%]',
+        'w-[5%]',
+        'w-[0%]'
     ];
-    const idx = Math.round(progress * (widths.length - 1));
+    const idx = Math.round(score * (widths.length - 1));
     return widths[idx];
 }
 function addCardListeners() {
@@ -309,10 +293,22 @@ function renderFailedGuess() {
     `);
 }
 function cleanChunk(guess) {
+    // Clamp range to 0.1-1.0, and then smooth the resulting values out 
+    // over the range 0.0-1.0. We do this because most distances fall within 
+    // the 0.1-1.0 Range.
     const guessCopy = Object.assign({}, guess);
+    let distance = guessCopy.distance;
     if (guessCopy.is_win) {
-        guessCopy.distance = 0;
+        distance = 0.1;
     }
+    else if (guessCopy.distance > 1) {
+        distance = 1;
+    }
+    else if (guessCopy.distance < 0.1) {
+        distance = 0.1;
+    }
+    distance = (distance / 0.9) - (1 / 9);
+    guessCopy.distance = distance;
     return guessCopy;
 }
 function renderGuess(chunks, guessCount, guessArticleId) {
@@ -345,8 +341,7 @@ function renderGuess(chunks, guessCount, guessArticleId) {
             if (game.guessChunkSet.has(guess.chunk_id))
                 continue;
             game.guessChunkSet.add(guess.chunk_id);
-            const cleanedGuess = cleanChunk(guess);
-            game.guesses.push(cleanedGuess);
+            game.guesses.push(guess);
         }
         game.guesses.sort((a, b) => a.distance - b.distance);
         renderChunks();
