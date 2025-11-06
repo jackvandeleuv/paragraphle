@@ -5,11 +5,8 @@
     --key-h-md: 4.2rem; 
 }
 
-.h-dvh { height:100vh; }
-    @supports (height: 100dvh) {
-    .h-dvh { 
-        height:100dvh; 
-    }
+html {
+    height: 100%;
 }
 
 .key {
@@ -26,7 +23,7 @@
     user-select: none
 }
 
-.key.wide{
+.key.wide {
     flex: 1.5 1 0%;
     font-size: .65rem
 }

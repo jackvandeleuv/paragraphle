@@ -51,84 +51,64 @@ class Game {
 }
 
 function tempToColor(value: number, elemType: string) {
-    const clamped = Math.max(0, Math.min(2, value));
+    // const clamped = Math.max(0, Math.min(2, value));
+    const clamped = value > 1 ? 1 : value;
 
-    let palette = [];
-    if (elemType === 'border') {
-        palette = [
-            'border-orange-800/60',
-            'border-orange-700/60',
-            'border-orange-600/60',
-            'border-orange-500/60',
-            'border-orange-400/60',
-            'border-orange-300/60',
-            'border-sky-600/60',
-            'border-sky-600/60',
-            'border-sky-600/60',
-            'border-sky-600/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60',
-            'border-sky-700/60'
-        ];
-    } else {
-        palette = [
-            'bg-orange-800/60',
-            'bg-orange-700/60',
-            'bg-orange-600/60',
-            'bg-orange-500/60',
-            'bg-orange-400/60',
-            'bg-orange-300/60',
-            'bg-sky-600/60',
-            'bg-sky-600/60',
-            'bg-sky-600/60',
-            'bg-sky-600/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60',
-            'bg-sky-700/60'
-        ];
-    }
+    const border_colors = [
+        'border-orange-800/60',
+        'border-orange-700/60',
+        'border-orange-600/60',
+        'border-orange-500/60',
+        'border-orange-400/60',
+        'border-orange-300/60',
+        'border-sky-600/60',
+        'border-sky-700/60'
+    ];
 
-    const idx = Math.round((clamped / 2) * (palette.length - 1));
+    const background_colors = [
+        'bg-orange-800/60',
+        'bg-orange-700/60',
+        'bg-orange-600/60',
+        'bg-orange-500/60',
+        'bg-orange-400/60',
+        'bg-orange-300/60',
+        'bg-sky-600/60',
+        'bg-sky-700/60'
+    ];
+
+    const palette = elemType === 'border' ? border_colors : background_colors;
+    const idx = Math.round(clamped * (palette.length - 1));
     return palette[idx];
 }
 
 function tempToProgress(score: number) {
-    const progress = Math.max(0, 1 - Math.pow(score, 1.5));
+    const clamped = score > 1 ? 1 : score;
+
     const widths = [
-        'w-[5%]',
-        'w-[10%]',
-        'w-[15%]',
-        'w-[20%]',
-        'w-[25%]',
-        'w-[30%]',
-        'w-[35%]',
-        'w-[40%]',
-        'w-[45%]',
-        'w-[50%]',
-        'w-[55%]',
-        'w-[60%]',
-        'w-[65%]',
-        'w-[70%]',
-        'w-[75%]',
-        'w-[80%]',
-        'w-[85%]',
+        'w-[100%]',
+        'w-[95%]',
         'w-[90%]',
-        'w-[100%]' 
+        'w-[85%]',
+        'w-[80%]',
+        'w-[75%]',
+        'w-[70%]',
+        'w-[65%]',
+        'w-[60%]',
+        'w-[55%]',
+        'w-[50%]',
+        'w-[45%]',
+        'w-[40%]',
+        'w-[35%]',
+        'w-[30%]',
+        'w-[25%]',
+        'w-[20%]',
+        'w-[15%]',
+        'w-[10%]',
+        'w-[5%]'
     ];
 
-    const idx = Math.round(progress * (widths.length - 1)); 
+    const idx = Math.round(clamped * (widths.length - 1)); 
+
     return widths[idx];
 }
 
