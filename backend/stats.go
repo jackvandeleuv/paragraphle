@@ -113,7 +113,7 @@ func queryTopChunks(db *sql.DB, session_id string) ([]Chunk, error) {
 		var url string
 		var title string
 		var best_chunk_score float64
-		var article_id int64
+		var article_id string
 		var count int64
 
 		err := rows.Scan(&best_chunk_id, &chunk_text, &url, &title, &best_chunk_score, &article_id, &count)

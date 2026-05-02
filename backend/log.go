@@ -35,8 +35,8 @@ func logWin(db *sql.DB, session_id string) error {
 
 func logGuess(
 	db *sql.DB,
-	guess_article_id int64,
-	target_article_id int64,
+	guess_article_id string,
+	target_article_id string,
 	best_chunk_id int64,
 	best_chunk_score float64,
 	session_id string,
@@ -78,7 +78,7 @@ func logSession(db *sql.DB, session_id uuid.UUID) error {
 	return nil
 }
 
-func topNGuesses(db *sql.DB, session_id string, n int) ([]int64, error) {
+func topNGuesses(db *sql.DB, session_id string, n int) ([]string, error) {
 	rows, err := db.Query(`
 		select distinct guess_article_id
 		from guesses
@@ -91,9 +91,9 @@ func topNGuesses(db *sql.DB, session_id string, n int) ([]int64, error) {
 	}
 	defer rows.Close()
 
-	article_ids := make([]int64, 0)
+	article_ids := make([]string, 0)
 	for rows.Next() {
-		var article_id int64
+		var article_id string
 		if err := rows.Scan(&article_id); err != nil {
 			return nil, err
 		}

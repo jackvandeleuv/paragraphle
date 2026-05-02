@@ -6,16 +6,25 @@ import (
 	"sort"
 )
 
-func loadSuggestions(db *sql.DB) []Article {
-	rows, err := db.Query("select article_id, title, clean_title, count from articles")
+func loadSuggestions(db *sql.DB, logger log.Logger) []Article {
+	rows, err := db.Query(`
+		select 
+			article_id, 
+			title, 
+			clean_title,
+			count
+		from suggestions
+	`)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 
+	logger.Println("starting to unpack suggestions")
+
 	articles := make([]Article, 0)
 	for rows.Next() {
-		var article_id int64
+		var article_id string
 		var title string
 		var clean_title string
 		var count int64
@@ -25,6 +34,10 @@ func loadSuggestions(db *sql.DB) []Article {
 		}
 		articles = append(articles, Article{article_id, title, clean_title, count})
 	}
+
+	logger.Println("unpacked articles")
+	logger.Println("length of articles:")
+	logger.Println(len(articles))
 
 	sort.Slice(articles, func(i, j int) bool {
 		return articles[i].CleanTitle < articles[j].CleanTitle
@@ -57,9 +70,16 @@ func binarySearch(articles []Article, target string) int {
 	return -1
 }
 
-func getSuggestions(articles []Article, prefix string, limit int64) []Article {
+func getSuggestions(articles []Article, prefix string, limit int64, logger log.Logger) []Article {
+	logger.Println(prefix)
+
+	// logger.Println(articles[5000:])
+
 	size := len(prefix)
 	mid := binarySearch(articles, prefix)
+
+	logger.Println("mid")
+	logger.Println(mid)
 
 	if mid == -1 {
 		return make([]Article, 0)
@@ -124,5 +144,9 @@ func getSuggestions(articles []Article, prefix string, limit int64) []Article {
 	if len(matches) < int(limit) {
 		return matches
 	}
+
+	logger.Println("matches:")
+	logger.Println(matches[:limit])
+
 	return matches[:limit]
 }

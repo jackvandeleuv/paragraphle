@@ -4,53 +4,36 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"math"
 	"sort"
-	"strconv"
-	"strings"
-
-	f16 "github.com/x448/float16"
 )
 
 func blobToFloat(b []byte) ([]float64, error) {
-	if len(b)%2 != 0 {
+	if len(b)%4 != 0 {
 		return nil, fmt.Errorf("could not decode vector from blob storage")
 	}
-	n := len(b) / 2
+	n := len(b) / 4
 	out := make([]float64, n)
 	for i := 0; i < n; i++ {
-		u := binary.LittleEndian.Uint16(b[2*i:])
-		out[i] = float64(f16.Frombits(u).Float32())
+		u := binary.LittleEndian.Uint32(b[4*i:])
+		out[i] = float64(math.Float32frombits(u))
 	}
 	return out, nil
 }
 
-func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id int64, is_win bool) ([]Chunk, error) {
-	chunk_ids := make([]string, 0)
-	for _, embedding := range embeddings {
-		chunk_id := strconv.Itoa(int(embedding.ChunkID))
-		chunk_ids = append(chunk_ids, chunk_id)
-	}
-	chunk_id_string := strings.Join(chunk_ids, ",")
-
-	article_id_string := strconv.Itoa(int(article_id))
-
-	query := fmt.Sprintf(`
-		select chunk_id, chunk, url, title
-		from (
-			select chunk_id, chunk, article_id
-			from chunks
-			where chunk_id in (%s)
-		) as c
-		join (
-			select article_id, url, title
-			from articles
-			where article_id in (%s)
-		) as a
-			on c.article_id == a.article_id
-	`, chunk_id_string, article_id_string)
-
-	rows, err := db.Query(query)
+func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id string, is_win bool, logger log.Logger) ([]Chunk, error) {
+	rows, err := db.Query(`
+		select
+			id as chunk_id,
+			sentence as chunk,
+			article_id as url,
+			coalesce(summaries.title, sentences.article_id) as title
+		from sentences
+		left join summaries
+			on sentences.article_id == summaries.article_id
+		where article_id = ?
+	`, article_id)
 
 	if err != nil {
 		fmt.Println(err)
@@ -69,34 +52,54 @@ func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id int64, is
 		if err := rows.Scan(&chunk_id, &chunk, &url, &title); err != nil {
 			return nil, fmt.Errorf("could not decode vector from blob storage")
 		}
-		chunks = append(chunks, Chunk{chunk_id, chunk, url, title, embeddings[i].Distance, is_win, -1, -1})
+
+		logger.Println(chunk_id)
+		logger.Println(chunk)
+		logger.Println(url)
+		logger.Println(title)
+
+		chunks = append(chunks, Chunk{chunk_id, chunk, url, title, embeddings[i].Distance, is_win, "", -1})
 		i++
 	}
 	return chunks, nil
 }
 
-func getEmbeddings(db *sql.DB, article_id int64) ([]Embedding, error) {
+func getEmbeddings(db *sql.DB, article_id string, logger log.Logger) ([]Embedding, error) {
+	logger.Println("getting embedding with:")
+	logger.Println(article_id)
+
+	// TODO: This join to get article_id is only necessary because of an
+	// outdated DB schema I will fix. Embeddings will have article_id.
 	rows, err := db.Query(`
-		select chunk_id, vector
+		select 
+			sentence_id as chunk_id, 
+			embedding as vector
 		from embeddings
-		where article_id = ?
+		join sentences
+			on embeddings.sentence_id == sentences.id
+		where sentences.article_id = ?
 	`, article_id)
 	if err != nil {
+		logger.Println(err)
 		return nil, fmt.Errorf("could not decode vector from blob storage")
 	}
 	defer rows.Close()
 
 	embeddings := make([]Embedding, 0)
 	for rows.Next() {
+		// logger.Println("reading a row...")
 		var chunk_id int64
 		var blob []byte
 
 		if err := rows.Scan(&chunk_id, &blob); err != nil {
+			logger.Println(err)
 			return nil, fmt.Errorf("could not decode vector from blob storage")
 		}
 
 		vector, err := blobToFloat(blob)
+
 		if err != nil {
+			logger.Println(err)
 			return nil, fmt.Errorf("could not decode vector from blob storage")
 		}
 
@@ -120,7 +123,10 @@ func averageTargetVec(targetChunks []Embedding) []float64 {
 
 	targetVector := make([]float64, 0)
 	for _, sum := range targetVectorSums {
-		targetVector = append(targetVector, sum/float64(len(targetChunks)))
+		targetVector = append(
+			targetVector,
+			sum/float64(len(targetChunks)),
+		)
 	}
 
 	return targetVector
@@ -144,20 +150,35 @@ func cosineSimilarity(x []float64, y []float64) float64 {
 	return innerProduct / (x_norm * y_norm)
 }
 
-func scoreArticleID(db *sql.DB, guess_id int64, target_id int64) ([]Embedding, error) {
-	guessEmbeddings, err := getEmbeddings(db, guess_id)
+func scoreArticleID(db *sql.DB, guess_id string, target_id string, logger log.Logger) ([]Embedding, error) {
+	logger.Println("getting guess embeddings...")
+	guessEmbeddings, err := getEmbeddings(db, guess_id, logger)
 	if err != nil {
 		return nil, fmt.Errorf("could not get guess chunks")
 	}
 
-	targetEmbeddings, err := getEmbeddings(db, target_id)
+	logger.Println("getting target embeddings...")
+	targetEmbeddings, err := getEmbeddings(db, target_id, logger)
 	if err != nil {
 		return nil, fmt.Errorf("could not get target chunks")
 	}
 
+	logger.Println("got both embeddings")
+	logger.Println("\n\n\nguess embedding:")
+	logger.Println(guessEmbeddings)
+	logger.Println("\n\n\ntarget embedding:")
+	logger.Println(targetEmbeddings)
+
 	targetVec := averageTargetVec(targetEmbeddings)
 
+	logger.Println("averaging target vec")
+
 	for i := range guessEmbeddings {
+		logger.Println("\n\nscoring vector:")
+		logger.Println("ith guess vector:")
+		logger.Println(guessEmbeddings[i].Vector)
+		logger.Println("target vec:")
+		logger.Println(targetVec)
 		guessEmbeddings[i].Distance = 1 - cosineSimilarity(guessEmbeddings[i].Vector, targetVec)
 	}
 
@@ -169,17 +190,21 @@ func scoreArticleID(db *sql.DB, guess_id int64, target_id int64) ([]Embedding, e
 		guessEmbeddings[i].Vector = nil
 	}
 
+	logger.Println("finish scoring article id")
+
 	return guessEmbeddings, nil
 }
 
-func getTopScoredChunks(db *sql.DB, guess_id int64, target_id int64, max_chunks int64) ([]Chunk, error) {
-	scoredEmbeddings, err := scoreArticleID(db, int64(guess_id), target_id)
+func getTopScoredChunks(db *sql.DB, guess_id string, target_id string, max_chunks int64, logger log.Logger) ([]Chunk, error) {
+	scoredEmbeddings, err := scoreArticleID(db, guess_id, target_id, logger)
 	if err != nil {
 		return nil, err
 	}
 	if len(scoredEmbeddings) == 0 {
+		logger.Println("err: length of scored embedding is zero")
 		return nil, fmt.Errorf("found no embeddings for article")
 	}
+	logger.Println("scorred article id")
 
 	if len(scoredEmbeddings) > int(max_chunks) {
 		scoredEmbeddings = scoredEmbeddings[:max_chunks]
@@ -188,10 +213,12 @@ func getTopScoredChunks(db *sql.DB, guess_id int64, target_id int64, max_chunks 
 	chunks, err := embeddingsToChunks(
 		db,
 		scoredEmbeddings,
-		int64(guess_id),
-		int64(guess_id) == target_id,
+		guess_id,
+		guess_id == target_id,
+		logger,
 	)
 	if err != nil {
+		logger.Println(err)
 		return nil, err
 	}
 	if len(chunks) == 0 {
@@ -201,7 +228,7 @@ func getTopScoredChunks(db *sql.DB, guess_id int64, target_id int64, max_chunks 
 	return chunks, nil
 }
 
-func isDuplicateGuess(db *sql.DB, guess_id int64, session_id string) bool {
+func isDuplicateGuess(db *sql.DB, guess_id string, session_id string) bool {
 	var duplicated int
 	err := db.QueryRow(`
 		select 1
@@ -211,7 +238,7 @@ func isDuplicateGuess(db *sql.DB, guess_id int64, session_id string) bool {
 	return err == nil
 }
 
-func getLastGuessArticleID(db *sql.DB, session_id string) (int64, error) {
+func getLastGuessArticleID(db *sql.DB, session_id string) (string, error) {
 	rows, err := db.Query(`
 		select guess_id
 		from guesses
@@ -220,15 +247,15 @@ func getLastGuessArticleID(db *sql.DB, session_id string) (int64, error) {
 		limit 1
 	`, session_id)
 	if err != nil {
-		return -1, err
+		return "", err
 	}
 	defer rows.Close()
 
-	var article_id int64
-	article_id = -1
+	var article_id string
+	article_id = ""
 	for rows.Next() {
 		if err := rows.Scan(&article_id); err != nil {
-			return -1, err
+			return "", err
 		}
 	}
 	return article_id, nil
