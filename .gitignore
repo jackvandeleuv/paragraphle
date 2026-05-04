@@ -30,3 +30,4 @@ preprocessing/guesses.txt
 preprocessing/t.ipynb
 preprocessing/wins.txt
 preprocessing/results.json
+pipe/.venv
