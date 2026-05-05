@@ -1,6 +1,6 @@
 import sqlite3
 
-conn = sqlite3.Connection('data.db')
+conn = sqlite3.Connection('test.db')
 cur = conn.cursor()
 
 INIT_DB = '''

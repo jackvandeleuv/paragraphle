@@ -319,10 +319,10 @@ async def get_write_summaries(article_id, conn, session, sem):
 async def main(conn, mode):
     MAX_SENTENCE_WORDS = 60
     MIN_SENTENCE_WORDS = 30
-    N_BATCHES = 100000
-    EXPLORE_PERCENT = .1
+    N_BATCHES = 1
+    EXPLORE_PERCENT = 0
 
-    batch_size = 5000
+    batch_size = 1
     max_promises = 500 if mode == 'sentences' else 600
     max_concurrent = 5 if mode == 'sentences' else 1
 
@@ -369,7 +369,7 @@ You need to get sentences before you can get summaries, as sentences mode also r
 if __name__ == '__main__':
 
     try:
-        conn = sqlite3.Connection('data.db')
+        conn = sqlite3.Connection('test.db')
         assert len(sys.argv) > 1, 'missing required argument: mode'
         mode = sys.argv[1]
         assert mode in ('summaries', 'sentences'), 'invalid mode'
