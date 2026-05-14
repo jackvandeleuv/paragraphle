@@ -32,3 +32,7 @@ preprocessing/wins.txt
 preprocessing/results.json
 pipe/.venv
 pipe/onnx
+pipe2/.pipeenv
+pipe2/source
+pipe2/transformed
+pipe2/__pycache__
