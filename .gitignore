@@ -31,3 +31,7 @@ preprocessing/t.ipynb
 preprocessing/wins.txt
 preprocessing/results.json
 pipe/.venv
+pipe2/.pipeenv
+pipe2/__pycache__
+pipe2/source
+pipe2/transformed
