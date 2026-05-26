@@ -174,6 +174,7 @@ function urlToName(title) {
     return titleSplit[titleSplit.length - 1];
 }
 function loadWikiImage(url, targetID, title) {
+    return;
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         addClasses(targetID, ['hidden']);
@@ -206,17 +207,44 @@ function loadWikiImage(url, targetID, title) {
     });
 }
 function distanceToPercentage(distance) {
-    const clampedDistance = distance > 1 ? 1 : distance;
-    return (100 * (1 - clampedDistance)).toFixed(0);
+    return distance.toFixed(2)
+    // const clampedDistance = distance > 1 ? 1 : distance;
+    // return (100 * (1 - clampedDistance)).toFixed(0);
 }
 function renderCardHTML(row) {
     const borderColor = tempToColor(row.distance, 'border');
+
+    // console.log(row)
+
+    // 'bg-orange-500/60',
+    // 'bg-orange-400/60',
+    // 'bg-orange-300/60',
+    let highlightChunk = [];
+    const chunkSplit = row.chunk.split(' ');
+    for (const token of chunkSplit) {
+        const cleanToken = token.toLowerCase().replace(/[^a-z0-9]/gi, "");
+        const score = row.token_scores[cleanToken];
+        if (!score) {
+            highlightChunk.push(token);
+        } else {
+            // Bold
+            if (score > .1) {
+                highlightChunk.push(`<span class="bg-orange-500/60">${token}</span>`)
+            // Mid
+            } else if (score > .01) {
+                highlightChunk.push(`<span class="bg-orange-400/60">${token}</span>`)
+            } else {
+                highlightChunk.push(`<span class="bg-orange-300/60">${token}</span>`)
+            }
+        }
+    }
+    
     return `
         <article data-card
             class="
                 relative bg-slate-800 border ${borderColor}
                 rounded p-4 pt-5 text-sm leading-snug select-none
-                break-all
+                
             ">
             <span class="card-title absolute -top-2 left-2 bg-slate-900 px-1 text-xs font-bold uppercase">
                 ${trimText(row.title)}
@@ -227,7 +255,7 @@ function renderCardHTML(row) {
 
             <p>
                 <span class="short">
-                    ${row.chunk}
+                    ${highlightChunk.join(' ')}
                 </span>
 
                 <span class="full hidden">
@@ -257,7 +285,7 @@ function renderIsGuessing() {
     updateInnerHTML('lastGuessDistance', '&nbsp;');
     updateInnerHTML('lastGuessDistanceMobile', '&nbsp;');
     addClasses('lastGuessImage', ['hidden']);
-    removeClasses('imageSkeleton', ['hidden']);
+    // removeClasses('imageSkeleton', ['hidden']);
     addClasses('lastGuessBox', [LOADING_CLASS]);
     addClasses('lastGuessBoxMobile', [LOADING_CLASS]);
     updateInnerHTML('lastGuessTopChunk', '');
@@ -297,23 +325,24 @@ function cleanChunk(guess) {
     // over the range 0.0-1.0. We do this because most distances fall within 
     // the 0.1-1.0 Range.
     const guessCopy = Object.assign({}, guess);
-    let distance = guessCopy.distance;
-    if (guessCopy.is_win) {
-        distance = 0.1;
-    }
-    else if (guessCopy.distance > 1) {
-        distance = 1;
-    }
-    else if (guessCopy.distance < 0.1) {
-        distance = 0.1;
-    }
-    distance = (distance / 0.9) - (1 / 9);
-    guessCopy.distance = distance;
+    // let distance = guessCopy.distance;
+    // if (guessCopy.is_win) {
+    //     distance = 0.1;
+    // }
+    // else if (guessCopy.distance > 1) {
+    //     distance = 1;
+    // }
+    // else if (guessCopy.distance < 0.1) {
+    //     distance = 0.1;
+    // }
+    // distance = (distance / 0.9) - (1 / 9);
+    // guessCopy.distance = distance;
+
     return guessCopy;
 }
 function renderGuess(chunks, guessCount, guessArticleId) {
     return __awaiter(this, void 0, void 0, function* () {
-        chunks.sort((a, b) => a.distance - b.distance);
+        chunks.sort((a, b) => b.distance - a.distance);
         const topChunk = chunks[0];
         updateInnerHTML('lastGuessText', topChunk.title);
         updateInnerHTML('lastGuessTextMobile', topChunk.title);
@@ -343,7 +372,7 @@ function renderGuess(chunks, guessCount, guessArticleId) {
             game.guessChunkSet.add(guess.chunk_id);
             game.guesses.push(guess);
         }
-        game.guesses.sort((a, b) => a.distance - b.distance);
+        game.guesses.sort((a, b) => b.distance - a.distance);
         renderChunks();
         const displayDistance = distanceToPercentage(topChunk.distance);
         const guessDataTop = topChunk.distance;
@@ -385,7 +414,8 @@ function loadGuess(guessArticleId) {
             return;
         game.isGuessing = true;
         renderIsGuessing();
-        const session_id = yield getSessionID();
+        // const session_id = await getSessionID();
+        const session_id = '12345';
         if (!session_id)
             return;
         const guessResponse = yield fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
@@ -395,6 +425,16 @@ function loadGuess(guessArticleId) {
             return;
         }
         const guessData = yield guessResponse.json();
+        console.log(guessData)
+
+        const top = guessData.article_summary_top_tokens;
+        const topTokens = [];
+        for (const key of Object.keys(top)) {
+            topTokens.push({token: key, count: top[key]})
+        }
+        topTokens.sort((a, b) => b.count - a.count);
+        console.log(topTokens.slice(0, 10));
+
         const guessCount = guessData.guesses;
         const chunks = guessData.chunks.map((chunk) => cleanChunk(chunk));
         yield renderGuess(chunks, guessCount, guessArticleId);
@@ -602,10 +642,10 @@ function addClasses(id, classes) {
 }
 function fetchSessionID() {
     return __awaiter(this, void 0, void 0, function* () {
-        const suggestionsResponse = yield fetch(encodeURI(`${URI}/start-session`));
-        if (!suggestionsResponse.ok)
-            return null;
-        return yield suggestionsResponse.json();
+        // const suggestionsResponse = await fetch(encodeURI(`${URI}/start-session`));
+        // if (!suggestionsResponse.ok) return null;
+        // return await suggestionsResponse.json() as string;
+        return null;
     });
 }
 function addResetButtonListener() {
@@ -643,7 +683,8 @@ function getSessionID() {
             if (existsSession())
                 return localStorage.getItem("session_id");
             localStorage.clear();
-            const session_id = yield fetchSessionID();
+            // const session_id = await fetchSessionID();
+            const session_id = '12345';
             if (!session_id)
                 return null;
             localStorage.setItem("session_id", session_id);
@@ -744,8 +785,9 @@ export function sleep(ms) {
 function suffixIsPlural(value) {
     return value !== 1;
 }
-const URI = 'https://api.paragraphle.com';
+// const URI = 'https://api.paragraphle.com';
 // const URI = 'http://localhost:8000';
+const URI = 'https://paragraphle-app-azmlr.ondigitalocean.app';
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
     const letter = String.fromCharCode(65 + i);

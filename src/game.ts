@@ -450,7 +450,8 @@ async function loadGuess(guessArticleId: string) {
 
     renderIsGuessing();
 
-    const session_id = await getSessionID();
+    // const session_id = await getSessionID();
+    const session_id = '12345'
     if (!session_id) return;
 
     const guessResponse = await fetch(`${URI}/guess-article?article_id=${guessArticleId}&limit=10&session_id=${session_id}`);
@@ -675,9 +676,10 @@ function addClasses(id: string, classes: string[]) {
 }
 
 async function fetchSessionID(): Promise<string | null> {
-    const suggestionsResponse = await fetch(encodeURI(`${URI}/start-session`));
-    if (!suggestionsResponse.ok) return null;
-    return await suggestionsResponse.json() as string;
+    // const suggestionsResponse = await fetch(encodeURI(`${URI}/start-session`));
+    // if (!suggestionsResponse.ok) return null;
+    // return await suggestionsResponse.json() as string;
+    return null;
 }
 
 function addResetButtonListener() {
@@ -720,7 +722,8 @@ async function getSessionID(): Promise<string | null> {
 
         localStorage.clear();
 
-        const session_id = await fetchSessionID();
+        // const session_id = await fetchSessionID();
+        const session_id = '12345';
         if (!session_id) return null;
         
         localStorage.setItem("session_id", session_id);
@@ -827,8 +830,9 @@ function suffixIsPlural(value: number): boolean {
     return value !== 1;
 }
 
-const URI = 'https://api.paragraphle.com';
+// const URI = 'https://api.paragraphle.com';
 // const URI = 'http://localhost:8000';
+const URI = 'https://paragraphle-app-azmlr.ondigitalocean.app';
 
 const acceptedKeys = new Set();
 for (let i = 0; i < 26; i++) {
