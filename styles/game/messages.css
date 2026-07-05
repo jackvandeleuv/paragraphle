@@ -1,0 +1,85 @@
+#winScreenWrapper {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+
+    top: 0;
+    position: absolute;
+    z-index: 2;
+
+    background-color: white;
+}
+
+#winScreen {
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    /* background-color: white; */
+    user-select: none;
+}
+
+#disabledScreen {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    padding: 15px;
+    box-sizing: border-box;
+    flex-direction: column;
+    justify-content: center;
+    gap: 15px;
+}
+
+.winScreenTitle {
+    font-size: 50px;
+}
+
+#winScreenTitleWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#shareButton {
+    font-size: large;
+    border: 1px solid var(--dark);
+    border-radius: 5px;
+    background-color: var(--light);
+    padding: 10px;
+    padding-left: 35px;
+    padding-right: 35px;
+    cursor: pointer;
+}
+
+.closeButtonIcon {
+    height: 40px;
+    width: 40px;
+    min-height: 40px;
+    min-width: 40px;
+    fill: var(--dark);
+}
+
+.closeButtonWrapper {
+    cursor: pointer;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    border: none;
+    background: none;
+    margin: 0;
+    padding: 0;
+}
+
+#initialMessage {
+    user-select: none;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}

@@ -1,0 +1,51 @@
+#menuIcon {
+    height: 40px;
+    width: 40px;
+    fill: var(--medium-darker);
+
+    padding: 5px;
+    box-sizing: border-box;
+    
+    background-color: var(--light);
+    /* border: 1px solid var(--medium-darker); */
+    border-radius: 3px;
+    user-select: none;
+    cursor: pointer;
+}
+
+#menuButtonWrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+#giveUpButtonWrapper {
+    /* display: flex; */
+}
+
+#giveUpButton {
+    /* padding: 5px;
+    box-sizing: border-box;
+    
+    background-color: var(--light);
+    border: 1px solid var(--medium-darker);
+    border-radius: 3px;
+    user-select: none;
+    cursor: pointer; */
+
+    flex-shrink: 1;
+
+    font-size: small;
+    padding: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    border-radius: 5px;
+    user-select: none;
+    cursor: pointer;
+
+    background-color: var(--dark);
+    border: 1px solid var(--dark);
+    color: var(--light);
+}

@@ -1,0 +1,40 @@
+#gameChunkWrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: scroll;
+    padding-right: 10px;
+    padding-left: 10px;
+    box-sizing: border-box;
+    gap: 5px;
+}
+
+#gameChunkDivider {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.chunk {
+    background-color: var(--light);
+    border: 1px solid var(--medium);
+    /* border-radius: 10px; */
+    padding: 15px;
+    user-select: none;
+    font-size: medium;
+    line-height: 25px;
+}
+
+.chunkHeader {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.chunkImg {
+    height: 90px;
+    width: 150px;
+    object-fit: cover;
+}

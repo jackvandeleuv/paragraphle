@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../styles/global.css" rel="stylesheet">
+    <link href="../styles/header/mainHeader.css" rel="stylesheet">
+    <link href="../styles/header/menu.css" rel="stylesheet">
+
+    <link href="../styles/game/main.css" rel="stylesheet">
+    <link href="../styles/game/headerButton.css" rel="stylesheet">
+    <link href="../styles/game/messages.css" rel="stylesheet">
+
+    <link href="../styles/game/input.css" rel="stylesheet">
+    <link href="../styles/game/suggestion.css" rel="stylesheet">
+    <link href="../styles/game/progress.css" rel="stylesheet">
+    <link href="../styles/game/chunk.css" rel="stylesheet">
+    <title>Document</title>
+</head>
+<body id="body">
+    <header>
+        <h3>Paragraphle</h3>
+        <div id="menuButtonWrapper">
+            <svg id="menuIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+                <path d="M120-680v-80h720v80H120Zm0 480v-80h720v80H120Zm0-240v-80h720v80H120Z"/>
+            </svg>
+        </div>
+    </header>
+
+    <section id="gameWrapper">
+        <div id="initialMessage">
+            <h1>
+                To start, guess a Wikipedia™ article!
+            </h1>
+            <p class="italicSubtitle">
+                Your goal is to find the article of the day.
+            </p>
+        </div>
+
+        <div id="gameInputWrapper">
+            <input
+                type="text"
+                id="gameInput"
+            >
+            <button id="submitButton">
+                Submit
+            </button>
+        </div>
+    </section>
+
+    <script type="module" src="./../scripts/main.js"></script>
+</body>
+</html>

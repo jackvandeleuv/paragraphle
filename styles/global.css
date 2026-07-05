@@ -1,0 +1,56 @@
+:root {
+    /* gray-100 */
+    --light: oklch(96.7% 0.003 264.542);
+
+    /* gray-300 */
+    --medium: oklch(87.2% 0.01 258.338);
+
+    /* gray-500 */
+    --medium-darker: oklch(55.1% 0.027 264.364);
+
+    /* gray-800  */
+    --dark: oklch(27.8% 0.033 256.848);
+
+    /* blue-700 */
+    --dark-blue: oklch(48.8% 0.243 264.376);
+
+    /* blue-400   */
+    --mid-blue: oklch(70.7% 0.165 254.624);
+
+    /* blue-200 */
+    --light-blue: oklch(88.2% 0.059 254.128);
+
+    font-family: sans-serif;
+    color: var(--dark);
+}
+
+h1, h2, h3, h4, p {
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-size: x-large;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+}
+
+html {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+
+    max-width: 600px;
+    min-height: 600px;
+}

@@ -1,0 +1,15 @@
+header {
+    font-family: Georgia, 'Times New Roman', Times, serif;
+
+    font-size: large;
+    box-sizing: border-box;
+    padding: 5px;
+    padding-left: 15px;
+    padding-right: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--light);
+    border-bottom: 1px solid var(--medium);
+    color: var(--medium-darker);
+}

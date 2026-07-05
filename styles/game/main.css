@@ -1,0 +1,27 @@
+#gameWrapper {
+    position: relative;
+
+    height: 100%;
+    /* flex: 1; */
+    /* min-height: 0; */
+    width: 100%;
+
+    padding: 15px;
+    box-sizing: border-box;
+    /* background-color: bisque; */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#gameMenu {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}

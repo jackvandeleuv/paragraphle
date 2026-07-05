@@ -1,0 +1,39 @@
+input {
+    font-size: x-large;
+    padding: 10px;
+    width: 100%;
+
+    background-color: var(--light);
+    border: 3px solid var(--medium-darker);
+    border-radius: 5px;
+    color: var(--dark);
+}
+
+input:focus {
+    outline: none;
+    border: 3px solid var(--mid-blue);
+}
+
+#gameInputWrapper {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+#submitButton {
+    font-size: large;
+    padding-left: 15px;
+    padding-right: 15px;
+
+    border-radius: 5px;
+    user-select: none;
+    cursor: pointer;
+
+    background-color: var(--dark);
+    border: 2px solid var(--dark);
+    color: var(--light);
+
+    /* background-color: var(--mid-blue);
+    border: 2px solid var(--mid-blue);
+    color: var(--light); */
+}
