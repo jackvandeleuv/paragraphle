@@ -35,3 +35,9 @@ pipe2/.pipeenv
 pipe2/__pycache__
 pipe2/source
 pipe2/transformed
+pipeline/__pycache__
+pipeline/.venv
+pipeline/data
+pipeline/*.json
+pipeline/.env
+pipeline/test.py
