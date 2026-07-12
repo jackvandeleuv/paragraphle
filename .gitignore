@@ -39,3 +39,5 @@ pipeline/__pycache__
 pipeline/.venv
 pipeline/data
 pipeline/*.json
+pipeline/.env
+pipeline/test.py

@@ -1,12 +1,15 @@
 from scrape import scrape
+from setup import create_db
 import time 
-def main():
-    N_TO_SCRAPE = 100000
-    BATCH_SIZE = 500
+from clean_articles import clean_articles
+from embed import embed_chunks
 
-    start = time.time()
-    scrape(N_TO_SCRAPE, BATCH_SIZE)
-    print(f"Time to scrape: {round(time.time() - start, 2)}")
+def main():
+    create_db()
+    scrape()
+    clean_articles()
+    embed_chunks()
+
 
 if __name__ == '__main__':
     main()
