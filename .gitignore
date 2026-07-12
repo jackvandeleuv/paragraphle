@@ -40,4 +40,3 @@ pipeline/.venv
 pipeline/data
 pipeline/*.json
 pipeline/.env
-pipeline/test.py
