@@ -1,8 +1,8 @@
 import numpy as np
 
 # Scrape module
-N_BATCHES = 2
-BATCH_SIZE = 100
+N_BATCHES = 10000
+BATCH_SIZE = 20
 
 # Clean articles module.
 CHUNK_WORDS_MAX = 60

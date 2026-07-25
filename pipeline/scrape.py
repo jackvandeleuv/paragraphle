@@ -120,10 +120,15 @@ def process_article(session, article_id, links, scraped, blacklist):
 
     soup = BeautifulSoup(resp.text, features="html.parser")
     process_links(soup, article_id, links)
+    body = soup.find('body')
+    if not body:
+        'No body element in the page!'
+        blacklist.add(article_id)
+        return None, None 
 
     scraped[article_id] = {
         'redirect': redirect, 
-        'text': soup.find('body').text,
+        'text': body.text,
         'written': False,
     }
 
@@ -140,7 +145,7 @@ def choose_scrape_targets(scraped, links, blacklist, batch_size):
     if len(links) == 0:
         raise Exception('No links to choose from')
     
-    explore = random.random() < .25
+    explore = random.random() < .5
     # Randomly pick articles.
     if explore:
         keys = [
