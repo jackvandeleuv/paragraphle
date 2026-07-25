@@ -42,7 +42,7 @@ def __create_embeddings():
         create table if not exists embeddings (
             chunk_id text not null primary key, 
             vector blob,
-            article_id integer,
+            article_id text,
             CHECK(length(vector) = 512),   -- Enforce blob size
             FOREIGN KEY (article_id) REFERENCES articles(article_id),
             FOREIGN KEY (chunk_id) REFERENCES chunks(chunk_id)
@@ -54,8 +54,8 @@ def __create_guesses():
         create table if not exists guesses (
             guess_id integer primary key,
             created_timestamp integer,
-            guess_article_id integer,
-            target_article_id integer,
+            guess_article_id text,
+            target_article_id text,
             best_chunk_id integer,
             best_chunk_score real,
             session_id text
