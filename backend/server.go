@@ -27,7 +27,7 @@ type Target struct {
 }
 
 type Article struct {
-	ArticleID  int64  `json:"article_id"`
+	ArticleID  string  `json:"article_id"`
 	Title      string `json:"title"`
 	CleanTitle string `json:"clean_title"`
 	Count      int64  `json:"count"`
@@ -235,6 +235,18 @@ func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []
 	json.NewEncoder(w).Encode(session_update)
 }
 
+func handleGiveup(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
+	
+	session_id := r.URL.Query().Get("session_id")
+	, err := giveUp(db)
+	if err != nil {
+		logger.Println(err)
+		http.Error(w, "could not get stats", http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode(resp)
+}
+ 
 func stats(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
 	stats, err := getStats(db)
 	if err != nil {
@@ -357,6 +369,13 @@ func main() {
 		}
 		guessArticle(w, r, db, targets, MAX_CHUNKS)
 	})
+
+		
+	http.HandleFunc("/giveup", func(w http.ResponseWriter, r *http.Request) {
+		setHeaders(w, r, DEFAULT_CORS_URI)
+		handleGiveup(w, db, logger)
+	})
+
 
 	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
 		setHeaders(w, r, DEFAULT_CORS_URI)

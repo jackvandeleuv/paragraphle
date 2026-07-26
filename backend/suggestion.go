@@ -15,7 +15,7 @@ func loadSuggestions(db *sql.DB) []Article {
 
 	articles := make([]Article, 0)
 	for rows.Next() {
-		var article_id int64
+		var article_id string
 		var title string
 		var clean_title string
 		var count int64
