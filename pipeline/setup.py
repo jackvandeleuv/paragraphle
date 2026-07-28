@@ -22,6 +22,8 @@ def __create_articles():
     __execute_stmt('''
         create table if not exists articles (
             article_id text not null primary key,
+            title text,
+            clean_title text,
             alias text,
             count integer
         )
@@ -62,20 +64,13 @@ def __create_guesses():
         )
     ''')
 
-def __create_wins():
-    __execute_stmt('''
-        create table if not exists wins (
-            created_timestamp integer,
-            guesses integer,
-            session_id text
-        )
-    ''')
-
 def __create_sessions():
     __execute_stmt('''
     create table if not exists sessions (
             created_timestamp integer,
-            session_id text
+            session_id text,
+            is_win integer,
+            is_giveup integer
         )
     ''')
 

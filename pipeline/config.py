@@ -1,7 +1,7 @@
 import numpy as np
 
 # Scrape module
-N_BATCHES = 10000
+N_BATCHES = 3
 BATCH_SIZE = 20
 
 # Clean articles module.

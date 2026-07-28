@@ -6,8 +6,8 @@ from embed import embed_chunks
 
 def main():
     create_db()
-    # scrape()
-    # clean_articles()
+    scrape()
+    clean_articles()
     # embed_chunks()
 
 

@@ -120,16 +120,16 @@ def get_articles(article_ids, conn):
     ''', article_ids)
     return [dict(row) for row in cur]
 
-def insert_article(canonical_id, alias_id, link_count, conn):
+def insert_article(canonical_id, alias_id, link_count, title, clean_title, conn):
     cur = conn.cursor()
     cur.execute('''
-        insert into articles (article_id, alias, count)
-        values (?, ?, ?)
+        insert into articles (article_id, title, clean_title, alias, count)
+        values (?, ?, ?, ?, ?)
         on conflict (article_id) do 
             update set
                 alias = excluded.alias,
                 count = excluded.count
-    ''', (canonical_id, alias_id, link_count))
+    ''', (canonical_id, title, clean_title, alias_id, link_count))
 
 def process_article_record(article, links, conn):
     '''
@@ -149,7 +149,8 @@ def process_article_record(article, links, conn):
         alias_id = None
         link_count = links.get(canonical_id, 0)
 
-    insert_article(canonical_id, alias_id, link_count, conn)
+    title, clean_title = make_clean_title(canonical_id)
+    insert_article(canonical_id, alias_id, link_count, title, clean_title, conn)
 
     return canonical_id
 
@@ -170,6 +171,26 @@ def insert_sentences(canonical_id, sentences, conn):
                 article_id = excluded.article_id,
                 chunk = excluded.chunk
     ''', params)
+
+def make_clean_title(article_id):
+    # Wagner_Free_Institute_of_Science
+    # Kimble_v._Marvel_Entertainment,_LLC
+    # External_debt
+    # Twenty-second_Amendment_to_the_United_States_Constitution
+    # Irina_Grigorieva_(footballer)
+    # Globalstar
+    # World_Trade_Center_(1973-2001)
+    # Die-in
+    # Battle_of_Chancellorsville
+    # Harcourt_(publisher)
+    # Music_Box_Theatre
+    # Ngo_Dinh_Diem
+    # Barnum's_American_Museum
+    # 1900_Democratic_National_Conven
+    title = article_id.replace('_', ' ')
+    clean_title = title.lower().strip()
+    return title, clean_title
+
 
 def process_article(article, links, conn):
     canonical_id = process_article_record(article, links, conn)
