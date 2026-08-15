@@ -45,3 +45,6 @@ test_db/data
 tests/data
 tests/__pycache__
 tests/.venv
+pipeline/.venv
+pipeline/.__pycache__
+pipeline/data
