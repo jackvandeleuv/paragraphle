@@ -8,6 +8,104 @@ import (
 	"github.com/google/uuid"
 )
 
+func processWin(db *sql.DB, session_id string, target_id int64, guess_id int64) (bool, int64, error) {
+	is_win := target_id == guess_id
+	if !is_win {
+		return false, -1, nil
+	}
+
+	err := logWin(db, session_id)
+	if err != nil {
+		return false, -1, err
+	}
+
+	// win_rank, err := getWinRank(db, session_id, target_id)
+	// if err != nil {
+	// 	return false, -1, err
+	// }
+	win_rank := int64(55)
+	return is_win, win_rank, nil
+}
+
+func getTodayEasternTimeStartUnix() (int64, error) {
+	et, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		return -1, err
+	}
+
+	time_now := time.Now()
+	today_start := time.Date(
+		time_now.Year(),
+		time_now.Month(),
+		time_now.Day(),
+		0, 0, 0, 0,
+		et,
+	).UnixMilli()
+	
+	return today_start, nil
+}
+
+func getTomorrowEasternTimeStartUnix() (int64, error) {
+	et, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		return -1, err
+	}
+
+	time_now := time.Now()
+	tomorrow := time_now.AddDate(0, 0, 1)
+	tomorrow_start := time.Date(
+		tomorrow.Year(),
+		tomorrow.Month(),
+		tomorrow.Day(),
+		0, 0, 0, 0,
+		et,
+	).UnixMilli()
+
+	return tomorrow_start, nil
+}
+
+func getWinRank(db *sql.DB, session_id string, target_id int64) (int64, error) {
+	today_start, err := getTodayEasternTimeStartUnix()
+	if err != nil {
+		return -1, err
+	}
+	tomorrow_start, err := getTomorrowEasternTimeStartUnix()
+	if err != nil {
+		return -1, err
+	}
+
+	var daily_rank int64
+	err = db.QueryRow(`
+		select daily_rank
+		from (
+			select
+				rank() over (
+					order by guesses asc
+				) as daily_rank,
+				session_id 
+			from wins
+			where 
+				created_timestamp >= ? and
+				created_timestamp < ?
+		)
+		where session_id == ?
+	`, today_start, tomorrow_start, session_id).Scan(&daily_rank)	
+
+	return daily_rank, nil
+}
+
+func getIsWin(db *sql.DB, session_id string) (bool, error) {
+	var exists int
+	err := db.QueryRow(`
+		select 1
+		from wins
+		where session_id == ?	
+	`, session_id,
+	).Scan(&exists)
+	is_win := exists == 1
+	return is_win, err
+}
+
 func logWin(db *sql.DB, session_id string) error {
 	created := time.Now().UnixMilli()
 	_, err := db.Exec(`

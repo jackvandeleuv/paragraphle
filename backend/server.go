@@ -62,6 +62,8 @@ type SessionUpdate struct {
 	Chunks             []Chunk `json:"chunks"`
 	Guesses            int64   `json:"guesses"`
 	LastGuessArticleID int64   `json:"last_guess_article_id"`
+	IsWin              bool    `json:"is_win"`
+	WinRank            int64   `json:"win_rank"`
 }
 
 func getTargets() []Target {
@@ -96,6 +98,7 @@ func getTargets() []Target {
 }
 
 func getTargetID(targets []Target) int64 {
+	return 290
 	now := time.Now().Unix()
 	now_et := now - (3600 * 4)
 	idx := int64(now_et/(3600*24)) - 20288
@@ -188,53 +191,6 @@ func startSession(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
 	json.NewEncoder(w).Encode(id)
 }
 
-func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64) {
-	target_id := getTargetID(targets)
-
-	raw_guess_id := r.URL.Query().Get("article_id")
-	clean_guess_id := strings.TrimSpace(strings.ToLower(raw_guess_id))
-	guess_id, err := strconv.Atoi(clean_guess_id)
-	if err != nil || guess_id <= 0 {
-		http.Error(w, "Invalid article_id.", http.StatusBadRequest)
-		return
-	}
-
-	session_id := r.URL.Query().Get("session_id")
-	if session_id == "" {
-		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
-		return
-	}
-
-	chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
-	if err != nil {
-		http.Error(w, "Internal server error.", http.StatusInternalServerError)
-		return
-	}
-
-	repeat_guess := isDuplicateGuess(db, int64(guess_id), session_id)
-	if !repeat_guess {
-		best_chunk_id := chunks[0].ChunkID
-		best_chunk_score := chunks[0].Distance
-		logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
-	}
-
-	if target_id == int64(guess_id) {
-		if err := logWin(db, session_id); err != nil {
-			http.Error(w, "Could not log win.", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	n_guesses, err := countGuesses(db, session_id)
-	if err != nil {
-		http.Error(w, "Could not count guesses.", http.StatusInternalServerError)
-		return
-	}
-	session_update := SessionUpdate{chunks, n_guesses, int64(guess_id)}
-
-	json.NewEncoder(w).Encode(session_update)
-}
-
 func stats(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
 	stats, err := getStats(db)
 	if err != nil {
@@ -245,7 +201,7 @@ func stats(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
 	json.NewEncoder(w).Encode(stats)
 }
 
-func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64) {
+func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64, logger *log.Logger) {
 	target_id := getTargetID(targets)
 
 	session_id := r.URL.Query().Get("session_id")
@@ -287,7 +243,17 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 		return
 	}
 
-	session_update := SessionUpdate{total_chunks, n_guesses, last_guess_article_id}
+	is_win, err := getIsWin(db, session_id)
+	if err != nil {
+		http.Error(w, "Could not get win status.", http.StatusInternalServerError)
+	}
+
+	win_rank, err := getWinRank(db, session_id, target_id) 
+	if err != nil {
+		http.Error(w, "Could not get win rank.", http.StatusInternalServerError)
+	}
+
+	session_update := SessionUpdate{total_chunks, n_guesses, last_guess_article_id, is_win, win_rank}
 
 	json.NewEncoder(w).Encode(session_update)
 }
@@ -321,6 +287,7 @@ func main() {
 		log.Fatal("no .env file found")
 	}
 
+	logger.Println(os.Getenv("DB_PATH"))
 	db_path := os.Getenv("DB_PATH")
 	db, err := openDB(db_path)
 
@@ -333,6 +300,9 @@ func main() {
 
 	articles := loadSuggestions(db)
 	logger.Println("creating handlers")
+
+	win_rank, err := getWinRank(db, "", int64(2)) 
+	logger.Println(win_rank)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		setHeaders(w, r, DEFAULT_CORS_URI)
@@ -369,7 +339,7 @@ func main() {
 		if !valid {
 			return
 		}
-		restoreSession(w, r, db, targets, MAX_CHUNKS)
+		restoreSession(w, r, db, targets, MAX_CHUNKS, logger)
 	})
 
 	http.HandleFunc("/top-chunks", func(w http.ResponseWriter, r *http.Request) {

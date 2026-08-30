@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"net/http"
+	"encoding/json"
 	"sort"
 	"strconv"
 	"strings"
@@ -252,4 +254,58 @@ func countGuesses(db *sql.DB, session_id string) (int64, error) {
 		}
 	}
 	return count, nil
+}
+
+func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64) {
+	target_id := getTargetID(targets)
+
+	raw_guess_id := r.URL.Query().Get("article_id")
+	clean_guess_id := strings.TrimSpace(strings.ToLower(raw_guess_id))
+	guess_id, err := strconv.Atoi(clean_guess_id)
+	if err != nil || guess_id <= 0 {
+		http.Error(w, "Invalid article_id.", http.StatusBadRequest)
+		return
+	}
+
+	session_id := r.URL.Query().Get("session_id")
+	if session_id == "" {
+		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
+		return
+	}
+
+	chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
+	if err != nil {
+		http.Error(w, "Internal server error.", http.StatusInternalServerError)
+		return
+	}
+
+	repeat_guess := isDuplicateGuess(db, int64(guess_id), session_id)
+	if !repeat_guess {
+		best_chunk_id := chunks[0].ChunkID
+		best_chunk_score := chunks[0].Distance
+		logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
+	}
+
+	// if target_id == int64(guess_id) {
+	// 	if err := logWin(db, session_id); err != nil {
+	// 		http.Error(w, "Could not log win.", http.StatusInternalServerError)
+	// 		return
+	// 	}
+	// }
+
+	n_guesses, err := countGuesses(db, session_id)
+	if err != nil {
+		http.Error(w, "Could not count guesses.", http.StatusInternalServerError)
+		return
+	}
+
+	is_win, win_rank, err := processWin(db, session_id, target_id, int64(guess_id))
+	if err != nil {
+		http.Error(w, "Internal server error.", http.StatusInternalServerError)
+		return
+	}
+
+	session_update := SessionUpdate{chunks, n_guesses, int64(guess_id), is_win, win_rank}
+
+	json.NewEncoder(w).Encode(session_update)
 }
