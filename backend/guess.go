@@ -10,11 +10,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"log"
 
 	f16 "github.com/x448/float16"
 )
 
 func blobToFloat(b []byte) ([]float64, error) {
+	log.Println("len of byte")
+	log.Println(len(b))
 	if len(b)%2 != 0 {
 		return nil, fmt.Errorf("could not decode vector from blob storage")
 	}
@@ -55,8 +58,7 @@ func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id int64, is
 	rows, err := db.Query(query)
 
 	if err != nil {
-		fmt.Println(err)
-		return nil, fmt.Errorf("could not decode vector from blob storage")
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -69,7 +71,7 @@ func embeddingsToChunks(db *sql.DB, embeddings []Embedding, article_id int64, is
 		var title string
 
 		if err := rows.Scan(&chunk_id, &chunk, &url, &title); err != nil {
-			return nil, fmt.Errorf("could not decode vector from blob storage")
+			return nil, err
 		}
 		chunks = append(chunks, Chunk{chunk_id, chunk, url, title, embeddings[i].Distance, is_win, -1, -1})
 		i++
@@ -84,7 +86,7 @@ func getEmbeddings(db *sql.DB, article_id int64) ([]Embedding, error) {
 		where article_id = ?
 	`, article_id)
 	if err != nil {
-		return nil, fmt.Errorf("could not decode vector from blob storage")
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -94,12 +96,15 @@ func getEmbeddings(db *sql.DB, article_id int64) ([]Embedding, error) {
 		var blob []byte
 
 		if err := rows.Scan(&chunk_id, &blob); err != nil {
-			return nil, fmt.Errorf("could not decode vector from blob storage")
+			return nil, err 
 		}
+
+		log.Println("chunk_id")
+		log.Println(chunk_id)
 
 		vector, err := blobToFloat(blob)
 		if err != nil {
-			return nil, fmt.Errorf("could not decode vector from blob storage")
+			return nil, err 
 		}
 
 		embeddings = append(embeddings, Embedding{chunk_id, vector, -1.0})
@@ -149,12 +154,12 @@ func cosineSimilarity(x []float64, y []float64) float64 {
 func scoreArticleID(db *sql.DB, guess_id int64, target_id int64) ([]Embedding, error) {
 	guessEmbeddings, err := getEmbeddings(db, guess_id)
 	if err != nil {
-		return nil, fmt.Errorf("could not get guess chunks")
+		return nil, err
 	}
 
 	targetEmbeddings, err := getEmbeddings(db, target_id)
 	if err != nil {
-		return nil, fmt.Errorf("could not get target chunks")
+		return nil, err
 	}
 
 	targetVec := averageTargetVec(targetEmbeddings)
@@ -275,7 +280,7 @@ func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []
 
 	chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
 	if err != nil {
-		http.Error(w, "Internal server error.", http.StatusInternalServerError)
+		genericServerError(w, err)
 		return
 	}
 
@@ -301,7 +306,7 @@ func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []
 
 	is_win, win_rank, err := processWin(db, session_id, target_id, int64(guess_id))
 	if err != nil {
-		http.Error(w, "Internal server error.", http.StatusInternalServerError)
+		genericServerError(w, err)
 		return
 	}
 

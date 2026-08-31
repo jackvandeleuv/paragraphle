@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+	"errors"
 
 	"github.com/google/uuid"
 )
@@ -19,11 +20,11 @@ func processWin(db *sql.DB, session_id string, target_id int64, guess_id int64) 
 		return false, -1, err
 	}
 
-	// win_rank, err := getWinRank(db, session_id, target_id)
-	// if err != nil {
-	// 	return false, -1, err
-	// }
-	win_rank := int64(55)
+	win_rank, err := getWinRank(db, session_id, target_id)
+	if err != nil {
+		return false, -1, err
+	}
+
 	return is_win, win_rank, nil
 }
 
@@ -91,6 +92,10 @@ func getWinRank(db *sql.DB, session_id string, target_id int64) (int64, error) {
 		where session_id == ?
 	`, today_start, tomorrow_start, session_id).Scan(&daily_rank)	
 
+	if errors.Is(err, sql.ErrNoRows) {
+		return -1, nil
+	}
+
 	return daily_rank, nil
 }
 
@@ -102,6 +107,9 @@ func getIsWin(db *sql.DB, session_id string) (bool, error) {
 		where session_id == ?	
 	`, session_id,
 	).Scan(&exists)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
 	is_win := exists == 1
 	return is_win, err
 }
@@ -156,7 +164,7 @@ func logGuess(
 		best_chunk_id, best_chunk_score, session_id,
 	)
 	if err != nil {
-		return fmt.Errorf("could not decode vector from blob storage")
+		return err
 	}
 	return nil
 }

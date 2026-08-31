@@ -214,7 +214,7 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 	MAX_CHUNKS := 100
 	top_n_guesses, err := topNGuesses(db, session_id, MAX_ARTICLE_IDS)
 	if err != nil {
-		http.Error(w, "Internal server error.", http.StatusInternalServerError)
+		genericServerError(w, err)
 		return
 	}
 
@@ -222,7 +222,7 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 	for idx, guess_id := range top_n_guesses {
 		chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
 		if err != nil {
-			http.Error(w, "Internal server error.", http.StatusInternalServerError)
+			genericServerError(w, err)
 			return
 		}
 		total_chunks = append(total_chunks, chunks...)
@@ -245,12 +245,12 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 
 	is_win, err := getIsWin(db, session_id)
 	if err != nil {
-		http.Error(w, "Could not get win status.", http.StatusInternalServerError)
+		genericServerError(w, err)
 	}
 
 	win_rank, err := getWinRank(db, session_id, target_id) 
 	if err != nil {
-		http.Error(w, "Could not get win rank.", http.StatusInternalServerError)
+		genericServerError(w, err)
 	}
 
 	session_update := SessionUpdate{total_chunks, n_guesses, last_guess_article_id, is_win, win_rank}
@@ -300,9 +300,6 @@ func main() {
 
 	articles := loadSuggestions(db)
 	logger.Println("creating handlers")
-
-	win_rank, err := getWinRank(db, "", int64(2)) 
-	logger.Println(win_rank)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		setHeaders(w, r, DEFAULT_CORS_URI)
