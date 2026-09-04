@@ -3,21 +3,18 @@ package main
 import (
 	"database/sql"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
-	"encoding/json"
 	"sort"
 	"strconv"
 	"strings"
-	"log"
 
 	f16 "github.com/x448/float16"
 )
 
 func blobToFloat(b []byte) ([]float64, error) {
-	log.Println("len of byte")
-	log.Println(len(b))
 	if len(b)%2 != 0 {
 		return nil, fmt.Errorf("could not decode vector from blob storage")
 	}
@@ -96,15 +93,12 @@ func getEmbeddings(db *sql.DB, article_id int64) ([]Embedding, error) {
 		var blob []byte
 
 		if err := rows.Scan(&chunk_id, &blob); err != nil {
-			return nil, err 
+			return nil, err
 		}
-
-		log.Println("chunk_id")
-		log.Println(chunk_id)
 
 		vector, err := blobToFloat(blob)
 		if err != nil {
-			return nil, err 
+			return nil, err
 		}
 
 		embeddings = append(embeddings, Embedding{chunk_id, vector, -1.0})

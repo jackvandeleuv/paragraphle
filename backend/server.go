@@ -233,13 +233,14 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 
 	n_guesses, err := countGuesses(db, session_id)
 	if err != nil {
-		http.Error(w, "Could not count guesses.", http.StatusInternalServerError)
+		genericServerError(w, err)
 		return
 	}
 
 	last_guess_article_id, err := getLastGuessArticleID(db, session_id)
 	if err != nil {
-		http.Error(w, "Could not find last article_id.", http.StatusInternalServerError)
+		log.Println("last guess err")
+		genericServerError(w, err)
 		return
 	}
 
@@ -248,7 +249,7 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 		genericServerError(w, err)
 	}
 
-	win_rank, err := getWinRank(db, session_id, target_id) 
+	win_rank, err := getWinRank(db, session_id, target_id)
 	if err != nil {
 		genericServerError(w, err)
 	}

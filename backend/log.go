@@ -2,9 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
-	"errors"
 
 	"github.com/google/uuid"
 )
@@ -42,7 +42,7 @@ func getTodayEasternTimeStartUnix() (int64, error) {
 		0, 0, 0, 0,
 		et,
 	).UnixMilli()
-	
+
 	return today_start, nil
 }
 
@@ -90,7 +90,7 @@ func getWinRank(db *sql.DB, session_id string, target_id int64) (int64, error) {
 				created_timestamp < ?
 		)
 		where session_id == ?
-	`, today_start, tomorrow_start, session_id).Scan(&daily_rank)	
+	`, today_start, tomorrow_start, session_id).Scan(&daily_rank)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return -1, nil
