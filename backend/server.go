@@ -98,7 +98,6 @@ func getTargets() []Target {
 }
 
 func getTargetID(targets []Target) int64 {
-	return 290
 	now := time.Now().Unix()
 	now_et := now - (3600 * 4)
 	idx := int64(now_et/(3600*24)) - 20288
