@@ -42,3 +42,6 @@ pipeline/*.json
 pipeline/.env
 test_db/.venv
 test_db/data
+tests/data
+tests/__pycache__
+tests/.venv

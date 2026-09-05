@@ -1,1 +1,1 @@
-{"root":["./src/game.ts","./src/sidebar.ts"],"version":"5.9.2"}
+{"version":"7.0.2","root":["./src/game.ts","./src/sidebar.ts"],"packageJsons":["./package.json"]}
