@@ -11,6 +11,8 @@ function existsExpiredSession() {
     const dayStartEasternMilli = getDayStartEasternMilli();
     const cached_session_id = localStorage.getItem("session_id");
     const cached_session_start = localStorage.getItem("session_start");
+    console.log(`cached sid: ${cached_session_id}`)
+    console.log(`cached sid start: ${cached_session_start}`)
     return (
         cached_session_id !== null &&
         cached_session_start !== null &&
