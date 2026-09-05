@@ -62,6 +62,8 @@ type SessionUpdate struct {
 	Chunks             []Chunk `json:"chunks"`
 	Guesses            int64   `json:"guesses"`
 	LastGuessArticleID int64   `json:"last_guess_article_id"`
+	IsWin              bool    `json:"is_win"`
+	WinRank            int64   `json:"win_rank"`
 }
 
 func getTargets() []Target {
@@ -96,6 +98,7 @@ func getTargets() []Target {
 }
 
 func getTargetID(targets []Target) int64 {
+	return 290
 	now := time.Now().Unix()
 	now_et := now - (3600 * 4)
 	idx := int64(now_et/(3600*24)) - 20288
@@ -188,53 +191,6 @@ func startSession(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
 	json.NewEncoder(w).Encode(id)
 }
 
-func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64) {
-	target_id := getTargetID(targets)
-
-	raw_guess_id := r.URL.Query().Get("article_id")
-	clean_guess_id := strings.TrimSpace(strings.ToLower(raw_guess_id))
-	guess_id, err := strconv.Atoi(clean_guess_id)
-	if err != nil || guess_id <= 0 {
-		http.Error(w, "Invalid article_id.", http.StatusBadRequest)
-		return
-	}
-
-	session_id := r.URL.Query().Get("session_id")
-	if session_id == "" {
-		http.Error(w, "Invalid session_id.", http.StatusBadRequest)
-		return
-	}
-
-	chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
-	if err != nil {
-		http.Error(w, "Internal server error.", http.StatusInternalServerError)
-		return
-	}
-
-	repeat_guess := isDuplicateGuess(db, int64(guess_id), session_id)
-	if !repeat_guess {
-		best_chunk_id := chunks[0].ChunkID
-		best_chunk_score := chunks[0].Distance
-		logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
-	}
-
-	if target_id == int64(guess_id) {
-		if err := logWin(db, session_id); err != nil {
-			http.Error(w, "Could not log win.", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	n_guesses, err := countGuesses(db, session_id)
-	if err != nil {
-		http.Error(w, "Could not count guesses.", http.StatusInternalServerError)
-		return
-	}
-	session_update := SessionUpdate{chunks, n_guesses, int64(guess_id)}
-
-	json.NewEncoder(w).Encode(session_update)
-}
-
 func stats(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
 	stats, err := getStats(db)
 	if err != nil {
@@ -258,7 +214,7 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 	MAX_CHUNKS := 100
 	top_n_guesses, err := topNGuesses(db, session_id, MAX_ARTICLE_IDS)
 	if err != nil {
-		http.Error(w, "Internal server error.", http.StatusInternalServerError)
+		genericServerError(w, err)
 		return
 	}
 
@@ -266,7 +222,7 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 	for idx, guess_id := range top_n_guesses {
 		chunks, err := getTopScoredChunks(db, int64(guess_id), target_id, max_chunks)
 		if err != nil {
-			http.Error(w, "Internal server error.", http.StatusInternalServerError)
+			genericServerError(w, err)
 			return
 		}
 		total_chunks = append(total_chunks, chunks...)
@@ -277,17 +233,28 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 
 	n_guesses, err := countGuesses(db, session_id)
 	if err != nil {
-		http.Error(w, "Could not count guesses.", http.StatusInternalServerError)
+		genericServerError(w, err)
 		return
 	}
 
 	last_guess_article_id, err := getLastGuessArticleID(db, session_id)
 	if err != nil {
-		http.Error(w, "Could not find last article_id.", http.StatusInternalServerError)
+		log.Println("last guess err")
+		genericServerError(w, err)
 		return
 	}
 
-	session_update := SessionUpdate{total_chunks, n_guesses, last_guess_article_id}
+	is_win, err := getIsWin(db, session_id)
+	if err != nil {
+		genericServerError(w, err)
+	}
+
+	win_rank, err := getWinRank(db, session_id, target_id)
+	if err != nil {
+		genericServerError(w, err)
+	}
+
+	session_update := SessionUpdate{total_chunks, n_guesses, last_guess_article_id, is_win, win_rank}
 
 	json.NewEncoder(w).Encode(session_update)
 }
@@ -321,6 +288,7 @@ func main() {
 		log.Fatal("no .env file found")
 	}
 
+	logger.Println(os.Getenv("DB_PATH"))
 	db_path := os.Getenv("DB_PATH")
 	db, err := openDB(db_path)
 
