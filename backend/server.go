@@ -201,7 +201,7 @@ func stats(w http.ResponseWriter, db *sql.DB, logger *log.Logger) {
 	json.NewEncoder(w).Encode(stats)
 }
 
-func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64, logger *log.Logger) {
+func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []Target, max_chunks int64) {
 	target_id := getTargetID(targets)
 
 	session_id := r.URL.Query().Get("session_id")
@@ -337,7 +337,7 @@ func main() {
 		if !valid {
 			return
 		}
-		restoreSession(w, r, db, targets, MAX_CHUNKS, logger)
+		restoreSession(w, r, db, targets, MAX_CHUNKS)
 	})
 
 	http.HandleFunc("/top-chunks", func(w http.ResponseWriter, r *http.Request) {
