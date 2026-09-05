@@ -285,13 +285,6 @@ func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []
 		logGuess(db, int64(guess_id), target_id, best_chunk_id, best_chunk_score, session_id)
 	}
 
-	// if target_id == int64(guess_id) {
-	// 	if err := logWin(db, session_id); err != nil {
-	// 		http.Error(w, "Could not log win.", http.StatusInternalServerError)
-	// 		return
-	// 	}
-	// }
-
 	n_guesses, err := countGuesses(db, session_id)
 	if err != nil {
 		http.Error(w, "Could not count guesses.", http.StatusInternalServerError)
