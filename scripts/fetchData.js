@@ -38,10 +38,13 @@ export async function getSessionID() {
         }
         if (existsSession()) return localStorage.getItem("session_id");
 
+        console.log('no session and no expired session')
+
         localStorage.clear();
 
         const session_id = await fetchSessionID();
         console.log('session id')
+        console.log(session_id)
         if (!session_id) return null;
         
         localStorage.setItem("session_id", session_id);

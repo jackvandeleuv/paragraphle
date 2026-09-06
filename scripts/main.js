@@ -157,6 +157,9 @@ function main() {
     addInitialEventListeners();
     focusInput();
 
+    // console.log('clear()')
+    // localStorage.clear();
+
     test();
 }
 

@@ -10,6 +10,7 @@ AID_1 = 717
 AID_2 = 863
 
 # RESET USER TABLES
+print('resetting user tables')
 reset_user_tables()
 
 # conn = sqlite3.connect("data/data.db")

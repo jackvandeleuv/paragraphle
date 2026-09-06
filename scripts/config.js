@@ -1,5 +1,5 @@
-export const URI = 'https://api.paragraphle.com';
-// const URI = 'http://localhost:8000';
+// export const URI = 'https://api.paragraphle.com';
+export const URI = 'http://localhost:8000';
 
 
 
