@@ -5,7 +5,7 @@ function main() {
     sidebar();
 
     const pathName = window.location.pathname;
-    if (pathName != '/play') return;
+    if (pathName != '/play/') return;
     initGame();
 }
 
