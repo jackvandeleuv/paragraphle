@@ -20,7 +20,7 @@ func processWin(db *sql.DB, session_id string, target_id int64, guess_id int64) 
 		return false, -1, err
 	}
 
-	win_rank, err := getWinRank(db, session_id, target_id)
+	win_rank, err := getWinRank(db, session_id)
 	if err != nil {
 		return false, -1, err
 	}
@@ -65,7 +65,7 @@ func getTomorrowEasternTimeStartUnix() (int64, error) {
 	return tomorrow_start, nil
 }
 
-func getWinRank(db *sql.DB, session_id string, target_id int64) (int64, error) {
+func getWinRank(db *sql.DB, session_id string) (int64, error) {
 	today_start, err := getTodayEasternTimeStartUnix()
 	if err != nil {
 		return -1, err
@@ -137,6 +137,29 @@ func logWin(db *sql.DB, session_id string) error {
 		return err
 	}
 	return nil
+}
+
+func getPlayTime(db *sql.DB, session_id string) (int64, error) {
+	var playTime int64
+	err := db.QueryRow(`
+		select
+			sum(diff) as playTime
+		from (        
+			select 
+				lead(created_timestamp) over (
+					order by created_timestamp	
+				) - created_timestamp as diff
+			from guesses
+			where session_id == ? 
+		)
+		where diff is not null and diff < 600000
+	`, session_id).Scan(&playTime)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return -1, nil
+	}
+
+	return playTime, nil
 }
 
 func logGuess(

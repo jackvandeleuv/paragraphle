@@ -1,47 +1,150 @@
-export const winModal = () => {
-    return `
-        <div
-            id="winModal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="winModalTitle"
-            aria-describedby="winModalDesc"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            style="display: none"
-        >
-            <div
-            class="relative w-full max-w-sm origin-center rounded-xl 
-            bg-gradient-to-br from-red-500/60 to-red-600/60 text-neutral-50 
-            shadow-2xl ring-1 ring-white/15
-            animate-[fadeIn_0.25s_ease,scaleIn_0.25s_ease]"
-            >
-            <button
-                type="button"
-                aria-label="Close dialog"
-                class="absolute top-2.5 right-2.5 inline-flex h-9 w-9 items-center justify-center rounded-md
-                    text-sky-50/80 hover:text-white hover:bg-white/10 focus:outline-none
-                    focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-sky-600
-                    transition"
-            >
-                <span class="relative block h-4 w-4">
-                <span class="absolute inset-0 h-[2px] w-full bg-current rotate-45" aria-hidden="true"></span>
-                <span class="absolute inset-0 h-[2px] w-full bg-current -rotate-45" aria-hidden="true"></span>
-                </span>
-            </button>
+import { updateInnerHTML } from "./game.js";
+import { calculateDailyNumber, html, updateClassName } from "./utils.js";
 
-            <div class="px-6 pt-9 pb-8 text-[15px] leading-relaxed">
-                <h2 class="text-2xl font-extrabold tracking-tight leading-tight mb-3">
-                You got it!
-                </h2>
-                <img class="w-full max-w-2xl object-cover mb-4" id="winImage" alt="Image of daily article." src="../public/nonplussed-lincoln.jpg"></img>
-                <p id="winModalTitle" class="mb-2 text-xl font-bold"></p>
-                <p id="winModalDesc" class="text-lg text-sky-50/90">
-                It took you <span id="winModalGuessCount" aria-live="polite" class="font-bold text-white"></span> guesses.
-                </p>
-                <p id="winModalStatsDesc" class="text-lg text-sky-50/90">
-                </p>
-            </div>
-            </div>
+function shareButtonListener(text) {
+    const button = document.getElementById('shareButton');
+    button.classList.remove('bg-slate-600')
+    button.classList.remove('border-slate-600')
+    button.classList.add('bg-orange-800/60');
+    button.classList.add('border-orange-800/60');
+    button.innerHTML = `
+        <svg class="copyIconChecked" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+            <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
+        </svg>
+        <p class="shareButtonText"> 
+            Copied
+        </p>
+    `;
+    navigator.clipboard.writeText(text);
+}
+
+const shareButtonText = (guessCount, winRank, winPercentile, playTime, playersWhoWon) => {
+    const dailyNumber = calculateDailyNumber();
+    return `Paragraphle #${dailyNumber}
+📈 Score: ${guessCount} guesses
+🏅 Rank:  Top ${winRank} (${winPercentile}%) of ${playersWhoWon} players
+🕙 Time:  ${playTime} minutes`;
+}
+
+const winModal = (winningArticle, game) => {
+    const winPercentile = Math.round((100 * game.winRank) / game.playersWhoWon, 1)
+    const playTime = (game.play_time_ms / (1000 * 60)).toFixed(1)
+
+    const buttonText = shareButtonText(
+        game.guessCount, 
+        game.winRank, 
+        winPercentile, 
+        playTime, 
+        game.playersWhoWon
+    );
+
+    const winModalWrapper = document.createElement('div');
+    winModalWrapper.id = 'winModalWrapper'
+
+    winModalWrapper.innerHTML = `
+        <div id="closeButtonWrapper">
+            <svg id="closeButton" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+                <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
+            </svg>
         </div>
-`;
+    `;
+    
+    const winModal = document.createElement('div');
+    winModal.id = 'winModal'
+
+    winModal.innerHTML = html`
+        <div id="winModalHeader">
+            <h2 id="winModalTitle">
+                Bravo!
+            </h2>    
+            <p id="winModalAnswer">
+                The answer was:
+                <span id="winModalAnswerName">${winningArticle}</span>
+            </p>
+        </div>
+        <div class="winModalBox">
+            <p>📈 Score:</p>
+            <p>${game.guessCount} guesses</p>
+        </div>
+        <div class="winModalBox">
+            <p>🏅 Rank:</p>
+            <p>Top ${game.winRank} (${winPercentile}%) of ${game.playersWhoWon} players</p>
+        </div>
+        <div class="winModalBox">
+            <p>🕙 Time:</p>
+            <p>${playTime} minutes</p>
+        </div>
+    `;
+
+    const button = document.createElement('button');
+    button.innerHTML = `
+        <svg class="copyIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+            <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/>
+        </svg>
+        <p class="shareButtonText"> 
+            &nbspShare&nbsp
+        </p>
+    `
+    button.id = 'shareButton';
+    button.className = `
+        inline-flex items-center justify-center px-2 py-1 rounded-md
+        bg-slate-600 text-white text-xs md:text-base font-semibold tracking-wide
+        transition-colors border-2 rounded-md border-slate-600
+    `;
+    button.addEventListener('click', () => shareButtonListener(buttonText))
+    winModal.appendChild(button);
+
+    winModalWrapper.appendChild(winModal);
+
+    return winModalWrapper;
+}
+
+function addCloseButtonListener() {
+    const closeButton = document.getElementById('closeButton');
+    const winModalElem = document.getElementById('winModalWrapper');
+    closeButton.addEventListener('click', () => {
+        console.log('clicck')
+        winModalElem.style.display = 'none';
+    })
+}
+
+function renderWinModal(winningArticle, game) {
+    // winModal.style.display = 'flex'
+    const body = document.getElementById('body');
+    body.appendChild(winModal(winningArticle, game));
+
+    addCloseButtonListener();
+}
+
+export async function renderWin(title, imageURL, game) {
+    console.log(game)
+    console.log('title')
+    console.log(title)
+
+    updateClassName('progressBar', `h-full bg-orange-800/60 w-full`);   
+
+    updateInnerHTML('lastGuessDistance', `Score: 100%`);
+
+    updateClassName('lastGuessBox', `
+        flex flex-col items-center justify-between text-sm md:text-base font-semibold
+        px-3 py-1 rounded border border-orange-800/60
+        bg-orange-800/60 text-white
+    `);
+
+    // updateInnerHTML('winModalGuessCount', String(game.guessCount));
+    // updateInnerHTML('winModalTitle', title);
+    
+    // await loadWikiImage(imageURL, 'winImage', title);
+
+    // const stats = await getDailyStats();
+    // if (!stats || stats.win_count <= 1) {
+    //     updateInnerHTML("winModalStatsDesc", "You're the first player to solve today's puzzle! 😮")
+    // } else {
+    //     const mean_guesses = String(stats.mean_guesses_per_win.toFixed(0));
+    //     updateInnerHTML("winModalStatsDesc", `
+    //         The ${stats.win_count} people who solved today's puzzle won in <span class="font-bold text-white">${mean_guesses}</span> guesses on average.
+    //     `)
+    // }
+
+    renderWinModal(title, game);
 }
