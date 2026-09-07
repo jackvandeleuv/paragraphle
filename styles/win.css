@@ -1,0 +1,101 @@
+#winModalWrapper {
+    position: absolute;
+    z-index: 1;
+    top: 68px;
+    height: calc(100% - 68px);
+    width: 100%;
+    box-sizing: border-box;
+    padding: 15px;
+    background-color: white;
+    color: black;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* border-radius: 15px; */
+}
+
+#winModal {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    gap: 8px;
+    /* height: 100% */
+    /* max-height: 500px; */
+}
+
+#winModalHeader {
+    text-align: center;
+}
+
+#winModalTitle {
+    font-size: x-large;
+    /* font-weight: bold; */
+}
+
+#winModalAnswer {
+    
+}
+
+#winModalAnswerName {
+    font-weight: bold;
+}
+
+.winModalBox {
+    width: 70%;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    border: 1px solid oklch(96.8% 0.007 247.896);
+    border-radius: 10px;
+    padding: 5px;
+    box-sizing: border-box;
+    background-color: oklch(96.8% 0.007 247.896);
+}
+
+#shareButton {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+  
+.copyIcon {
+    height: 20px;
+    min-height: 20px;
+    width: 20px;
+    min-width: 20px;
+    fill: white;
+} 
+ 
+#closeButton {
+    height: 40px;
+    min-height: 40px;
+    width: 40px;
+    min-width: 40px;
+    fill: black;
+    cursor: pointer;
+} 
+
+#closeButtonWrapper {
+    width: 100%;
+    display: flex;
+    justify-content: right;
+}
+
+.copyIconChecked {
+    height: 20px;
+    min-height: 20px;
+    width: 20px;
+    min-width: 20px;
+    fill: white;
+}
+
+.shareButtonText {
+    display: flex;
+    height: 30px;
+    align-items: center;
+    font-size: medium;
+}

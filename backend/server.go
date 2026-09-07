@@ -64,6 +64,9 @@ type SessionUpdate struct {
 	LastGuessArticleID int64   `json:"last_guess_article_id"`
 	IsWin              bool    `json:"is_win"`
 	WinRank            int64   `json:"win_rank"`
+	PlayersWhoWon      int64   `json:"players_who_won"`
+	MeanGuessesPerWin  float64 `json:"mean_guesses_per_win"`
+	PlayTimeMS         int64   `json:"play_time_ms"`
 }
 
 func getTargets() []Target {
@@ -238,7 +241,6 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 
 	last_guess_article_id, err := getLastGuessArticleID(db, session_id)
 	if err != nil {
-		log.Println("last guess err")
 		genericServerError(w, err)
 		return
 	}
@@ -248,12 +250,31 @@ func restoreSession(w http.ResponseWriter, r *http.Request, db *sql.DB, targets 
 		genericServerError(w, err)
 	}
 
-	win_rank, err := getWinRank(db, session_id, target_id)
+	win_rank, err := getWinRank(db, session_id)
 	if err != nil {
 		genericServerError(w, err)
 	}
 
-	session_update := SessionUpdate{total_chunks, n_guesses, last_guess_article_id, is_win, win_rank}
+	stats, err := getStats(db)
+	if err != nil {
+		genericServerError(w, err)
+	}
+
+	playTime, err := getPlayTime(db, session_id)
+	if err != nil {
+		genericServerError(w, err)
+	}
+
+	session_update := SessionUpdate{
+		total_chunks,
+		n_guesses,
+		last_guess_article_id,
+		is_win,
+		win_rank,
+		int64(stats.WinCount),
+		float64(stats.MeanGuessesPerWin),
+		playTime,
+	}
 
 	json.NewEncoder(w).Encode(session_update)
 }

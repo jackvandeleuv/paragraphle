@@ -1,45 +1,23 @@
-interface Suggestion {
-    article_id: number;
-    title: string;
-}
-
-interface Chunk {
-    chunk_id: number;
-    chunk: string;
-    distance: number;
-    title: string;
-    url: string;
-    is_win: boolean;
-}
-
-interface SessionUpdate {
-    chunks: Chunk[];
-    guesses: number;
-    last_guess_article_id: number;
-}
-
-interface Stats {
-    current_users: number;
-	mean_guesses_per_win: number;
-    win_count: number;
-    guess_count: number;
-    play_count: number;
-}
+import { acceptedKeys, LOADING_CLASS, URI } from "./config.js";
+import { calculateDailyNumber, getDayStartEasternMilli, updateClassName } from "./utils.js";
+import { renderWin } from "./win.js";
 
 class Game {
-    isGuessing: boolean;
-    isWin: boolean;
-    text: string;
-    mainSuggestion: Suggestion | null;
-    bestScore: number;
-    guesses: Chunk[];
-    guessChunkSet: Set<number>;
-    guessIDSet: Set<string>;
-    guessCount: number;
+    isGuessing;
+    isWin;
+    text;
+    mainSuggestion;
+    bestScore;
+    guesses;
+    guessChunkSet;
+    guessIDSet;
+    guessCount;
 
     constructor() {
         this.isGuessing = false;
         this.isWin = false;
+        this.winRank = -1;
+        this.playersWhoWon = -1;
         this.text = '';
         this.mainSuggestion = null;
         this.bestScore = 2;
@@ -47,10 +25,27 @@ class Game {
         this.guessChunkSet = new Set();
         this.guessIDSet = new Set();
         this.guessCount = 0;
+        this.playTime = -1;
     }
 }
 
-function tempToColor(value: number, elemType: string) {
+class SessionUpdate {
+    constructor(sessionUpdateJSON) {
+        const cleanChunks = sessionUpdateJSON.chunks.map((chunk) => cleanChunk(chunk));
+        cleanChunks.sort((a, b) => a.distance - b.distance);
+        this.chunks = cleanChunks;
+
+        this.guesses = sessionUpdateJSON.guesses;
+        this.last_guess_article_id = sessionUpdateJSON.last_guess_article_id;
+        this.is_win = sessionUpdateJSON.is_win;
+        this.win_rank = sessionUpdateJSON.win_rank;
+        this.mean_guesses_per_win = sessionUpdateJSON.mean_guesses_per_win;
+        this.players_who_won = sessionUpdateJSON.players_who_won;
+        this.play_time_ms = sessionUpdateJSON.play_time_ms;
+    }
+}
+
+function tempToColor(value, elemType) {
     const border_colors = [
         'border-orange-800/60',
         'border-orange-700/60',
@@ -88,7 +83,7 @@ function tempToColor(value: number, elemType: string) {
     return palette[idx];
 }
 
-function tempToProgress(score: number) {
+function tempToProgress(score) {
     const widths = [
         'w-[100%]',
         'w-[95%]',
@@ -142,7 +137,7 @@ function addCardListeners() {
     });
 }
 
-function trimText(text: string) {
+function trimText(text) {
     let max_len = 25;
     let trimmed = text.slice(0, max_len);
     if (text.length > trimmed.length) {
@@ -151,7 +146,7 @@ function trimText(text: string) {
     return trimmed;
 }
 
-function renderSuggestionButtonHTML(row: Suggestion) {
+function renderSuggestionButtonHTML(row) {
     return `
         <button id="${row.article_id}" class="chip activeButton">
             ${trimText(row.title)}
@@ -160,7 +155,7 @@ function renderSuggestionButtonHTML(row: Suggestion) {
 }
 
 function addSuggestionButtonListeners() {
-    document.querySelectorAll<HTMLElement>('.chip').forEach((chip) => {
+    document.querySelectorAll('.chip').forEach((chip) => {
         chip.addEventListener('click', () => {
             loadGuess(chip.id);
         });
@@ -176,7 +171,7 @@ function addMainSuggestionListener() {
     });
 }
 
-async function loadSuggestionButtons(suggestions: Suggestion[]) {
+async function loadSuggestionButtons(suggestions) {
     const mainSuggestionText = document.getElementById('mainSuggestionText');
     if (!mainSuggestionText) return;
     const input = mainSuggestionText.innerHTML.toUpperCase();
@@ -202,7 +197,7 @@ function loadEmptySuggestions() {
     `);
 }
 
-function loadDefaultSuggestion(message: string) {
+function loadDefaultSuggestion(message) {
     const mainSuggestionElem = document.getElementById('mainSuggestion');
     if (!mainSuggestionElem) return;
     mainSuggestionElem.classList.add(
@@ -216,12 +211,12 @@ function loadDefaultSuggestion(message: string) {
     `);
 }
 
-function urlToName(title: string) {
+function urlToName(title) {
     const titleSplit = title.split('/wiki/');
     return titleSplit[titleSplit.length - 1];
 }
 
-async function loadWikiImage(url: string, targetID: string, title: string) {
+export async function loadWikiImage(url, targetID, title) {
     addClasses(targetID, ['hidden']);
     removeClasses('imageSkeleton', ['hidden']);
 
@@ -248,12 +243,12 @@ async function loadWikiImage(url: string, targetID: string, title: string) {
     }
 }
 
-function distanceToPercentage(distance: number) {
+function distanceToPercentage(distance) {
     const clampedDistance = distance > 1 ? 1 : distance;
     return (100 * (1 - clampedDistance)).toFixed(0);
 }
 
-function renderCardHTML(row: Chunk) {
+function renderCardHTML(row) {
     const borderColor = tempToColor(row.distance, 'border'); 
     return `
         <article data-card
@@ -350,7 +345,7 @@ function renderFailedGuess() {
     `);
 }
 
-function cleanChunk(guess: Chunk) {
+function cleanChunk(guess) {
     // Clamp range to 0.1-1.0, and then smooth the resulting values out 
     // over the range 0.0-1.0. We do this because most distances fall within 
     // the 0.1-1.0 Range.
@@ -368,10 +363,8 @@ function cleanChunk(guess: Chunk) {
     return guessCopy;
 }
 
-async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: string) {
-    chunks.sort((a, b) => a.distance - b.distance);
-
-    const topChunk = chunks[0];
+async function renderGuess(sessionUpdate) {
+    const topChunk = sessionUpdate.chunks[0];
 
     updateInnerHTML('lastGuessText', topChunk.title);
     updateInnerHTML('lastGuessTextMobile', topChunk.title);
@@ -385,7 +378,7 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
     };
     lastGuessCard.classList.add(tempToColor(topChunk.distance, 'border'))
     
-    game.guessCount = guessCount;
+    game.guessCount = sessionUpdate.guesses;
     updateInnerHTML('guessCount', String(game.guessCount));
 
     if (suffixIsPlural(game.guessCount)) {
@@ -394,9 +387,9 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
         updateInnerHTML("guessPlural", "")
     }
 
-    game.guessIDSet.add(guessArticleId);
+    game.guessIDSet.add(sessionUpdate.last_guess_article_id);
 
-    for (const guess of chunks) {
+    for (const guess of sessionUpdate.chunks) {
         if (game.guessChunkSet.has(guess.chunk_id)) continue;
         game.guessChunkSet.add(guess.chunk_id);
         game.guesses.push(guess);
@@ -438,11 +431,19 @@ async function renderGuess(chunks: Chunk[], guessCount: number, guessArticleId: 
     updateClassName('progressBar', `${progress} ${tempToColor(game.bestScore, 'bg')}`);   
 
     if (topChunk.is_win) {
-        await renderWin(topChunk.title.toUpperCase().trim(), topChunk.url);
+        game.isWin = true;
+        game.winRank = sessionUpdate.win_rank; 
+        game.play_time_ms = sessionUpdate.play_time_ms;
+        game.playersWhoWon = sessionUpdate.players_who_won
+        await renderWin(
+            topChunk.title.toUpperCase().trim(), 
+            topChunk.url, 
+            game,
+        );
     }
 }
 
-async function loadGuess(guessArticleId: string) {
+async function loadGuess(guessArticleId) {
     if (game.isWin) return;
     if (game.isGuessing) return;
 
@@ -460,11 +461,9 @@ async function loadGuess(guessArticleId: string) {
         return;
     }
 
-    const guessData = await guessResponse.json() as SessionUpdate;
-    const guessCount = guessData.guesses;
-    const chunks = guessData.chunks.map((chunk) => cleanChunk(chunk));
-
-    await renderGuess(chunks, guessCount, guessArticleId);
+    const guessData = await guessResponse.json();
+    const sessionUpdate = new SessionUpdate(guessData);
+    await renderGuess(sessionUpdate);
 
     game.mainSuggestion = null;
     game.isGuessing = false;
@@ -491,7 +490,7 @@ async function updateMainSuggestion() {
     if (!session_id) return;
 
     const suggestionsResponse = await fetch(encodeURI(`${URI}/suggestion?q=${input}&limit=4&session_id=${session_id}`));
-    const suggestions = await suggestionsResponse.json() as Suggestion[];
+    const suggestions = await suggestionsResponse.json();
 
     if (suggestions.length === 0) {
         return flagNoSuggestion();
@@ -569,7 +568,7 @@ function handleEnter() {
     loadGuess(String(game.mainSuggestion.article_id));
 }
 
-function handleOtherInput(value: string) {
+function handleOtherInput(value) {
     const mainSuggestionText = document.getElementById('mainSuggestionText');
     if (!mainSuggestionText) return;
     const text = mainSuggestionText.innerHTML;
@@ -615,50 +614,17 @@ function addButtonListeners() {
 }
 
 function updateDailyNumber() {
-    const MILLISECONDS_PER_DAY = 24 * 3600 * 1000;
-    const GAME_EPOCH = 20287;
-
-    const dayStartEasternMilli = getDayStartEasternMilli();
-    const index = Math.floor(dayStartEasternMilli / MILLISECONDS_PER_DAY) - GAME_EPOCH;
+    const index = calculateDailyNumber();
     updateInnerHTML('dailyNumber', String(index));
 }
 
-function getDayStartEasternMilli(): number {
-    const now = new Date();
-
-    const formatter = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "America/New_York",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
-
-    const dateString = formatter.format(now); 
-    const [year, month, day] = dateString.split("-").map(Number);
-
-    const midnightET = new Date(
-    Date.UTC(year, month - 1, day) 
-    );
-
-    const offsetMinutes = -midnightET.toLocaleString("en-US", { timeZone: "America/New_York", timeZoneName: "short" }).includes("EST") ? 300 : 240;
-    return midnightET.getTime() + offsetMinutes * 60 * 1000;
-}
-
-function updateClassName(id: string, value: string) {
-    const elem = document.getElementById(id);
-    if (!elem) {
-        return 
-    }
-    elem.className = value;
-}
-
-export function updateInnerHTML(id: string, value: string) {
+export function updateInnerHTML(id, value) {
     const elem = document.getElementById(id);
     if (!elem) return; 
     elem.innerHTML = value;
 }
 
-function removeClasses(id: string, classes: string[]) {
+function removeClasses(id, classes) {
     const elem = document.getElementById(id);
     if (!elem) return; 
     for (const className of classes) {
@@ -666,7 +632,7 @@ function removeClasses(id: string, classes: string[]) {
     }
 }
 
-function addClasses(id: string, classes: string[]) {
+function addClasses(id, classes) {
     const elem = document.getElementById(id);
     if (!elem) return;
     for (const className of classes) {
@@ -674,10 +640,10 @@ function addClasses(id: string, classes: string[]) {
     }
 }
 
-async function fetchSessionID(): Promise<string | null> {
+async function fetchSessionID() {
     const suggestionsResponse = await fetch(encodeURI(`${URI}/start-session`));
     if (!suggestionsResponse.ok) return null;
-    return await suggestionsResponse.json() as string;
+    return await suggestionsResponse.json();
 }
 
 function addResetButtonListener() {
@@ -693,13 +659,13 @@ function resetPage() {
     location.reload();
 }
 
-function existsSession(): boolean {
+function existsSession() {
     const cached_session_id = localStorage.getItem("session_id");
     const cached_session_start = localStorage.getItem("session_start");
     return cached_session_id !== null && cached_session_start !== null
 }
 
-function existsExpiredSession(): boolean {
+function existsExpiredSession() {
     const dayStartEasternMilli = getDayStartEasternMilli();
     const cached_session_id = localStorage.getItem("session_id");
     const cached_session_start = localStorage.getItem("session_start");
@@ -710,7 +676,7 @@ function existsExpiredSession(): boolean {
     )
 }
 
-async function getSessionID(): Promise<string | null> {
+async function getSessionID() {
     try {
         if (existsExpiredSession()) {
             resetPage();
@@ -733,75 +699,44 @@ async function getSessionID(): Promise<string | null> {
     return null
 }
 
-export async function getDailyStats(): Promise<Stats | null> {
+export async function getDailyStats() {
     const response = await fetch(`${URI}/stats`);
     if (!response.ok) return null;
-    return await response.json() as Stats;
+    return await response.json();
 }
 
-async function renderWin(title: string, imageURL: string) {
-    updateClassName('progressBar', `h-full bg-orange-800/60 w-full`);   
-
-    updateInnerHTML('lastGuessDistance', `Score: 100%`);
-
-    updateClassName('lastGuessBox', `
-        flex flex-col items-center justify-between text-sm md:text-base font-semibold
-        px-3 py-1 rounded border border-orange-800/60
-        bg-orange-800/60 text-white
-    `);
-
-    updateInnerHTML('winModalGuessCount', String(game.guessCount));
-    updateInnerHTML('winModalTitle', title);
-    
-    await loadWikiImage(imageURL, 'winImage', title);
-
-    const stats = await getDailyStats();
-    if (!stats || stats.win_count <= 1) {
-        updateInnerHTML("winModalStatsDesc", "You're the first player to solve today's puzzle! 😮")
-    } else {
-        const mean_guesses = String(stats.mean_guesses_per_win.toFixed(0));
-        updateInnerHTML("winModalStatsDesc", `
-            The ${stats.win_count} people who solved today's puzzle won in <span class="font-bold text-white">${mean_guesses}</span> guesses on average.
-        `)
-    }
-    
-    const winModal = document.getElementById('winModal');
-    if (!winModal) {
-        console.error("Could not access win modal element.");
-        return;
-    }
-
-    winModal.style.display = 'flex'
-    winModal.addEventListener('click', () => {
-        winModal.style.display = 'none';
-    })
-
-    game.isWin = true;
-}
-
-async function restoreSession(session_id: string) {
+async function restoreSession(session_id) {
     addClasses('lastGuessImage', ['hidden']);
     removeClasses('imageSkeleton', ['hidden']);
 
     const response = await fetch(`${URI}/restore-session?session_id=${session_id}`);
     if (!response.ok) throw Error("Could not restore session");
-    const session_update = await response.json() as SessionUpdate;
+    const session_update_resp = await response.json();
 
-    if (session_update.last_guess_article_id === -1) {
+    if (session_update_resp.last_guess_article_id === -1) {
         renderEmptyState();
         return;
     };
-    await renderGuess(
-        session_update.chunks.map((chunk) => cleanChunk(chunk)), 
-        session_update.guesses, 
-        String(session_update.last_guess_article_id)
-    );
+
+    const sessionUpdate = new SessionUpdate(session_update_resp);
+
+    await renderGuess(sessionUpdate);
 
     removeClasses('lastGuessImage', ['hidden']);
     addClasses('imageSkeleton', ['hidden']);
 }
 
-async function initGame() {
+function suffixIsPlural(value) {
+    return value !== 1;
+}
+
+export async function initGame() {
+    addCardListeners();
+    addButtonListeners();
+    updateDailyNumber();
+    addMainSuggestionListener();
+    addResetButtonListener();
+
     try {
         const cached_session_id = localStorage.getItem("session_id");
         game.isGuessing = true;
@@ -819,45 +754,4 @@ async function initGame() {
     }
 }
 
-export function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function suffixIsPlural(value: number): boolean {
-    return value !== 1;
-}
-
-const URI = 'https://api.paragraphle.com';
-// const URI = 'http://localhost:8000';
-
-const acceptedKeys = new Set();
-for (let i = 0; i < 26; i++) {
-    const letter = String.fromCharCode(65 + i);
-    acceptedKeys.add(letter);
-}
-
-const WHITELIST_KEYS = [
-    'Enter', 'Backspace', '.',
-    ',', ':', '-',
-    ' ', `'`, `"`,
-    '(', ')', '+',
-    '-', '_', '1',
-    '2', '3', '4',
-    '5', '6', '7', 
-    '8', '9', '0',
-    '?', '!', ';'
-];
-for (const key of WHITELIST_KEYS) {
-    acceptedKeys.add(key)
-}
-
-const LOADING_CLASS = 'animate-[loadingBox_0.5s_linear_infinite_alternate]';
-
-addCardListeners();
-addButtonListeners();
-updateDailyNumber();
-addMainSuggestionListener();
-addResetButtonListener();
-
 let game = new Game();
-initGame();

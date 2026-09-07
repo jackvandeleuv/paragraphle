@@ -297,7 +297,27 @@ func guessArticle(w http.ResponseWriter, r *http.Request, db *sql.DB, targets []
 		return
 	}
 
-	session_update := SessionUpdate{chunks, n_guesses, int64(guess_id), is_win, win_rank}
+	stats, err := getStats(db)
+	if err != nil {
+		genericServerError(w, err)
+		return
+	}
+
+	playTime, err := getPlayTime(db, session_id)
+	if err != nil {
+		genericServerError(w, err)
+	}
+
+	session_update := SessionUpdate{
+		chunks,
+		n_guesses,
+		int64(guess_id),
+		is_win,
+		win_rank,
+		int64(stats.WinCount),
+		float64(stats.MeanGuessesPerWin),
+		playTime,
+	}
 
 	json.NewEncoder(w).Encode(session_update)
 }
