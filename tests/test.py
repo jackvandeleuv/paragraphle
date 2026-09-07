@@ -3,8 +3,6 @@ import sqlite3
 
 pd.set_option('display.max_columns', None)
 
-path = '/mnt/c/Users/jackv/OneDrive/Documents/paragraphle-db/data.db'
-
 conn = sqlite3.connect(path)
 df = pd.read_sql('''
 select *
