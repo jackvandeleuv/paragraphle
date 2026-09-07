@@ -103,13 +103,11 @@ function addCloseButtonListener() {
     const closeButton = document.getElementById('closeButton');
     const winModalElem = document.getElementById('winModalWrapper');
     closeButton.addEventListener('click', () => {
-        console.log('clicck')
         winModalElem.style.display = 'none';
     })
 }
 
 function renderWinModal(winningArticle, game) {
-    // winModal.style.display = 'flex'
     const body = document.getElementById('body');
     body.appendChild(winModal(winningArticle, game));
 
@@ -117,10 +115,6 @@ function renderWinModal(winningArticle, game) {
 }
 
 export async function renderWin(title, imageURL, game) {
-    console.log(game)
-    console.log('title')
-    console.log(title)
-
     updateClassName('progressBar', `h-full bg-orange-800/60 w-full`);   
 
     updateInnerHTML('lastGuessDistance', `Score: 100%`);
@@ -130,21 +124,6 @@ export async function renderWin(title, imageURL, game) {
         px-3 py-1 rounded border border-orange-800/60
         bg-orange-800/60 text-white
     `);
-
-    // updateInnerHTML('winModalGuessCount', String(game.guessCount));
-    // updateInnerHTML('winModalTitle', title);
-    
-    // await loadWikiImage(imageURL, 'winImage', title);
-
-    // const stats = await getDailyStats();
-    // if (!stats || stats.win_count <= 1) {
-    //     updateInnerHTML("winModalStatsDesc", "You're the first player to solve today's puzzle! 😮")
-    // } else {
-    //     const mean_guesses = String(stats.mean_guesses_per_win.toFixed(0));
-    //     updateInnerHTML("winModalStatsDesc", `
-    //         The ${stats.win_count} people who solved today's puzzle won in <span class="font-bold text-white">${mean_guesses}</span> guesses on average.
-    //     `)
-    // }
 
     renderWinModal(title, game);
 }
