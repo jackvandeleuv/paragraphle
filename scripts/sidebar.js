@@ -1,12 +1,6 @@
-interface StatsUpdate {
-    current_users: number;
-	mean_guesses_per_win: number;
-    win_count: number;
-    guess_count: number;
-    play_count: number;
-}
+import { URI } from "./config.js";
 
-function sidebar() {
+export function sidebar() {
     openMenuIconListener();
     closedMenuIconListener();
     sidebarListener();
@@ -48,7 +42,7 @@ function sidebarListener() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
     sidebar.addEventListener('click', (e) => {
-        const div = e.target as HTMLDivElement;
+        const div = e.target;
         if (div.id !== 'sidebar') return;
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
@@ -60,7 +54,7 @@ function sidebarListener() {
     })
 }
 
-function updateStat(id: string, val: number) {
+function updateStat(id, val) {
     if (val === -1) return;
     const elem = document.getElementById(id);
     if (!elem) return;
@@ -71,7 +65,7 @@ function updateStat(id: string, val: number) {
 async function updatePlayerCount() {
     const response = await fetch(`${URI}/stats`);
     if (!response.ok) return null;
-    const stats =  await response.json() as StatsUpdate;
+    const stats =  await response.json();
     if (!stats) return;
 
     updateStat('meanGuessesPerWin', stats.mean_guesses_per_win);
@@ -87,12 +81,8 @@ async function playerCountMonitor() {
     }
 }
 
-function sleepCallback(ms: number) {
+function sleepCallback(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const URI = 'https://api.paragraphle.com';
-// const URI = 'http://localhost:8000';
-
 let monitoringPlayerCount = false;
-sidebar();

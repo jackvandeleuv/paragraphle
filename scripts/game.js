@@ -726,7 +726,17 @@ async function restoreSession(session_id) {
     addClasses('imageSkeleton', ['hidden']);
 }
 
-async function initGame() {
+function suffixIsPlural(value) {
+    return value !== 1;
+}
+
+export async function initGame() {
+    addCardListeners();
+    addButtonListeners();
+    updateDailyNumber();
+    addMainSuggestionListener();
+    addResetButtonListener();
+
     try {
         const cached_session_id = localStorage.getItem("session_id");
         game.isGuessing = true;
@@ -744,19 +754,4 @@ async function initGame() {
     }
 }
 
-export function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function suffixIsPlural(value) {
-    return value !== 1;
-}
-
-addCardListeners();
-addButtonListeners();
-updateDailyNumber();
-addMainSuggestionListener();
-addResetButtonListener();
-
 let game = new Game();
-initGame();

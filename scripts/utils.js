@@ -9,6 +9,10 @@ export function updateClassName(id, value) {
     elem.className = value;
 }
 
+export function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export function getDayStartEasternMilli() {
     const now = new Date();
 
