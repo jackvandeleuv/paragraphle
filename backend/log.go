@@ -34,7 +34,7 @@ func getTodayEasternTimeStartUnix() (int64, error) {
 		return -1, err
 	}
 
-	time_now := time.Now()
+	time_now := time.Now().In(et)
 	today_start := time.Date(
 		time_now.Year(),
 		time_now.Month(),
@@ -52,7 +52,7 @@ func getTomorrowEasternTimeStartUnix() (int64, error) {
 		return -1, err
 	}
 
-	time_now := time.Now()
+	time_now := time.Now().In(et)
 	tomorrow := time_now.AddDate(0, 0, 1)
 	tomorrow_start := time.Date(
 		tomorrow.Year(),
