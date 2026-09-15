@@ -22,7 +22,7 @@ const shareButtonText = (guessCount, winRank, winPercentile, playTime, playersWh
     const dailyNumber = calculateDailyNumber();
     return `Paragraphle #${dailyNumber}
 📈 Score: ${guessCount} guesses
-🏅 Rank:  Top ${winRank} (${winPercentile}%) of ${playersWhoWon} players
+🏅 Rank:  Top ${winRank} of ${playersWhoWon} players
 🕙 Time:  ${playTime} minutes`;
 }
 
@@ -68,7 +68,7 @@ const winModal = (winningArticle, game) => {
         </div>
         <div class="winModalBox">
             <p>🏅 Rank:</p>
-            <p>Top ${game.winRank} (${winPercentile}%) of ${game.playersWhoWon} players</p>
+            <p>Top ${game.winRank} of ${game.playersWhoWon} players</p>
         </div>
         <div class="winModalBox">
             <p>🕙 Time:</p>
